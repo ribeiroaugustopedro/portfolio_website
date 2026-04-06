@@ -9,7 +9,9 @@ A clean, elegant, and professional developer portfolio website.
 - **Minimalist Dark Mode Design**
 - **Three.js Particle Background**
 - **Round Language & Theme Toggles**
-- **JSON-based Project Management**
+- **Featured SaaS: GeoMap SaaS Integration**
+    - High-performance Geographical Analysis tool.
+    - Built with Streamlit, DuckDB, and Google Gemini AI.
 - **Responsive Layout**
 - **Automatic Deployment** via GitHub Actions
 

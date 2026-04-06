@@ -5,7 +5,7 @@ import { renderNavbar } from './components/navbar.js';
 import { renderHero } from './sections/hero.js';
 import { renderHighlights } from './sections/highlights.js';
 import { renderProjects } from './sections/projects.js';
-import { renderIDE } from './sections/playgroud.js';
+import { renderIDE } from './sections/playground.js';
 import { renderResume } from './sections/resume.js';
 import { renderFooter } from './components/footer.js';
 import { renderBackToTop } from './components/backToTop.js';
