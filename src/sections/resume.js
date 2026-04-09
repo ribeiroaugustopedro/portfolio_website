@@ -4,12 +4,10 @@ export function renderResume(lang, translations) {
   const section = document.createElement('section');
   section.className = 'section container reveal';
   section.id = 'resume';
-  section.style.maxWidth = '1000px'; // Increased for better layout
 
   const h2 = document.createElement('h2');
   h2.textContent = t.title;
-  h2.style.borderLeft = '4px solid var(--border-color)';
-  h2.style.paddingLeft = '16px';
+  h2.className = 'rainbow-border-left';
   h2.style.marginBottom = '40px';
 
   const content = document.createElement('div');
@@ -43,10 +41,20 @@ export function renderResume(lang, translations) {
   t.experiences.forEach(job => {
     const item = document.createElement('div');
     item.className = 'resume-item';
+    
+    let descriptionHTML = '';
+    if (Array.isArray(job.description)) {
+      descriptionHTML = `<ul style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 10px; padding-left: 18px;">
+        ${job.description.map(point => `<li style="margin-bottom: 6px; line-height: 1.5;">${point}</li>`).join('')}
+      </ul>`;
+    } else {
+      descriptionHTML = `<p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 8px;">${job.description}</p>`;
+    }
+
     item.innerHTML = `
       <h4>${job.role}</h4>
       <span class="company">${job.company} | ${job.period}</span>
-      <p style="color: var(--text-secondary); font-size: 0.95rem;">${job.description}</p>
+      ${descriptionHTML}
     `;
     expSection.appendChild(item);
   });
@@ -108,7 +116,11 @@ export function renderResume(lang, translations) {
 
     // Custom bullet
     li.innerHTML = `
-      <span class="rainbow-text" style="margin-right: 10px; line-height: 1.6;">▹</span>
+      <span style="display: flex; align-items: center; margin-right: 10px; margin-top: 4px; color: var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </span>
       <span style="line-height: 1.6;">${cert}</span>
     `;
     certList.appendChild(li);
@@ -146,26 +158,6 @@ export function renderResume(lang, translations) {
   });
   langSection.appendChild(langList);
   rightCol.appendChild(langSection);
-
-  // Download Button
-  const btnContainer = document.createElement('div');
-  btnContainer.style.marginTop = '48px';
-  btnContainer.innerHTML = `
-    <a href="cv_pedro_augusto_ribeiro_en-us.txt" download class="btn-primary" 
-       style="display: inline-block; padding: 12px 24px; border: 2px solid var(--text-primary); border-radius: 4px; font-weight: bold; text-align: center; width: 100%; transition: all 0.3s ease; text-decoration: none; color: var(--text-primary); font-family: var(--font-mono);">
-      ${t.downloadResume}
-    </a>
-  `;
-
-  const btn = btnContainer.querySelector('a');
-  btn.addEventListener('mouseenter', (e) => {
-    e.target.style.background = 'rgba(255, 255, 255, 0.05)';
-  });
-  btn.addEventListener('mouseleave', (e) => {
-    e.target.style.background = 'transparent';
-  });
-
-  rightCol.appendChild(btnContainer);
 
   grid.appendChild(leftCol);
   grid.appendChild(rightCol);

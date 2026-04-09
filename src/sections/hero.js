@@ -13,7 +13,7 @@ export function renderHero(lang, translations) {
   content.className = 'stagger-reveal';
 
   const h1 = document.createElement('h1');
-  h1.innerHTML = `${translations[lang].hero.titlePre} <span class="rainbow-text">${translations[lang].hero.titleHighlight}</span>`;
+  h1.innerHTML = `${translations[lang].hero.titlePre}<br>${translations[lang].hero.titleHighlight}`;
   h1.style.fontSize = 'clamp(2rem, 6vw, 3.5rem)';
   h1.style.lineHeight = '1.1';
   h1.style.marginBottom = '24px';
@@ -24,25 +24,6 @@ export function renderHero(lang, translations) {
   p.style.color = 'var(--text-secondary)';
   p.style.maxWidth = '700px';
   p.style.margin = '0 auto 40px auto';
-
-  const ctaContainer = document.createElement('div');
-  ctaContainer.style.display = 'flex';
-  ctaContainer.style.gap = '20px';
-  ctaContainer.style.justifyContent = 'center';
-
-  const cta = document.createElement('a');
-  cta.href = '#highlights';
-  cta.textContent = translations[lang].hero.ctaWork;
-  cta.className = 'btn-rainbow';
-
-  const ctaPlayground = document.createElement('a');
-  ctaPlayground.href = '#playground';
-  ctaPlayground.textContent = translations[lang].hero.ctaPlayground;
-  ctaPlayground.className = 'btn-rainbow';
-  ctaPlayground.style.filter = 'hue-rotate(45deg)'; // Alternate color slightly
-
-  ctaContainer.appendChild(cta);
-  ctaContainer.appendChild(ctaPlayground);
 
   // Contact Content embedded in Hero
   const contactContainer = document.createElement('div');
@@ -118,22 +99,69 @@ export function renderHero(lang, translations) {
   contactContainer.appendChild(contactTitle);
   contactContainer.appendChild(btnContainer);
 
+  // Layout logic
+  section.style.justifyContent = 'center'; 
+  section.style.padding = '0'; // Let spacers handle it
+
   content.appendChild(h1);
   content.appendChild(p);
-  content.appendChild(ctaContainer);
 
-  // Create spacer to push content to center, then contact to bottom
+  // Grouped CTA Cluster
+  const ctaCluster = document.createElement('div');
+  ctaCluster.className = 'stagger-reveal';
+  ctaCluster.style.display = 'flex';
+  ctaCluster.style.flexDirection = 'column';
+  ctaCluster.style.alignItems = 'center';
+  ctaCluster.style.gap = '100px'; // Even more gap as requested
+  ctaCluster.style.marginTop = '40px';
+
+  // Primary Buttons Row (Restored to boxed btn-rainbow style)
+  const primaryRow = document.createElement('div');
+  primaryRow.style.display = 'flex';
+  primaryRow.style.gap = '20px';
+  primaryRow.style.justifyContent = 'center';
+
+  const cta = document.createElement('a');
+  cta.href = '#highlights';
+  cta.textContent = translations[lang].hero.ctaWork;
+  cta.className = 'btn-rainbow';
+  cta.style.zIndex = '1';
+
+  const ctaPlayground = document.createElement('a');
+  ctaPlayground.href = '#playground';
+  ctaPlayground.textContent = translations[lang].hero.ctaPlayground;
+  ctaPlayground.className = 'btn-rainbow';
+  ctaPlayground.style.filter = 'hue-rotate(45deg)'; 
+  ctaPlayground.style.zIndex = '1';
+
+  primaryRow.appendChild(cta);
+  primaryRow.appendChild(ctaPlayground);
+
+  // Secondary Resume Button
+  const resumeBtn = document.createElement('a');
+  resumeBtn.href = 'cv_pedro_augusto_ribeiro_en-us.pdf';
+  resumeBtn.download = 'cv_pedro_augusto_ribeiro_en-us.pdf';
+  resumeBtn.className = 'btn-outline';
+  resumeBtn.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+    <span>${translations[lang].resume.downloadResume}</span>
+  `;
+
+  ctaCluster.appendChild(primaryRow);
+  ctaCluster.appendChild(resumeBtn);
+  content.appendChild(ctaCluster);
+
+  // Spacers for balanced diagramming
   const spacerTop = document.createElement('div');
-  spacerTop.style.flex = '1';
-  section.appendChild(spacerTop); // Push central content down
+  spacerTop.style.flex = '1.5'; // More weight on top to push content lower
+  section.appendChild(spacerTop);
 
   section.appendChild(content);
 
   const spacerBottom = document.createElement('div');
-  spacerBottom.style.flex = '1';
-  section.appendChild(spacerBottom); // Push contact down
+  spacerBottom.style.flex = '0.5'; // Significantly less weight to pull contact UP
+  section.appendChild(spacerBottom);
 
-  section.style.paddingBottom = '80px'; // Extra room for footer
   section.appendChild(contactContainer);
 
   return section;

@@ -1,6 +1,6 @@
 export function renderProjectCard(project, lang, translations) {
   const card = document.createElement('div');
-  card.className = 'project-card rainbow-border reveal';
+  card.className = 'project-card reveal';
 
   const titleText = (project.title && project.title[lang]) ? project.title[lang] : (project.title || 'Untitled');
   const descText = (project.description && project.description[lang]) ? project.description[lang] : (project.description || '');
@@ -28,21 +28,16 @@ export function renderProjectCard(project, lang, translations) {
     'Python': '#3776AB',
     'SQL': '#3498DB',
     'Databricks': '#FF3621',
+    'DuckDB': '#FFCC00',
+    'Pandas': '#527FFF',
     'Data Modeling': '#E67E22',
     'ETL': '#27AE60',
     'Streamlit': '#FF4B4B',
-    'Folium': '#16A085',
-    'Geospatial': '#9B59B6',
+    'Folium': '#2ECC71',
+    'GenAI': '#9B59B6',
+    'Generative AI': '#9B59B6',
     'Power BI': '#F1C40F',
-    'DAX': '#34495E',
-    'Governance': '#E74C3C',
-    'NLP': '#8E44AD',
-    'Generative AI': '#D35400',
-    'Teams Integration': '#4B53BC',
     'Excel': '#1D6F42',
-    'Data Analysis': '#2C3E50',
-    'AWS Athena': '#FF9900',
-    'AWS Glue': '#527FFF',
     'default': '#858585'
   };
 
@@ -50,14 +45,15 @@ export function renderProjectCard(project, lang, translations) {
     const span = document.createElement('span');
     span.textContent = tag;
     span.style.fontSize = '0.75rem';
-    span.style.padding = '4px 10px';
-    span.style.borderRadius = '4px';
+    span.style.padding = '4px 12px';
+    span.style.borderRadius = '20px'; // Pill shape
 
     const color = uniqueTagColors[tag] || uniqueTagColors.default;
-    span.style.border = `1px solid ${color}`;
+    span.style.border = `1px solid ${color}55`; // Translucent border
     span.style.color = color;
-    span.style.background = 'var(--surface-color)';
+    span.style.background = `${color}15`; // 10% opacity background
     span.style.fontFamily = 'var(--font-mono)';
+    span.style.fontWeight = 'bold';
     tags.appendChild(span);
   });
 

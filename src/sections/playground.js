@@ -10,8 +10,56 @@ export function renderIDE() {
   let openTabs = ['pipeline.py'];
   let collapsedFolders = new Set();
   const currentSession = {
-    fileName: 'pipeline.py'
+    fileName: 'pipeline.py',
+    sidebar: 'explorer' // 'explorer' or 'catalog'
   };
+
+  const CATALOG_TYPE_ICONS = {
+    text: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#79c0ff" stroke-width="2.5"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>',
+    number: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7ee787" stroke-width="2.5"><path d="M5 22V2M19 22V2M2 17h20M2 7h20"/></svg>',
+    date: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff7b72" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+  };
+
+  const catalogData = [
+    {
+      name: 'warehouse',
+      type: 'database',
+      open: true,
+      children: [
+        {
+          name: 'gold',
+          type: 'schema',
+          open: true,
+          children: [
+            {
+              name: 'members',
+              type: 'table',
+              rows: '149,203',
+              columns: [
+                { name: 'user_id', type: 'text', distinct: '149,203' },
+                { name: 'user_gender', type: 'text', distinct: '2' },
+                { name: 'user_age', type: 'number', distinct: '84' },
+                { name: 'loc_region', type: 'text', distinct: '5' },
+                { name: 'loc_state', type: 'text', distinct: '27' },
+                { name: 'created_at', type: 'date', distinct: '1,450' }
+              ]
+            },
+            {
+              name: 'providers',
+              type: 'table',
+              rows: '1,240',
+              columns: [
+                { name: 'provider_id', type: 'text', distinct: '1,240' },
+                { name: 'specialty', type: 'text', distinct: '14' },
+                { name: 'rating', type: 'number', distinct: '5' },
+                { name: 'is_active', type: 'text', distinct: '2' }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ];
 
   const ICONS = {
     js: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f7df1e" stroke-width="2"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>',
@@ -25,6 +73,12 @@ export function renderIDE() {
     default: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>',
     folder: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dcb67a" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
     folderOpen: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dcb67a" stroke-width="2"><path d="M6 14l1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h4a2 2 0 0 1 2 2v2"/></svg>'
+  };
+
+  const CATALOG_ICONS = {
+    database: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',
+    schema: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>',
+    table: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>'
   };
 
   function getFileIcon(name) {
@@ -94,7 +148,7 @@ export function renderIDE() {
   }
 
   section.innerHTML = `
-    <h2 class="section-title rainbow-text" style="text-align: center; margin-bottom: 40px;">Interactive Playground</h2>
+    <h2 class="section-title" style="text-align: center; margin-bottom: 40px; color: var(--text-primary);">Interactive Playground</h2>
     
     <div class="ide-window" id="ide-window">
       <div class="ide-header">
@@ -108,30 +162,56 @@ export function renderIDE() {
       </div>
       <div class="ide-body">
         <div class="ide-activity-bar">
-          <div class="ide-icon active"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg></div>
-          <div class="ide-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></div>
+          <!-- Workspace / Repos (Folder) -->
+          <div class="ide-icon active" title="Workspace">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <!-- Catalog (Geometric Shapes) -->
+          <div class="ide-icon" title="Catalog">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <!-- Triangle (Aggressive) -->
+              <path d="M12 1l9 11H3l9-11z"></path>
+              <!-- Circle (Aggressive) -->
+              <circle cx="7.5" cy="18.5" r="4"></circle>
+              <!-- Square (Aggressive) -->
+              <rect x="13" y="14.5" width="8" height="8" rx="1"></rect>
+            </svg>
+          </div>
         </div>
 
-        <div class="ide-sidebar">
-          <div class="ide-sidebar-header">
-            <span>Explorer</span>
-            <div class="ide-sidebar-actions">
-              <div class="sidebar-action-btn" title="New File" id="btn-new-file">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+          <div class="ide-sidebar">
+            <div class="ide-sidebar-content" id="sidebar-explorer">
+              <div class="ide-sidebar-header">
+                <span>Explorer</span>
+                <div class="ide-sidebar-actions">
+                  <div class="sidebar-action-btn" title="New File" id="btn-new-file">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                  </div>
+                  <div class="sidebar-action-btn" title="New Folder" id="btn-new-folder">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="17" x2="12" y2="11"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                  </div>
+                  <div class="sidebar-action-btn" title="Refresh" id="btn-refresh">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                  </div>
+                  <div class="sidebar-action-btn" title="Collapse/Expand All" id="btn-collapse">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path><line x1="12" y1="15" x2="19" y2="15"></line></svg>
+                  </div>
+                </div>
               </div>
-              <div class="sidebar-action-btn" title="New Folder" id="btn-new-folder">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="17" x2="12" y2="11"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+              <div class="ide-file-list" id="ide-file-list"></div>
+            </div>
+            <div class="ide-sidebar-content" id="sidebar-catalog" style="display:none;">
+              <div class="ide-sidebar-header">
+                <span>Attached Databases</span>
+                <div class="ide-sidebar-actions">
+                  <div class="sidebar-action-btn" title="Add Database"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></div>
+                </div>
               </div>
-              <div class="sidebar-action-btn" title="Refresh" id="btn-refresh">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-              </div>
-              <div class="sidebar-action-btn" title="Collapse/Expand All" id="btn-collapse">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path><line x1="12" y1="15" x2="19" y2="15"></line></svg>
-              </div>
+              <div class="catalog-tree" id="catalog-tree"></div>
             </div>
           </div>
-          <div class="ide-file-list" id="ide-file-list" style="flex:1; overflow-y:auto;"></div>
-        </div>
 
         <div class="ide-editor-container">
           <div class="ide-editor-main">
@@ -146,8 +226,15 @@ export function renderIDE() {
             <div class="terminal-header">
               <span>OUTPUT</span>
               <div class="terminal-actions">
-                <button id="run-btn" class="run-btn">Run Python</button>
-                <button id="clear-btn" style="background:none; border:none; color:#858585; cursor:pointer;">Clear</button>
+                <button id="run-btn" class="run-btn" title="Run (Ctrl+Enter)" style="padding-top: 2px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                </button>
+                <button id="restart-btn" class="run-btn" title="Restart Kernel">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                </button>
+                <button id="clear-btn" class="run-btn" title="Clear Output">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
               </div>
             </div>
             <div class="terminal-output" id="terminal-output">
@@ -157,7 +244,7 @@ export function renderIDE() {
         </div>
       </div>
       <div class="ide-status-bar">
-        <div class="status-left"><span>PEDRO AUGUSTO RIBEIRO</span></div>
+        <div class="status-left"></div>
         <div class="status-right" id="status-info"><span>UTF-8</span><span>Text</span></div>
       </div>
     </div>
@@ -169,17 +256,108 @@ export function renderIDE() {
     const preCode = section.querySelector('#ide-code');
     const lineNumbers = section.querySelector('#line-numbers');
     const runBtn = section.querySelector('#run-btn');
-    const terminal = section.querySelector('#terminal-output');
+     const terminal = section.querySelector('#terminal-output');
     const clearBtn = section.querySelector('#clear-btn');
+    const restartBtn = section.querySelector('#restart-btn');
     const fileListContainer = section.querySelector('#ide-file-list');
+    const catalogTreeContainer = section.querySelector('#catalog-tree');
     const tabsContainer = section.querySelector('#ide-tabs');
     const statusInfo = section.querySelector('#status-info');
     const ideWindow = section.querySelector('#ide-window');
+    const activityBar = section.querySelector('.ide-activity-bar');
+
+    const explorerSidebar = section.querySelector('#sidebar-explorer');
+    const catalogSidebar = section.querySelector('#sidebar-catalog');
 
     let pyodide = null;
 
+    function renderCatalog() {
+      if (!catalogTreeContainer) return;
+
+      function renderNode(node, depth = 0) {
+        const icon = CATALOG_ICONS[node.type];
+        const color = node.type === 'database' ? '#79c0ff' : node.type === 'schema' ? '#d1d5db' : '#7ee787';
+
+        let html = `
+          <div class="catalog-node ${node.open ? 'open' : ''}" style="padding-left: ${depth * 15 + 10}px" data-node-name="${node.name}">
+            <span class="catalog-arrow" style="font-size: 8px;">${node.children ? (node.open ? '▼' : '▶') : ' '}</span>
+            <span class="catalog-icon" style="color: ${color}">${icon}</span>
+            <span class="catalog-name">${node.name}</span>
+          </div>
+        `;
+
+        if (node.open && node.children) {
+          html += node.children.map(child => renderNode(child, depth + 1)).join('');
+        }
+
+        if (node.open && node.type === 'table' && node.columns) {
+          html += `
+            <div class="catalog-table-details" style="margin-left: ${depth * 15 + 28}px">
+              <div class="details-header">
+                <span>${node.name}</span>
+                <span class="rows">${node.rows} rows</span>
+              </div>
+              <div class="column-list">
+                ${node.columns.map(col => `
+                  <div class="column-item">
+                    <span class="type-icon">${CATALOG_TYPE_ICONS[col.type]}</span>
+                    <span class="name">${col.name}</span>
+                    <span class="stat" title="Distinct Values">${col.distinct}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        return html;
+      }
+
+      catalogTreeContainer.innerHTML = catalogData.map(db => renderNode(db)).join('');
+    }
+
+    function switchSidebar(view) {
+      currentSession.sidebar = view;
+      activityBar.querySelectorAll('.ide-icon').forEach(icon => icon.classList.remove('active'));
+
+      if (view === 'explorer') {
+        activityBar.querySelector('[title="Workspace"]').classList.add('active');
+        explorerSidebar.style.display = 'flex';
+        catalogSidebar.style.display = 'none';
+      } else {
+        activityBar.querySelector('[title="Catalog"]').classList.add('active');
+        explorerSidebar.style.display = 'none';
+        catalogSidebar.style.display = 'flex';
+        renderCatalog();
+      }
+    }
+
+    // Set side bar click events
+    activityBar.querySelector('[title="Workspace"]').onclick = () => switchSidebar('explorer');
+    activityBar.querySelector('[title="Catalog"]').onclick = () => switchSidebar('catalog');
+
+    catalogTreeContainer.onclick = (e) => {
+      const node = e.target.closest('.catalog-node');
+      if (!node) return;
+
+      const name = node.dataset.nodeName;
+      
+      const findAndToggle = (list) => {
+        for (const item of list) {
+          if (item.name === name) {
+            item.open = !item.open;
+            return true;
+          }
+          if (item.children && findAndToggle(item.children)) return true;
+        }
+        return false;
+      };
+
+      findAndToggle(catalogData);
+      renderCatalog();
+    };
+
     function syncEditor() {
-      const code = textarea.value;
       const file = currentFiles[currentSession.fileName];
       if (!file) return;
 
@@ -218,7 +396,7 @@ export function renderIDE() {
       }
 
       textarea.value = file.content;
-      statusInfo.innerHTML = `<span>UTF-8</span><span>${file.language}</span>`;
+      statusInfo.innerHTML = `<span>UTF-8</span><span></span>`;
       runBtn.style.display = name.endsWith('.py') ? 'block' : 'none';
 
       renderFileList(fileListContainer);
@@ -430,20 +608,46 @@ export function renderIDE() {
     runBtn.onclick = async () => {
       if (!pyodide) {
         runBtn.disabled = true;
-        runBtn.textContent = 'Loading...';
+        runBtn.innerHTML = '<svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle></svg>';
+        // Add spinner animation style if not exists
+        if (!document.getElementById('ide-spinner-style')) {
+          const style = document.createElement('style');
+          style.id = 'ide-spinner-style';
+          style.textContent = `
+            @keyframes spin { 100% { transform: rotate(360deg); } }
+            .spinner { animation: spin 1s linear infinite; opacity: 0.7; }
+          `;
+          document.head.appendChild(style);
+        }
         pyodide = await window.loadPyodide();
         runBtn.disabled = false;
-        runBtn.textContent = 'Run Python';
+        runBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
       }
       terminal.innerHTML = '<span class="info">Executing...</span>';
       try {
         pyodide.runPython(`import sys\nimport io\nsys.stdout = io.StringIO()`);
         await pyodide.runPythonAsync(textarea.value);
         const stdout = pyodide.runPython("sys.stdout.getvalue()");
-        terminal.innerHTML = stdout ? stdout.replace(/\n/g, '<br>') : '<span class="info">Executed with no output.</span>';
+        terminal.innerHTML = stdout ? stdout.replace(/\n/g, '<br>') : '<span class="success">✓ Executed successfully (no output).</span>';
       } catch (err) {
         terminal.innerHTML = `<span class="error">${err.message}</span>`;
       }
+    };
+
+    // Keyboard Shortcuts
+    textarea.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        runBtn.click();
+      }
+    });
+
+    restartBtn.onclick = () => {
+      terminal.innerHTML = '<span class="info">Restarting kernel...</span>';
+      pyodide = null; // This will trigger reload on next run
+      setTimeout(() => {
+        terminal.innerHTML = '<span class="success">✓ Kernel restarted. Ready.</span>';
+      }, 500);
     };
 
     clearBtn.onclick = () => { terminal.innerHTML = ''; };
