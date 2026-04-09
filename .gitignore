@@ -4,7 +4,7 @@ dist/
 dist-ssr/
 *.local
 
-# Editor
+# Editor and System Files
 .vscode/
 !.vscode/extensions.json
 .idea/
@@ -15,11 +15,11 @@ dist-ssr/
 *.sln
 *.sw?
 
-# Vite
+# Tooling
 .vite/
 *.log
 npm-debug.log*
 
-# Temporary
+# Temporary Files
 tmp/
 temp/

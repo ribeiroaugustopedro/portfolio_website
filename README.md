@@ -1,48 +1,36 @@
-# Pedro Augusto Ribeiro - Portfolio
+# Professional Portfolio Website
 
-A clean, elegant, and professional developer portfolio website.
+A clean, elegant, and professional developer portfolio website showcasing multidisciplinary data expertise and engineering skills.
 
-**Live at: [paribeiro.com](https://paribeiro.com)**
+Live demonstration available at: [paribeiro.com](https://paribeiro.com)
 
-## Features
+## Key Features
+- **Professional User Interface**: Minimalist dark-mode design with responsive layouts.
+- **Interactive Visuals**: Particle-based background systems built with Three.js.
+- **Multilingual Support**: Switchable Portuguese and English translations.
+- **Project Integration**: Direct showcase of specialized tools like the Network Planner.
+- **Automated Delivery**: Continuous deployment pipeline via GitHub Actions.
 
-- **Minimalist Dark Mode Design**
-- **Three.js Particle Background**
-- **Round Language & Theme Toggles**
-- **Featured SaaS: GeoMap SaaS Integration**
-    - High-performance Geographical Analysis tool.
-    - Built with Streamlit, DuckDB, and Google Gemini AI.
-- **Responsive Layout**
-- **Automatic Deployment** via GitHub Actions
+## Tech Stack
+- Vite (Build Tool)
+- Vanilla JavaScript
+- Three.js (Graphics)
+- CSS3 (Styling)
 
-## Deployment & Workflow
-
-The project is hosted on GitHub Pages with a custom domain.
-
-1.  **Work**: Make changes in the `main` branch.
-2.  **Commit**: Use descriptive commit messages.
-3.  **Deploy**: Simply `git push origin main`. GitHub Actions will automatically build the project and deploy it to the `gh-pages` branch.
-
-## How to Run Locally
-
-1. **Install Dependencies**
+## Local Development
+1. Clone the repository.
+2. Install project dependencies:
    ```bash
    npm install
    ```
-
-2. **Run Development Server**
+3. Start the local development server:
    ```bash
    npm run dev
    ```
-
-3. **Build for Production**
+4. Build for professional deployment:
    ```bash
    npm run build
    ```
 
-## Tech Stack
-
-- Vite
-- Vanilla JavaScript
-- Three.js
-- CSS3
+## Workflow
+The project follows a standard Git workflow. Commits pushed to the main branch are automatically processed and deployed to GitHub Pages via automated actions.
