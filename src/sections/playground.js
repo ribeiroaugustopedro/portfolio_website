@@ -3,7 +3,7 @@ import { files } from '../data/ideFiles.js';
 export function renderIDE() {
   const section = document.createElement('section');
   section.id = 'playground';
-  section.className = 'ide-section reveal';
+  section.className = 'ide-section';
 
   // State Management
   let currentFiles = { ...files };
@@ -148,9 +148,9 @@ export function renderIDE() {
   }
 
   section.innerHTML = `
-    <h2 class="section-title" style="text-align: center; margin-bottom: 40px; color: var(--text-primary);">Interactive Playground</h2>
+    <h2 class="section-title reveal" style="text-align: center; margin-bottom: 40px; color: var(--text-primary);">Interactive Playground</h2>
     
-    <div class="ide-window" id="ide-window">
+    <div class="ide-window reveal" id="ide-window">
       <div class="ide-header">
         <div class="window-controls">
           <div class="control close" id="win-close"></div>

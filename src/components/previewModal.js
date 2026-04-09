@@ -2,6 +2,12 @@ export function openPreviewModal(url, titleText) {
   // Check if modal already exists
   if (document.getElementById('project-preview-modal')) return;
 
+  // Streamlit Specific Fix: Append ?embed=true to avoid redirect loops and improve embedding
+  let embedUrl = url;
+  if (url.includes('streamlit.app') && !url.includes('embed=true')) {
+    embedUrl += (url.includes('?') ? '&' : '?') + 'embed=true';
+  }
+
   const modal = document.createElement('div');
   modal.id = 'project-preview-modal';
   modal.className = 'preview-modal';
@@ -29,7 +35,7 @@ export function openPreviewModal(url, titleText) {
             <div class="loader-spinner"></div>
             <p>Initializing Secure Session...</p>
         </div>
-        <iframe src="${url}" frameborder="0" allowfullscreen role="presentation" title="Project Preview"></iframe>
+        <iframe src="${embedUrl}" frameborder="0" allowfullscreen role="presentation" title="Project Preview"></iframe>
       </div>
     </div>
   `;

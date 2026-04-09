@@ -48,6 +48,11 @@ export function renderFooter(lang, translations) {
             name: 'Email',
             href: 'mailto:ribeiroaugustopedro@gmail.com',
             icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>'
+        },
+        {
+            name: (translations && translations[lang] && translations[lang].resume) ? translations[lang].resume.downloadResume : 'Download Resume',
+            href: './cv_pedro_augusto_ribeiro_en-us.pdf',
+            icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>'
         }
     ];
 

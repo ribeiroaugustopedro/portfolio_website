@@ -2,27 +2,62 @@ export function renderResume(lang, translations) {
   const t = translations[lang].resume;
 
   const section = document.createElement('section');
-  section.className = 'section container reveal';
+  section.className = 'section container';
   section.id = 'resume';
 
   const h2 = document.createElement('h2');
   h2.textContent = t.title;
-  h2.className = 'rainbow-border-left';
+  h2.className = 'rainbow-border-left reveal';
   h2.style.marginBottom = '40px';
 
   const content = document.createElement('div');
-  content.className = 'resume-container';
+  content.className = 'resume-container reveal'; // Apply reveal to content
 
   // Professional Summary
   const summaryBox = document.createElement('div');
   summaryBox.style.marginBottom = '48px';
-  summaryBox.className = 'project-card'; // Reuse card style for consistency
-  summaryBox.style.borderLeft = '4px solid var(--border-color)';
+  summaryBox.className = 'project-card reveal'; 
 
-  summaryBox.innerHTML = `
-    <h3 style="margin-bottom: 16px; display: inline-block; color: var(--text-primary);">${t.summaryTitle}</h3>
-    <p style="font-size: 1rem; color: var(--text-primary);">${t.summary}</p>
-  `;
+  const summaryTitle = document.createElement('h3');
+  summaryTitle.textContent = t.summaryTitle;
+  summaryTitle.style.fontSize = '1.2rem';
+  summaryTitle.style.marginBottom = '12px';
+  summaryTitle.style.transition = 'color 0.3s ease';
+
+  const summaryText = document.createElement('p');
+  summaryText.textContent = t.summary;
+  summaryText.style.fontSize = '0.95rem';
+  summaryText.style.color = 'var(--text-secondary)';
+  summaryText.style.lineHeight = '1.6';
+  summaryText.style.marginBottom = '24px';
+
+  const downloadLink = document.createElement('a');
+  downloadLink.className = 'project-link-indicator';
+  downloadLink.href = './cv_pedro_augusto_ribeiro_en-us.pdf';
+  downloadLink.target = '_blank';
+  downloadLink.innerHTML = `${t.downloadResume} &rarr;`;
+  downloadLink.style.marginTop = 'auto';
+  downloadLink.style.color = 'var(--text-primary)';
+  downloadLink.style.fontSize = '0.9rem';
+  downloadLink.style.fontWeight = 'bold';
+  downloadLink.style.display = 'inline-block';
+  downloadLink.style.width = 'fit-content';
+  downloadLink.style.paddingBottom = '4px';
+  downloadLink.style.transition = 'all 0.3s ease';
+  downloadLink.style.textDecoration = 'none';
+
+  summaryBox.appendChild(summaryTitle);
+  summaryBox.appendChild(summaryText);
+  summaryBox.appendChild(downloadLink);
+
+  // Hover Effect for Card
+  summaryBox.onmouseenter = () => {
+    summaryTitle.style.color = '#8a2be2';
+  };
+  summaryBox.onmouseleave = () => {
+    summaryTitle.style.color = '';
+  };
+
   content.appendChild(summaryBox);
 
   // Grid Layout
@@ -75,7 +110,6 @@ export function renderResume(lang, translations) {
   });
 
   leftCol.appendChild(expSection);
-  leftCol.appendChild(eduSection);
 
   // Right Column: Skills, Certifications, Languages
   const rightCol = document.createElement('div');
@@ -127,6 +161,10 @@ export function renderResume(lang, translations) {
   });
   certSection.appendChild(certList);
   rightCol.appendChild(certSection);
+
+  // Education (Moved from left column)
+  eduSection.style.marginTop = '40px'; // Align with right column spacing
+  rightCol.appendChild(eduSection);
 
   // Languages
   const langSection = document.createElement('div');

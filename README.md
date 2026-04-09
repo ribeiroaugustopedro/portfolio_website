@@ -10,6 +10,7 @@ Live demonstration available at: [paribeiro.com](https://paribeiro.com)
 - **Multilingual Support**: Switchable Portuguese and English translations.
 - **Project Integration**: Direct showcase of specialized tools like the Network Planner.
 - **Automated Delivery**: Continuous deployment pipeline via GitHub Actions.
+- **Code Hygiene**: Optimized structure with redundant file removal and refined scroll UX.
 
 ## Tech Stack
 - Vite (Build Tool)

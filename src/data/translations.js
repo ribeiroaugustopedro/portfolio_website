@@ -37,7 +37,7 @@ export const translations = {
                     company: 'Leve Saúde',
                     period: 'Jul 2023 – Presente',
                     description: [
-                        'Promovido rapidamente de estagiário a engenheiro de dados pleno, tornando-se referência técnica e estratégica em analytics, governança de BI e operações de dados.',
+                        'Promovido rapidamente de estagiário a Engenheiro de Analytics Sênior, tornando-se referência técnica e estratégica em analytics, governança de BI e operações de dados.',
                         'Liderou a reestruturação e padronização de mais de 50 dashboards Power BI, eliminando dependências de Excel/CSV e reduzindo o esforço de manutenção em mais de 50%.',
                         'Desenvolve e implementa soluções integradas de BI usando Python, SQL e Excel/CSV, garantindo rastreabilidade e consistência em relatórios corporativos.',
                         'Supervisiona e orienta a equipe de business intelligence, estabelecendo padrões de KPI, convenções de nomenclatura, hierarquia visual e documentação de dados.',
@@ -175,7 +175,7 @@ export const translations = {
                     company: 'Leve Saúde',
                     period: 'Jul 2023 – Present',
                     description: [
-                        'Rapidly promoted from intern to mid-level data engineer, becoming a technical and strategic reference in analytics, business intelligence governance, and data operations.',
+                        'Rapidly promoted from intern to Senior Level Analytics Engineer, becoming a technical and strategic reference in analytics, business intelligence governance, and data operations.',
                         'Led the restructuring and standardization of 50+ Power BI dashboards, eliminating Excel/CSV dependencies and reducing maintenance effort by over 50%.',
                         'Design and implement fully integrated BI solutions using Python, SQL, and Excel/CSV, ensuring traceability and consistency across corporate reports.',
                         'Supervise and guide the business intelligence team, establishing KPI standards, naming conventions, visual hierarchy, and data documentation for dashboard delivery.',

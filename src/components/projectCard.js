@@ -3,7 +3,7 @@ import { openPreviewModal } from './previewModal.js';
 export function renderProjectCard(project, lang, translations) {
   const card = document.createElement('div');
   card.className = 'project-card reveal';
-  card.style.cursor = 'pointer';
+  // card is no longer a button, removing pointer cursor
 
   const titleText = (project.title && project.title[lang]) ? project.title[lang] : (project.title || 'Untitled');
   const descText = (project.description && project.description[lang]) ? project.description[lang] : (project.description || '');
@@ -61,33 +61,39 @@ export function renderProjectCard(project, lang, translations) {
     tags.appendChild(span);
   });
 
-  const linkIndicator = document.createElement('div');
+  const linkIndicator = document.createElement('a');
   linkIndicator.className = 'project-link-indicator';
+  linkIndicator.href = '#';
   linkIndicator.innerHTML = `${viewText} &rarr;`;
   linkIndicator.style.marginTop = 'auto';
   linkIndicator.style.color = 'var(--text-primary)';
   linkIndicator.style.fontSize = '0.9rem';
   linkIndicator.style.fontWeight = 'bold';
-  linkIndicator.style.transition = 'transform 0.3s ease';
+  linkIndicator.style.cursor = 'pointer';
+  linkIndicator.style.display = 'inline-block';
+  linkIndicator.style.width = 'fit-content';
+  linkIndicator.style.paddingBottom = '4px';
+  linkIndicator.style.transition = 'all 0.3s ease';
+  linkIndicator.style.textDecoration = 'none';
+
+  // Modal Trigger moved to the button
+  linkIndicator.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openPreviewModal(project.link, titleText);
+  };
 
   card.appendChild(title);
   card.appendChild(desc);
   card.appendChild(tags);
   card.appendChild(linkIndicator);
 
-  // Modal Trigger for the entire card
-  card.onclick = (e) => {
-    openPreviewModal(project.link, titleText);
-  };
-
-  // Hover Effect for Title
+  // Hover Effect for Card (Visual logic for title handled here, indicator handled in CSS)
   card.onmouseenter = () => {
     title.style.color = '#8a2be2';
-    linkIndicator.style.transform = 'translateX(5px)';
   };
   card.onmouseleave = () => {
     title.style.color = '';
-    linkIndicator.style.transform = 'translateX(0)';
   };
 
   return card;

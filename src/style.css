@@ -30,9 +30,7 @@
 
   --nav-bg: rgba(13, 17, 23, 0.85);
 
-  --bg-pattern: none;
-  /* Dots removed from Dark Mode */
-  --bg-pattern-size: 40px 40px;
+  --nav-bg: rgba(13, 17, 23, 0.85);
 }
 
 [data-theme="light"] {
@@ -44,8 +42,6 @@
   --surface-color: #ffffff;
   --border-color: #e2e8f0;
   --nav-bg: rgba(248, 250, 252, 0.85);
-  --bg-pattern: none;
-  /* No dots in Light Mode either */
 }
 
 [data-theme="light"] h1,
@@ -70,6 +66,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 100px; /* Increased padding */
 }
 
 body {
@@ -79,12 +76,10 @@ body {
     radial-gradient(at 0% 0%, rgba(255, 0, 0, 0.05) 0px, transparent 50%),
     radial-gradient(at 100% 100%,
       rgba(138, 43, 226, 0.05) 0px,
-      transparent 50%),
-    var(--bg-pattern);
+      transparent 50%);
   background-size:
     100% 100%,
-    100% 100%,
-    var(--bg-pattern-size);
+    100% 100%;
   background-attachment: fixed;
   color: var(--text-primary);
   line-height: 1.6;
@@ -140,10 +135,11 @@ button {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   padding: var(--spacing-xl) 0;
   position: relative;
   z-index: 1;
+  scroll-margin-top: 100px; /* Explicit scroll margin for better ID targeting */
   /* Above background */
 }
 
@@ -155,7 +151,7 @@ button {
 /* Reveal Animations */
 .reveal {
   opacity: 0;
-  transform: translateY(50px) scale(0.95);
+  transform: translateY(30px);
   transition:
     opacity 1s cubic-bezier(0.23, 1, 0.32, 1),
     transform 1s cubic-bezier(0.23, 1, 0.32, 1);
@@ -487,6 +483,15 @@ a:hover {
   transform: translateY(-5px);
   background-color: rgba(255, 255, 255, 0.02);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.project-card:hover .project-link-indicator::after {
+  width: 100%;
+}
+
+.project-card:hover .project-link-indicator {
+  transform: translateX(5px);
+  color: #8a2be2 !important;
 }
 
 /* Resume & Skills */
