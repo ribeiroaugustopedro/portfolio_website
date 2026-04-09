@@ -1,6 +1,9 @@
+import { openPreviewModal } from './previewModal.js';
+
 export function renderProjectCard(project, lang, translations) {
   const card = document.createElement('div');
   card.className = 'project-card reveal';
+  card.style.cursor = 'pointer';
 
   const titleText = (project.title && project.title[lang]) ? project.title[lang] : (project.title || 'Untitled');
   const descText = (project.description && project.description[lang]) ? project.description[lang] : (project.description || '');
@@ -10,6 +13,7 @@ export function renderProjectCard(project, lang, translations) {
   title.textContent = titleText;
   title.style.fontSize = '1.2rem';
   title.style.marginBottom = '12px';
+  title.style.transition = 'color 0.3s ease';
 
   const desc = document.createElement('p');
   desc.textContent = descText;
@@ -46,32 +50,45 @@ export function renderProjectCard(project, lang, translations) {
     span.textContent = tag;
     span.style.fontSize = '0.75rem';
     span.style.padding = '4px 12px';
-    span.style.borderRadius = '20px'; // Pill shape
+    span.style.borderRadius = '20px';
 
     const color = uniqueTagColors[tag] || uniqueTagColors.default;
-    span.style.border = `1px solid ${color}55`; // Translucent border
+    span.style.border = `1px solid ${color}55`;
     span.style.color = color;
-    span.style.background = `${color}15`; // 10% opacity background
+    span.style.background = `${color}15`;
     span.style.fontFamily = 'var(--font-mono)';
     span.style.fontWeight = 'bold';
     tags.appendChild(span);
   });
 
-  const linkEl = document.createElement('a');
-  linkEl.href = project.link;
-  linkEl.className = 'project-link';
-  linkEl.innerHTML = `${viewText} &rarr;`;
-  linkEl.style.display = 'inline-block';
-  linkEl.style.marginTop = 'auto';
-  linkEl.style.color = 'var(--text-primary)';
-  linkEl.style.fontSize = '0.9rem';
-  linkEl.style.fontWeight = 'bold';
-  linkEl.style.textDecoration = 'none';
+  const linkIndicator = document.createElement('div');
+  linkIndicator.className = 'project-link-indicator';
+  linkIndicator.innerHTML = `${viewText} &rarr;`;
+  linkIndicator.style.marginTop = 'auto';
+  linkIndicator.style.color = 'var(--text-primary)';
+  linkIndicator.style.fontSize = '0.9rem';
+  linkIndicator.style.fontWeight = 'bold';
+  linkIndicator.style.transition = 'transform 0.3s ease';
 
   card.appendChild(title);
   card.appendChild(desc);
   card.appendChild(tags);
-  card.appendChild(linkEl);
+  card.appendChild(linkIndicator);
+
+  // Modal Trigger for the entire card
+  card.onclick = (e) => {
+    openPreviewModal(project.link, titleText);
+  };
+
+  // Hover Effect for Title
+  card.onmouseenter = () => {
+    title.style.color = '#8a2be2';
+    linkIndicator.style.transform = 'translateX(5px)';
+  };
+  card.onmouseleave = () => {
+    title.style.color = '';
+    linkIndicator.style.transform = 'translateX(0)';
+  };
 
   return card;
 }
