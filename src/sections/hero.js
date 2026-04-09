@@ -127,6 +127,13 @@ export function renderHero(lang, translations) {
   cta.className = 'btn-rainbow';
   cta.style.zIndex = '1';
 
+  const ctaPlayground = document.createElement('a');
+  ctaPlayground.href = '#playground';
+  ctaPlayground.textContent = translations[lang].hero.ctaPlayground;
+  ctaPlayground.className = 'btn-rainbow';
+  ctaPlayground.style.filter = 'hue-rotate(45deg)'; 
+  ctaPlayground.style.zIndex = '1';
+
   const ctaNetwork = document.createElement('a');
   ctaNetwork.href = 'https://networkplanner-fb6fzcdfuz9nvicgfinfj2.streamlit.app/';
   ctaNetwork.target = '_blank';
