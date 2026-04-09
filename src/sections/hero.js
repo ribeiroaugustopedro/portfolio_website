@@ -127,15 +127,17 @@ export function renderHero(lang, translations) {
   cta.className = 'btn-rainbow';
   cta.style.zIndex = '1';
 
-  const ctaPlayground = document.createElement('a');
-  ctaPlayground.href = '#playground';
-  ctaPlayground.textContent = translations[lang].hero.ctaPlayground;
-  ctaPlayground.className = 'btn-rainbow';
-  ctaPlayground.style.filter = 'hue-rotate(45deg)'; 
-  ctaPlayground.style.zIndex = '1';
+  const ctaNetwork = document.createElement('a');
+  ctaNetwork.href = 'https://networkplanner-fb6fzcdfuz9nvicgfinfj2.streamlit.app/';
+  ctaNetwork.target = '_blank';
+  ctaNetwork.textContent = translations[lang].hero.ctaNetwork;
+  ctaNetwork.className = 'btn-rainbow';
+  ctaNetwork.style.filter = 'hue-rotate(90deg)'; 
+  ctaNetwork.style.zIndex = '1';
 
   primaryRow.appendChild(cta);
   primaryRow.appendChild(ctaPlayground);
+  primaryRow.appendChild(ctaNetwork);
 
   // Secondary Resume Button
   const resumeBtn = document.createElement('a');
