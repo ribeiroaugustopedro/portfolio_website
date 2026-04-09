@@ -1,25 +1,26 @@
-# Dependencies
+# Node artifacts
 node_modules/
 dist/
-dist-ssr/
-*.local
-
-# Editor and System Files
-.vscode/
-!.vscode/extensions.json
-.idea/
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# Tooling
 .vite/
-*.log
+.vercel/
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Temporary Files
-tmp/
-temp/
+# OS Metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+*.Zone.Identifier
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+.gemini/
+.antigravity/
+brain/
+scratch/
