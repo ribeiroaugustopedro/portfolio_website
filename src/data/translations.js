@@ -6,7 +6,6 @@ export const translations = {
             description: 'Olá, sou <strong>Pedro Augusto Ribeiro</strong>, um Profissional de Dados Multidisciplinar especializado na construção de pipelines ETL escaláveis e ecossistemas de BI de alto impacto.',
             ctaWork: 'Ver Meus Trabalhos',
             ctaPlayground: 'Testar Playground',
-            ctaNetwork: 'Analisar Rede Live',
             contactTitle: 'Entre em Contato'
         },
         navbar: {
@@ -145,7 +144,6 @@ export const translations = {
             description: 'Hi, I am <strong>Pedro Augusto Ribeiro</strong>, a Multidisciplinary Data Professional specialized in building scalable ETL pipelines and high-impact BI ecosystems.',
             ctaWork: 'View My Work',
             ctaPlayground: 'Try Playground',
-            ctaNetwork: 'Analyze Network Live',
             contactTitle: 'Get In Touch'
         },
         navbar: {
