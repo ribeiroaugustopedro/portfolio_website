@@ -1,26 +1,37 @@
-# Pedro Augusto | Senior Portfolio
+# Portfolio Website
 
-Interactive developer portfolio featuring a high-fidelity IDE simulation, professional experience timeline, and strategic project showcase.
+Advanced personal portfolio built with Vite, Javascript, and Three.js. Features a high-performance design with custom thematic elements, dynamic responsiveness, and an integrated data playground.
 
-## 🚀 Live Demo
-[paribeiro.com](https://paribeiro.com)
+## Technologies
+- Core: Javascript (Vanilla), HTML5
+- Styling: CSS3 (Custom Design System)
+- Animations: Three.js (Background), Intersection Observer API
+- Environment: Vite
+- Deployment: Automated CI/CD flow
 
-## 🛠️ Tech Stack
--   **Core**: React + Vite
--   **Styling**: Vanilla CSS (High-Performance)
--   **Animation**: Custom Pulse & Blur Effects
--   **Deployment**: GitHub Pages (CI/CD via Actions)
+## Architecture
+- Components: Modular UI elements located in src/components.
+- Sections: Page-level content structures in src/sections.
+- Data: Centralized translations and project configurations in src/data.
+- Three: Dedicated 3D environment logic in src/three.
 
-## 📁 Project Structure
--   `/src`: Main application logic and components.
--   `/src/data/translations.js`: Multilingual content and project metadata.
--   `/public`: Static assets and professional resume.
+## Local Development
+1. Clone the repository.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run development server:
+   ```bash
+   npm run dev
+   ```
+4. Build for production:
+   ```bash
+   npm run build
+   ```
 
-## 💻 Development
-```bash
-npm install
-npm run dev
-```
-
----
-*Identity & Code by Pedro Augusto*
+## Design Principles
+- High information density and premium aesthetics.
+- Seamless Dark/Light theme integration.
+- Optimized for mobile landscape and portrait orientations.
+- Zero external CSS frameworks for maximum performance.

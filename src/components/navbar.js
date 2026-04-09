@@ -108,7 +108,6 @@ export function renderNavbar(lang, translations) {
   ul.style.listStyle = 'none';
 
   const links = [
-    { name: translations[lang].navbar.work, id: 'highlights' },
     { name: translations[lang].navbar.projects, id: 'projects' },
     { name: translations[lang].navbar.about, id: 'resume' },
     { name: translations[lang].navbar.playground, id: 'playground' },
