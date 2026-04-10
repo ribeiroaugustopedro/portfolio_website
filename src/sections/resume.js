@@ -5,8 +5,7 @@ export function renderResume(lang, translations) {
   section.id = 'resume';
   const h2 = document.createElement('h2');
   h2.textContent = t.title;
-  h2.className = 'rainbow-border-left reveal';
-  h2.style.marginBottom = '40px';
+  h2.className = 'rainbow-title-center reveal';
   const content = document.createElement('div');
   content.className = 'resume-container reveal';
   const summaryBox = document.createElement('div');
@@ -27,7 +26,7 @@ export function renderResume(lang, translations) {
   downloadLink.className = 'project-link-indicator';
   downloadLink.href = './cv_pedro_augusto_ribeiro_en-us.pdf';
   downloadLink.target = '_blank';
-  downloadLink.innerHTML = `${t.downloadResume} &rarr;`;
+  downloadLink.innerHTML = `Download Resume &rarr;`;
   downloadLink.style.marginTop = 'auto';
   downloadLink.style.color = 'var(--text-primary)';
   downloadLink.style.fontSize = '0.9rem';
@@ -40,8 +39,8 @@ export function renderResume(lang, translations) {
   summaryBox.appendChild(summaryTitle);
   summaryBox.appendChild(summaryText);
   summaryBox.appendChild(downloadLink);
-  summaryBox.onmouseenter = () => { summaryTitle.style.color = '#8a2be2'; };
-  summaryBox.onmouseleave = () => { summaryTitle.style.color = ''; };
+  summaryBox.onmouseenter = () => { /* Handled by CSS */ };
+  summaryBox.onmouseleave = () => { /* Handled by CSS */ };
   content.appendChild(summaryBox);
   const grid = document.createElement('div');
   grid.className = 'resume-grid';

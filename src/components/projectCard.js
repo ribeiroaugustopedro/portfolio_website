@@ -61,7 +61,7 @@ export function renderProjectCard(project, lang, translations) {
   card.appendChild(desc);
   card.appendChild(tags);
   card.appendChild(linkIndicator);
-  card.onmouseenter = () => { title.style.color = '#8a2be2'; };
-  card.onmouseleave = () => { title.style.color = ''; };
+  card.onmouseenter = () => { /* Logic handled by CSS */ };
+  card.onmouseleave = () => { /* Logic handled by CSS */ };
   return card;
 }

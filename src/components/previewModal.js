@@ -43,17 +43,28 @@ export function openPreviewModal(url, titleText) {
   document.body.appendChild(modal);
   document.body.style.overflow = 'hidden'; // Prevent background scroll
 
+  // Auto-fullscreen on open for maximum immersion
+  if (modal.requestFullscreen) {
+    modal.requestFullscreen().catch(err => {
+        console.warn(`Fullscreen blocked: ${err.message}`);
+    });
+  }
+
   // Close Button Logic
   const closeBtn = modal.querySelector('#close-project-modal');
   const overlay = modal.querySelector('.modal-overlay');
 
   const closeModal = () => {
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    }
     modal.classList.add('closing');
     setTimeout(() => {
       document.body.removeChild(modal);
       document.body.style.overflow = '';
     }, 400);
   };
+
 
   closeBtn.onclick = closeModal;
   overlay.onclick = closeModal;

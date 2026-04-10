@@ -1,3 +1,5 @@
+import { renderDynamicName } from './dynamicName.js';
+
 export function renderFooter(lang, translations) {
     const footer = document.createElement('footer');
     footer.style.padding = '40px 20px';
@@ -43,21 +45,45 @@ export function renderFooter(lang, translations) {
         const a = document.createElement('a');
         a.href = l.href;
         a.target = '_blank';
+        a.className = 'social-btn';
         a.innerHTML = l.icon;
         a.style.color = 'var(--text-secondary)';
-        a.style.transition = 'color 0.3s, transform 0.3s';
         a.style.display = 'flex';
         a.style.alignItems = 'center';
+        a.style.padding = '10px';
+        a.style.borderRadius = '50%';
+        a.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+        a.style.textDecoration = 'none';
         a.title = l.name;
-        a.addEventListener('mouseenter', () => { a.style.color = 'var(--accent-color)'; a.style.transform = 'translateY(-3px)'; });
-        a.addEventListener('mouseleave', () => { a.style.color = 'var(--text-secondary)'; a.style.transform = 'translateY(0)'; });
         leftContainer.appendChild(a);
     });
 
+
+
+
     const p = document.createElement('p');
-    p.innerHTML = translations[lang].footer.rights;
+    const rightsText = translations[lang].footer.rights;
+    const parts = rightsText.split('{NAME}');
+    
     p.style.margin = '0';
+    p.style.display = 'flex';
+    p.style.alignItems = 'center';
+    p.style.gap = '8px';
+    p.style.flexWrap = 'wrap';
+    p.style.justifyContent = 'center';
+
+    const startSpan = document.createElement('span');
+    startSpan.innerHTML = parts[0];
+    p.appendChild(startSpan);
+    
+    p.appendChild(renderDynamicName('Pedro Augusto Ribeiro', '0.9rem'));
+    
+    const endSpan = document.createElement('span');
+    endSpan.innerHTML = parts[1];
+    p.appendChild(endSpan);
+
     footer.appendChild(leftContainer);
     footer.appendChild(p);
+
     return footer;
 }

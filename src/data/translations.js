@@ -134,7 +134,7 @@ export const translations = {
             ]
         },
         footer: {
-            rights: '&copy; 2026 <span class="rainbow-text" style="font-weight:bold;">Pedro Augusto Ribeiro</span>. Construído com Vite & Three.js.'
+            rights: '&copy; 2026 {NAME}. Construído com Vite & Three.js.'
         }
     },
     en: {
@@ -272,7 +272,7 @@ export const translations = {
             ]
         },
         footer: {
-            rights: '&copy; 2026 <span class="rainbow-text" style="font-weight:bold;">Pedro Augusto Ribeiro</span>. Built with Vite & Three.js.'
+            rights: '&copy; 2026 {NAME}. Built with Vite & Three.js.'
         }
     }
 };

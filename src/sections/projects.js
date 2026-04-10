@@ -7,8 +7,7 @@ export function renderProjects(projects, lang, translations) {
 
   const h2 = document.createElement('h2');
   h2.textContent = translations[lang].projects.title;
-  h2.style.marginBottom = '40px';
-  h2.className = 'rainbow-border-left reveal';
+  h2.className = 'rainbow-title-center reveal';
 
   const grid = document.createElement('div');
   grid.className = 'grid stagger-reveal reveal';

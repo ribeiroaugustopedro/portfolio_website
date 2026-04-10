@@ -1,4 +1,6 @@
-export function renderNavbar(lang, translations) {
+import { renderDynamicName } from './dynamicName.js';
+
+export function renderNavbar(lang, translations, customLinks = null) {
   const nav = document.createElement('nav');
   nav.style.position = 'fixed';
   nav.style.top = '0';
@@ -16,13 +18,15 @@ export function renderNavbar(lang, translations) {
   leftContainer.style.alignItems = 'center';
   leftContainer.style.gap = '20px';
 
-  const logo = document.createElement('div');
-  logo.textContent = 'PEDRO AUGUSTO RIBEIRO';
-  logo.className = 'rainbow-text'; // Highlight name with rainbow effect
-  logo.style.fontFamily = 'var(--font-mono)';
-  logo.style.fontWeight = 'bold';
-  logo.style.fontSize = '1.2rem';
-  leftContainer.appendChild(logo);
+  const logoContainer = renderDynamicName('PEDRO AUGUSTO RIBEIRO', '1.2rem');
+  logoContainer.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (window.location.hash) {
+        history.pushState("", document.title, window.location.pathname + window.location.search);
+    }
+  });
+  leftContainer.appendChild(logoContainer);
+
 
   // Theme Toggle Button
   const themeToggle = document.createElement('button');
@@ -34,8 +38,15 @@ export function renderNavbar(lang, translations) {
   
   themeToggle.innerHTML = currentTheme === 'light' ? sunIcon : moonIcon;
   themeToggle.style.color = 'var(--text-primary)';
-  themeToggle.style.padding = '8px';
+  themeToggle.style.width = '40px';
+  themeToggle.style.height = '40px';
+  themeToggle.style.display = 'flex';
+  themeToggle.style.alignItems = 'center';
+  themeToggle.style.justifyContent = 'center';
   themeToggle.style.borderRadius = '50%';
+  themeToggle.style.backgroundColor = 'transparent';
+  themeToggle.style.border = 'none';
+  themeToggle.style.cursor = 'pointer';
   themeToggle.style.transition = 'background 0.3s ease';
   themeToggle.title = 'Toggle Light/Dark Mode';
 
@@ -76,9 +87,11 @@ export function renderNavbar(lang, translations) {
   langToggle.style.backgroundColor = 'transparent';
   langToggle.style.border = 'none';
   langToggle.style.cursor = 'pointer';
+  langToggle.style.padding = '0'; // Remove padding to keep size exact 40px
   langToggle.style.fontFamily = 'var(--font-mono)';
-  langToggle.style.fontSize = '0.9rem';
+  langToggle.style.fontSize = '1rem'; // Increased by ~1px (from 0.9rem)
   langToggle.style.fontWeight = 'bold';
+  langToggle.style.lineHeight = '1.2';
   langToggle.style.transition = 'background 0.3s ease';
   langToggle.title = 'Switch Language';
 
@@ -107,7 +120,8 @@ export function renderNavbar(lang, translations) {
   ul.style.gap = '30px';
   ul.style.listStyle = 'none';
 
-  const links = [
+  const links = customLinks || [
+    { name: translations[lang].navbar.home || 'Home', id: 'hero' },
     { name: translations[lang].navbar.projects, id: 'projects' },
     { name: translations[lang].navbar.about, id: 'resume' },
     { name: translations[lang].navbar.playground, id: 'playground' },
@@ -144,6 +158,19 @@ export function renderNavbar(lang, translations) {
   nav.appendChild(hamburger);
 
   // Responsive padding adjustment in JS for the nav itself
+  // Scroll Dynamics for evolved feel
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 20) {
+      nav.style.padding = '12px 40px';
+      nav.style.backgroundColor = 'rgba(13, 17, 23, 0.95)';
+      nav.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.5)';
+    } else {
+      nav.style.padding = '20px 40px';
+      nav.style.backgroundColor = 'var(--nav-bg)';
+      nav.style.boxShadow = 'none';
+    }
+  });
+
   const updateNavPadding = () => {
     if (window.innerWidth <= 768) {
       nav.style.padding = '15px 20px';
