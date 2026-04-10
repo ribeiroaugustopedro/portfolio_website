@@ -1,4 +1,5 @@
 import { openPreviewModal } from './previewModal.js';
+import { getTagStyle } from '../utils/tagColors.js';
 
 export function renderProjectCard(project, lang, translations) {
   const card = document.createElement('div');
@@ -17,29 +18,27 @@ export function renderProjectCard(project, lang, translations) {
   desc.style.color = 'var(--text-secondary)';
   desc.style.marginBottom = '20px';
   desc.style.lineHeight = '1.6';
+  desc.style.textAlign = 'justify';
   const tags = document.createElement('div');
   tags.style.display = 'flex';
   tags.style.flexWrap = 'wrap';
   tags.style.gap = '8px';
   tags.style.marginBottom = '20px';
-  const uniqueTagColors = {
-    'Python': '#3776AB', 'SQL': '#3498DB', 'Databricks': '#FF3621', 'DuckDB': '#FFCC00',
-    'Pandas': '#527FFF', 'Data Modeling': '#E67E22', 'ETL': '#27AE60', 'Streamlit': '#FF4B4B',
-    'Folium': '#2ECC71', 'GenAI': '#9B59B6', 'Generative AI': '#9B59B6', 'Power BI': '#F1C40F',
-    'Excel': '#1D6F42', 'default': '#858585'
-  };
+
   project.tags.forEach(tag => {
     const span = document.createElement('span');
     span.textContent = tag;
-    span.style.fontSize = '0.75rem';
-    span.style.padding = '4px 12px';
-    span.style.borderRadius = '20px';
-    const color = uniqueTagColors[tag] || uniqueTagColors.default;
-    span.style.border = `1px solid ${color}55`;
-    span.style.color = color;
-    span.style.background = `${color}15`;
-    span.style.fontFamily = 'var(--font-mono)';
-    span.style.fontWeight = 'bold';
+    const style = getTagStyle(tag);
+    Object.assign(span.style, {
+      fontSize: style.fontSize,
+      padding: style.padding,
+      borderRadius: style.borderRadius,
+      border: style.border,
+      color: style.color,
+      background: style.background,
+      fontFamily: style.fontFamily,
+      fontWeight: style.fontWeight
+    });
     tags.appendChild(span);
   });
   const linkIndicator = document.createElement('a');

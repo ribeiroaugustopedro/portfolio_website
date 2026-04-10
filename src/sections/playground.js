@@ -642,16 +642,8 @@ export function renderIDE(lang, translations) {
     launchPlaceholder.style.textAlign = 'center';
     launchPlaceholder.style.padding = '80px 20px';
     launchPlaceholder.innerHTML = `
-      <button class="btn-outline" id="btn-launch-ide">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-        <span>Download Resume</span>
-      </button>
-    `;
-    // WAIT - User asked to REPLACE Launch IDE with exactly SAME label 'Download Resume'? 
-    
-    launchPlaceholder.innerHTML = `
-      <button class="btn-outline" id="btn-launch-ide">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 12px;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+      <button class="btn-rainbow" id="btn-launch-ide">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
         <span>Launch IDE</span>
       </button>
     `;
@@ -666,12 +658,14 @@ export function renderIDE(lang, translations) {
     restoreFab.style.height = '52px';
     restoreFab.style.borderRadius = '50%';
     restoreFab.style.padding = '2px';
-    restoreFab.style.background = 'var(--border-color)';
+    restoreFab.style.background = 'var(--rainbow-gradient)';
+    restoreFab.style.backgroundSize = '200% 200%';
     restoreFab.style.display = 'none';
     restoreFab.style.zIndex = '2000';
     restoreFab.style.cursor = 'pointer';
-    restoreFab.style.transition = 'all 0.3s ease';
-    restoreFab.style.boxShadow = '0 6px 12px rgba(0,0,0,0.2)';
+    restoreFab.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+    restoreFab.style.boxShadow = '0 0 20px rgba(153, 255, 255, 0.3)';
+    restoreFab.style.animation = 'rainbowSlide 3s linear infinite';
 
     const fabInner = document.createElement('div');
     fabInner.className = 'fab-inner';
@@ -689,21 +683,15 @@ export function renderIDE(lang, translations) {
 
     // Dynamic Interaction on Hover
     restoreFab.onmouseenter = () => {
-        restoreFab.style.background = 'var(--rainbow-gradient)';
-        restoreFab.style.backgroundSize = '200% 200%';
-        restoreFab.style.animation = 'rainbowSlide 2s linear infinite';
-        restoreFab.style.transform = 'scale(1.1)';
-        restoreFab.style.boxShadow = '0 0 20px rgba(153, 255, 255, 0.3)';
+        restoreFab.style.transform = 'scale(1.15) rotate(5deg)';
+        restoreFab.style.boxShadow = '0 0 30px rgba(153, 255, 255, 0.5)';
         const svg = restoreFab.querySelector('svg');
         svg.style.filter = 'brightness(1.5) drop-shadow(0 0 5px var(--accent-color))';
     };
     restoreFab.onmouseleave = () => {
-        restoreFab.style.background = 'var(--border-color)';
-        restoreFab.style.animation = 'none';
-        restoreFab.style.transform = 'scale(1)';
-        restoreFab.style.boxShadow = '0 6px 12px rgba(0,0,0,0.2)';
+        restoreFab.style.transform = 'scale(1) rotate(0deg)';
+        restoreFab.style.boxShadow = '0 0 20px rgba(153, 255, 255, 0.3)';
         const svg = restoreFab.querySelector('svg');
-        svg.style.stroke = 'var(--text-primary)';
         svg.style.filter = 'none';
     };
 

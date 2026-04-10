@@ -5,7 +5,6 @@ export function renderNavbar(lang, translations, customLinks = null) {
   nav.style.position = 'fixed';
   nav.style.top = '0';
   nav.style.width = '100%';
-  nav.style.padding = '20px 40px';
   nav.style.display = 'flex';
   nav.style.justifyContent = 'space-between';
   nav.style.alignItems = 'center';
@@ -157,29 +156,27 @@ export function renderNavbar(lang, translations, customLinks = null) {
   nav.appendChild(ul);
   nav.appendChild(hamburger);
 
-  // Responsive padding adjustment in JS for the nav itself
-  // Scroll Dynamics for evolved feel
+  // Static padding to prevent resizing annoyance
+  const getNavPadding = () => window.innerWidth <= 768 ? '15px 20px' : '15px 40px';
+  nav.style.padding = getNavPadding();
+
+  // Scroll Dynamics - Background only, no size change
   window.addEventListener('scroll', () => {
     if (window.scrollY > 20) {
-      nav.style.padding = '12px 40px';
       nav.style.backgroundColor = 'rgba(13, 17, 23, 0.95)';
       nav.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.5)';
+      nav.style.backdropFilter = 'blur(15px)';
     } else {
-      nav.style.padding = '20px 40px';
       nav.style.backgroundColor = 'var(--nav-bg)';
       nav.style.boxShadow = 'none';
+      nav.style.backdropFilter = 'blur(10px)';
     }
   });
 
-  const updateNavPadding = () => {
-    if (window.innerWidth <= 768) {
-      nav.style.padding = '15px 20px';
-    } else {
-      nav.style.padding = '20px 40px';
-    }
+  const updateNavLayout = () => {
+    nav.style.padding = getNavPadding();
   };
-  window.addEventListener('resize', updateNavPadding);
-  updateNavPadding();
+  window.addEventListener('resize', updateNavLayout);
 
   return nav;
 }

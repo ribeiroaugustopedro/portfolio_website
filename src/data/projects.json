@@ -12,8 +12,7 @@
     "tags": [
       "Python",
       "Streamlit",
-      "Folium",
-      "Geospatial"
+      "Folium"
     ],
     "link": "https://networkplanner-fb6fzcdfuz9nvicgfinfj2.streamlit.app/",
     "highlight": true
@@ -31,13 +30,11 @@
     "tags": [
       "SQL",
       "Databricks",
-      "Data Modeling",
       "ETL"
     ],
     "link": "#",
     "highlight": true
   },
-
   {
     "id": 3,
     "title": {
@@ -50,8 +47,7 @@
     },
     "tags": [
       "Power BI",
-      "DAX",
-      "Governance"
+      "DAX"
     ],
     "link": "#",
     "highlight": true
@@ -69,7 +65,7 @@
     "tags": [
       "Python",
       "SQL",
-      "Automation"
+      "Polars"
     ],
     "link": "#",
     "highlight": true
@@ -86,8 +82,7 @@
     },
     "tags": [
       "Power BI",
-      "Excel",
-      "Data Analysis"
+      "Excel"
     ],
     "link": "#",
     "highlight": false
@@ -105,8 +100,7 @@
     "tags": [
       "Python",
       "NLP",
-      "Generative AI",
-      "Teams Integration"
+      "LLM"
     ],
     "link": "#",
     "highlight": false
@@ -123,8 +117,7 @@
     },
     "tags": [
       "AWS Glue",
-      "Pyspark",
-      "Cloud",
+      "PySpark",
       "ETL"
     ],
     "link": "#",
@@ -142,8 +135,7 @@
     },
     "tags": [
       "Excel",
-      "Data Modeling",
-      "Data Analysis"
+      "SQL"
     ],
     "link": "#",
     "highlight": false

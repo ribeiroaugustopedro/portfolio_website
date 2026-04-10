@@ -109,13 +109,12 @@ export const translations = {
                 }
             ],
             skillCategories: [
-                { name: 'Engenharia e Modelagem', items: ['Databricks', 'Pipelines ETL', 'Data Marts', 'Arquitetura Medallion', 'APIs'] },
-                { name: 'Linguagens', items: ['SQL', 'Python (Pandas, PySpark, Polars)'] },
-                { name: 'BI e Analytics', items: ['Power BI', 'Streamlit', 'Design de KPI', 'Data Storytelling'] },
-                { name: 'Cloud e Storage', items: ['AWS (S3, Athena, Glue)', 'Azure'] },
-                { name: 'Automação', items: ['Requests', 'Selenium', 'BeautifulSoup'] },
-                { name: 'Versionamento', items: ['GitHub', 'GitLab', 'Code Commit'] },
-                { name: 'Análise Geoespacial', items: ['Folium', 'Spatial Clustering', 'Radius Analysis'] }
+                { name: 'Engineering & Modeling', items: ['Databricks', 'ETL', 'Data Marts', 'SQL', 'Python'] },
+                { name: 'Languages & Frameworks', items: ['Pandas', 'PySpark', 'Polars', 'Streamlit', 'Folium'] },
+                { name: 'Analytics & BI', items: ['Power BI', 'DAX', 'Metric Design', 'KPIs'] },
+                { name: 'Cloud & Infrastructure', items: ['AWS', 'S3', 'Athena', 'Glue', 'Azure'] },
+                { name: 'Automation & AI', items: ['Selenium', 'NLP', 'LLM', 'Web Scraping'] },
+                { name: 'Versioning & DevOps', items: ['GitHub', 'GitLab', 'Code Commit'] }
             ],
             certifications: [
                 'Cientista de Dados 4.0 | Data Science Academy',
@@ -247,13 +246,12 @@ export const translations = {
                 }
             ],
             skillCategories: [
-                { name: 'Engineering & Modeling', items: ['Databricks', 'ETL pipelines', 'Data Marts', 'Medallion Architecture', 'APIs'] },
-                { name: 'Languages', items: ['SQL', 'Python (Pandas, PySpark, Polars)'] },
-                { name: 'BI & Analytics', items: ['Power BI', 'Streamlit', 'KPI design', 'Data Storytelling'] },
-                { name: 'Cloud & Storage', items: ['AWS (S3, Athena, Glue)', 'Azure'] },
-                { name: 'Automation', items: ['Requests', 'Selenium', 'BeautifulSoup'] },
-                { name: 'Versioning', items: ['GitHub', 'GitLab', 'Code Commit'] },
-                { name: 'Geospatial Analysis', items: ['Folium', 'Spatial Clustering', 'Radius Analysis'] }
+                { name: 'Engineering & Modeling', items: ['Databricks', 'ETL', 'Data Marts', 'SQL', 'Python'] },
+                { name: 'Languages & Frameworks', items: ['Pandas', 'PySpark', 'Polars', 'Streamlit', 'Folium'] },
+                { name: 'Analytics & BI', items: ['Power BI', 'DAX', 'Metric Design', 'KPIs'] },
+                { name: 'Cloud & Infrastructure', items: ['AWS', 'S3', 'Athena', 'Glue', 'Azure'] },
+                { name: 'Automation & AI', items: ['Selenium', 'NLP', 'LLM', 'Web Scraping'] },
+                { name: 'Versioning & DevOps', items: ['GitHub', 'GitLab', 'Code Commit'] }
             ],
             certifications: [
                 'Cientista de Dados 4.0 | Data Science Academy',

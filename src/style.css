@@ -226,8 +226,12 @@ button {
   background-size: 200% auto;
 }
 
-.btn-rainbow svg {
+.btn-rainbow svg, .btn-outline svg {
   animation: rainbowSimultaneous 4s linear infinite;
+}
+
+.btn-outline svg {
+  margin-right: 12px;
 }
 
 
@@ -543,7 +547,7 @@ a:hover {
 .resume-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 60px;
+  gap: 80px;
 }
 
 .resume-col {
