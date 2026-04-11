@@ -104,40 +104,5 @@
     ],
     "link": "#",
     "highlight": false
-  },
-  {
-    "id": 7,
-    "title": {
-      "en": "Legacy Modernization: Oracle to Cloud",
-      "pt": "Modernização de Legado: Oracle para Cloud"
-    },
-    "description": {
-      "en": "Modernized legacy Oracle-based workflows into modern data warehouse structures using AWS Glue and Databricks.",
-      "pt": "Modernizei fluxos de trabalho legados baseados em Oracle para estruturas modernas de data warehouse usando AWS Glue e Databricks."
-    },
-    "tags": [
-      "AWS Glue",
-      "PySpark",
-      "ETL"
-    ],
-    "link": "#",
-    "highlight": false
-  },
-  {
-    "id": 8,
-    "title": {
-      "en": "Operational ERP Structuring",
-      "pt": "Estruturação Operacional de ERP"
-    },
-    "description": {
-      "en": "Structured medical professional and procedure registration rules to streamline ERP data input and organizational transparency.",
-      "pt": "Estruturei regras de cadastro de profissionais médicos e procedimentos para otimizar a entrada de dados no ERP e a transparência organizacional."
-    },
-    "tags": [
-      "Excel",
-      "SQL"
-    ],
-    "link": "#",
-    "highlight": false
   }
 ]
