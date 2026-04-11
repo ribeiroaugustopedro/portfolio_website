@@ -7,26 +7,43 @@ export const techColors = {
   'Databricks': '#EF4444', // Red
   'Python': '#A855F7',     // Purple
 
+  // MotherDuck & DuckDB (Beige/Yellow variants)
+  'DuckDB': '#FFEE58',     // Lemon Yellow
+  'MotherDuck': '#FDE68A', // Beige-Yellow
+
   // Diverse secondary colors to avoid repetition
-  'AWS': '#14B8A6',        // Teal
-  'AWS Glue': '#14B8A6',   
-  'S3': '#06B6D4',         // Cyan
-  'Athena': '#06B6D4',
-  'Glue': '#14B8A6',
-  'ETL': '#D946EF',        // Fuchsia
+  'AWS': '#FF9900',        // AWS Orange
+  'AWS Glue': '#FF6F00',   // Darker AWS Orange
+  'S3': '#F87171',         // Soft Red
+  'Athena': '#06B6D4',     // Cyan
+  'Glue': '#FFB74D',       // Light Amber
+  'Azure': '#3B82F6',      // Blue
+  'ETL/ELT': '#F472B6',    // Pink
   'Data Marts': '#C026D3', // Darker Fuchsia
-  'PySpark': '#F43F5E',    // Rose
-  'Polars': '#6366F1',     // Indigo
-  'Pandas': '#EC4899',     // Pink
-  'Folium': '#8B5CF6',     // Violet
-  'NLP': '#F87171',        // Soft Red (Careful with Databricks)
-  'LLM': '#FB923C',        // Soft Orange (Careful with Streamlit)
-  'DAX': '#CA8A04',        // Deep Yellow
-  'GitHub': '#64748B',     // Slate
-  'GitLab': '#475569',     // Dark Slate
-  'Code Commit': '#3B82F6',// Blue
-  'Web Scraping': '#57534E',// Stone
-  'Selenium': '#78716C',   // Stone
+  'PySpark': '#F43F5E',    // Rose (Distinct from Databricks Red)
+  'Polars': '#94A3B8',     // Lighter Slate
+  'Pandas': '#60A5FA',     // Lighter Blue
+  'Folium': '#14B8A6',     // Teal
+  'NLP': '#4ADE80',        // Light Green
+  'LLM': '#A78BFA',        // Soft Purple
+  'DAX': '#CA8A04',        // Deep Gold (Distinct from Power BI)
+  'GitHub': '#CBD5E1',     // Light Slate
+  'GitLab': '#E24329',     // GitLab Red-Orange
+  'Code Commit': '#4F46E5',// Indigo
+  'Web Scraping': '#78716C',// Stone
+  'Selenium': '#00B400',   // Forest Green
+  'JavaScript': '#F7DF1E', // JS Yellow
+  'React.js': '#61DAFB',    // React Blue
+  'Three.js': '#6366F1',    // Indigo-Blue
+  'Pyodide': '#3776AB',     // Python Blue
+  'Word': '#42A5F5',        // Lighter Word Blue
+  'PowerPoint': '#D24726',  // PowerPoint Orange-Red
+  'Web Architecture': '#10B981', // Emerald
+  'System Architecture': '#8B5CF6',// Violet
+  'Medallion Architecture': '#D946EF', // Fuchsia
+  'UI/UX': '#4F46E5',      // Indigo
+  'Data Analysis': '#0891B2', // Cyan-Blue
+  'KPIs': '#EC4899',       // Pink-Red
   'default': '#94a3b8'
 };
 

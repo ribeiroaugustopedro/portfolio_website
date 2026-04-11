@@ -29,8 +29,9 @@
     },
     "tags": [
       "JavaScript",
-      "Web Architecture",
-      "UI/UX"
+      "React.js",
+      "Three.js",
+      "Pyodide"
     ],
     "link": "#ide",
     "highlight": true
@@ -49,7 +50,8 @@
       "DuckDB",
       "MotherDuck",
       "SQL",
-      "Python"
+      "Python",
+      "ETL/ELT"
     ],
     "link": "#catalog",
     "highlight": true
@@ -65,9 +67,9 @@
       "pt": "Redesenhei o Boletim de Mobilidade Metropolitana para a SETRANS-RJ, fornecendo insights profundos sobre padrões de transporte público e impactos socioeconômicos da COVID-19."
     },
     "tags": [
-      "Data Analysis",
-      "Power BI",
-      "Policy"
+      "Excel",
+      "PowerPoint",
+      "Word"
     ],
     "link": "/boletim_mobilidade.pdf",
     "highlight": true
