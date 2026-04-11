@@ -12,6 +12,8 @@ export function renderProjectCard(project, lang, translations) {
   title.style.fontSize = '1.2rem';
   title.style.marginBottom = '12px';
   title.style.transition = 'color 0.3s ease';
+  title.style.textAlign = 'center';
+  title.style.width = '100%'; // Ensure it takes full width for centering
   const desc = document.createElement('p');
   desc.textContent = descText;
   desc.style.fontSize = '0.95rem';

@@ -6,6 +6,7 @@ export const translations = {
             description: 'Olá, sou <strong>Pedro Augusto Ribeiro</strong>, um Profissional de Dados Multidisciplinar especializado na construção de pipelines ETL escaláveis e ecossistemas de BI de alto impacto.',
             ctaWork: 'Ver Meus Trabalhos',
             ctaPlayground: 'Testar Playground',
+            resumeButton: 'Baixar Currículo',
             contactTitle: 'Entre em Contato'
         },
         navbar: {
@@ -111,12 +112,12 @@ export const translations = {
                 }
             ],
             skillCategories: [
-                { name: 'Engineering & Modeling', items: ['Databricks', 'ETL', 'Data Marts', 'SQL', 'Python'] },
-                { name: 'Languages & Frameworks', items: ['Pandas', 'PySpark', 'Polars', 'Streamlit', 'Folium'] },
-                { name: 'Analytics & BI', items: ['Power BI', 'DAX', 'Metric Design', 'KPIs'] },
-                { name: 'Cloud & Infrastructure', items: ['AWS', 'S3', 'Athena', 'Glue', 'Azure'] },
-                { name: 'Automation & AI', items: ['Selenium', 'NLP', 'LLM', 'Web Scraping'] },
-                { name: 'Versioning & DevOps', items: ['GitHub', 'GitLab', 'Code Commit'] }
+                { name: 'Engenharia e Modelagem', items: ['Databricks', 'ETL', 'Data Marts', 'SQL', 'Python'] },
+                { name: 'Linguagens e Frameworks', items: ['Pandas', 'PySpark', 'Polars', 'Streamlit', 'Folium'] },
+                { name: 'Analytics e BI', items: ['Power BI', 'DAX', 'Metric Design', 'KPIs'] },
+                { name: 'Nuvem e Infraestrutura', items: ['AWS', 'S3', 'Athena', 'Glue', 'Azure'] },
+                { name: 'Automação e IA', items: ['Selenium', 'NLP', 'LLM', 'Web Scraping'] },
+                { name: 'Versionamento e DevOps', items: ['GitHub', 'GitLab', 'Code Commit'] }
             ],
             certifications: [
                 'Cientista de Dados 4.0 | Data Science Academy',
@@ -135,7 +136,7 @@ export const translations = {
             ]
         },
         playground: {
-            title: 'Interactive Playground',
+            title: 'Playground Interativo',
             launchButton: 'Launch IDE',
             windowTitle: 'pedro_augusto_ribeiro — playground',
             tooltips: {
@@ -176,6 +177,7 @@ export const translations = {
             description: 'Hi, I am <strong>Pedro Augusto Ribeiro</strong>, a Multidisciplinary Data Professional specialized in building scalable ETL pipelines and high-impact BI ecosystems.',
             ctaWork: 'View My Work',
             ctaPlayground: 'Try Playground',
+            resumeButton: 'Download Resume',
             contactTitle: 'Get In Touch'
         },
         navbar: {

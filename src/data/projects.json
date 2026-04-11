@@ -39,7 +39,7 @@
     "id": 1,
     "title": {
       "en": "Modern Data Warehouse",
-      "pt": "Modern Data Warehouse"
+      "pt": "Data Warehouse Moderno"
     },
     "description": {
       "en": "High-performance hybrid analytics architecture using DuckDB for local processing and MotherDuck for cloud scale, migrating legacy workflows into ultra-fast SQL structures.",

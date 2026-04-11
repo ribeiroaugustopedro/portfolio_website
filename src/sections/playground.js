@@ -422,11 +422,11 @@ export function renderIDE(lang, translations) {
 
       function renderNode(node, depth = 0) {
         const icon = CATALOG_ICONS[node.type];
-        const color = node.type === 'database' ? '#79c0ff' : node.type === 'schema' ? '#d1d5db' : '#7ee787';
+        const color = node.type === 'database' ? '#79c0ff' : node.type === 'schema' ? 'var(--text-secondary)' : '#7ee787';
 
         let html = `
           <div class="catalog-node ${node.open ? 'open' : ''}" style="padding-left: ${depth * 15 + 10}px" data-node-name="${node.name}">
-            <span class="catalog-arrow" style="font-size: 8px;">${node.children ? (node.open ? '▼' : '▶') : ' '}</span>
+            <span class="catalog-arrow" style="font-size: 8px; opacity: 0.5;">${node.children ? (node.open ? '▼' : '▶') : ' '}</span>
             <span class="catalog-icon" style="color: ${color}" title="${node.type.charAt(0).toUpperCase() + node.type.slice(1)}">${icon}</span>
             <span class="catalog-name">${node.name}</span>
             <div class="catalog-node-meta">
@@ -513,7 +513,30 @@ export function renderIDE(lang, translations) {
     // Set side bar click events
     activityBar.querySelector('#v-explorer').onclick = () => switchSidebar('explorer');
     activityBar.querySelector('#v-catalog').onclick = () => switchSidebar('catalog');
-    section.querySelector('#btn-refresh').onclick = () => renderFileList(fileListContainer);
+    section.querySelector('#btn-refresh').onclick = () => {
+      const btn = section.querySelector('#btn-refresh');
+      btn.style.animation = 'spin 1s linear';
+      setTimeout(() => { btn.style.animation = ''; renderFileList(fileListContainer); }, 1000);
+    };
+
+    section.querySelector('#btn-refresh-catalog').onclick = () => {
+      const btn = section.querySelector('#btn-refresh-catalog');
+      btn.style.animation = 'spin 1s linear';
+      
+      // Simulate fetching truth from MotherDuck
+      const output = section.querySelector('#terminal-output');
+      const log = document.createElement('div');
+      log.className = 'info';
+      log.style.color = '#79c0ff';
+      log.innerHTML = `[catalog] Syncing with MotherDuck...<br>[catalog] Fetching schema for 'warehouse.gold'...<br>[catalog] Done. Found 2 tables.`;
+      output.appendChild(log);
+      output.scrollTop = output.scrollHeight;
+
+      setTimeout(() => { 
+        btn.style.animation = ''; 
+        renderCatalog(); 
+      }, 1000);
+    };
 
     // Drag and Drop
     let draggedFile = null;

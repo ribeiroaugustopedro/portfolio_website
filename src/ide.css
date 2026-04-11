@@ -21,10 +21,10 @@
   --ide-tab-active: #ffffff;
   --ide-tab-inactive: #eff2f5;
   --ide-status-bar: #007acc;
-  --ide-text: #24292f;
+  --ide-text: #1a1f23;
   --ide-text-bright: #000000;
   --ide-border: #d0d7de;
-  --ide-terminal: #f6f8fa;
+  --ide-terminal: #ffffff;
 }
 
 .ide-section { padding: 100px 5%; background: transparent; display: flex; flex-direction: column; align-items: center; }
@@ -75,6 +75,7 @@
   animation: rainbowSlide 3s linear infinite;
   box-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
 }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .ide-icon svg { transition: transform 0.3s ease; }
 .ide-icon:hover svg { transform: scale(1.1); }
 .ide-icon.active svg { filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3)); }
@@ -124,8 +125,8 @@
   border-radius: 4px;
 }
 .naming-input { 
-  background: #1e1e1e; 
-  border: none;
+  background: var(--ide-bg); 
+  border: 1px solid var(--ide-border);
   color: var(--ide-text-bright); 
   font-size: 13px; 
   font-family: var(--font-mono); 
@@ -147,14 +148,32 @@
 
 .ide-terminal { height: 200px; background: var(--ide-terminal); border-top: 1px solid var(--ide-border); display: flex; flex-direction: column; flex-shrink: 0; }
 .terminal-header { height: 35px; background: var(--ide-header); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; font-size: 11px; color: var(--ide-text); border-bottom: 1px solid var(--ide-border); font-family: var(--font-main); text-transform: uppercase; letter-spacing: 0.5px; }
-.run-btn { background: transparent; color: var(--ide-text); border: none; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.run-btn:hover { color: #7ee787; }
+.terminal-actions { display: flex; gap: 4px; align-items: center; }
+.run-btn { background: transparent; color: var(--ide-text); border: none; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; transition: all 0.2s; }
+.run-btn:hover { color: #7ee787; background: rgba(255, 255, 255, 0.05); }
 .terminal-output { flex: 1; padding: 15px; overflow-y: auto; font-size: 13px; line-height: 1.5; color: #d1d5db; font-family: "Fira Code", "Consolas", monospace; background: rgba(0, 0, 0, 0.2); }
 
-[data-theme="light"] .ide-pre, [data-theme="light"] .ide-code, [data-theme="light"] .token.punctuation, [data-theme="light"] .token.operator { color: #000000 !important; }
-[data-theme="light"] .token.keyword { color: #a01010 !important; font-weight: bold !important; }
-[data-theme="light"] .token.string { color: #004400 !important; }
-[data-theme="light"] .token.function { color: #330066 !important; font-weight: bold !important; }
+[data-theme="light"] .ide-pre, [data-theme="light"] .ide-code, [data-theme="light"] .token.punctuation, [data-theme="light"] .token.operator { color: #1a1f23 !important; }
+[data-theme="light"] .token.keyword { color: #cf222e !important; font-weight: bold !important; }
+[data-theme="light"] .token.string { color: #0a3069 !important; }
+[data-theme="light"] .token.function { color: #8250df !important; font-weight: bold !important; }
+[data-theme="light"] .token.comment { color: #3a4149 !important; font-style: italic !important; }
+[data-theme="light"] .token.number { color: #0550ae !important; }
+[data-theme="light"] .token.boolean { color: #0550ae !important; font-weight: bold !important; }
+[data-theme="light"] .line-numbers-sidebar { color: #57606a; border-right-color: #d0d7de; }
+[data-theme="light"] .terminal-output { color: #1a1f23; background: #ffffff; }
+[data-theme="light"] .run-btn { color: #57606a; }
+[data-theme="light"] .run-btn:hover { color: #1a1f23; background: rgba(0,0,0,0.05); }
+
+/* Theme aware catalog panels */
+[data-theme="light"] .column-stats-panel { background: #ffffff; border-color: #d0d7de; box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2); }
+[data-theme="light"] .value-item { background: #f6f8fa; border-color: #d0d7de; color: #1a1f23; }
+[data-theme="light"] .stats-header .label { color: #57606a; }
+[data-theme="light"] .stats-footer { color: #57606a; }
+[data-theme="light"] .unique-values-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); }
+[data-theme="light"] .show-more-btn { border-color: #d0d7de !important; color: #57606a !important; }
+[data-theme="light"] .show-more-btn:hover { background: #eff2f5 !important; color: #1a1f23 !important; }
+
 
 .ide-status-bar { 
   height: 22px; 
