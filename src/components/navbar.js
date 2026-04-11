@@ -18,20 +18,18 @@ export function renderNavbar(lang, translations, customLinks = null) {
   leftContainer.style.gap = '20px';
 
   const logoContainer = renderDynamicName('PEDRO AUGUSTO RIBEIRO', '1.2rem');
-  logoContainer.addEventListener('click', () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (window.location.hash) {
-        history.pushState("", document.title, window.location.pathname + window.location.search);
-    }
-  });
   leftContainer.appendChild(logoContainer);
 
 
   // Theme Toggle Button
   const themeToggle = document.createElement('button');
   themeToggle.id = 'theme-toggle';
-  // Initialize icon based on current theme
-  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+  // Initialize from localStorage
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme === 'light' ? 'light' : 'dark');
+  if (savedTheme === 'dark') document.documentElement.removeAttribute('data-theme'); // default is dark
+  
+  const currentTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
   const sunIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
   const moonIcon = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
   
@@ -47,7 +45,7 @@ export function renderNavbar(lang, translations, customLinks = null) {
   themeToggle.style.border = 'none';
   themeToggle.style.cursor = 'pointer';
   themeToggle.style.transition = 'background 0.3s ease';
-  themeToggle.title = 'Toggle Light/Dark Mode';
+  themeToggle.title = translations[lang].navbar.themeTooltip;
 
   themeToggle.addEventListener('mouseenter', () => {
     themeToggle.style.background = 'linear-gradient(90deg, rgba(255, 0, 0, 0.1), rgba(0, 255, 0, 0.1), rgba(0, 0, 255, 0.1))';
@@ -62,10 +60,12 @@ export function renderNavbar(lang, translations, customLinks = null) {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     if (isLight) {
       document.documentElement.removeAttribute('data-theme');
-      themeToggle.innerHTML = moonIcon; // Show Moon when switching to Dark
+      localStorage.setItem('theme', 'dark');
+      themeToggle.innerHTML = moonIcon;
     } else {
       document.documentElement.setAttribute('data-theme', 'light');
-      themeToggle.innerHTML = sunIcon; // Show Sun when switching to Light
+      localStorage.setItem('theme', 'light');
+      themeToggle.innerHTML = sunIcon;
     }
   });
 
@@ -74,7 +74,7 @@ export function renderNavbar(lang, translations, customLinks = null) {
   // Language Toggle Button
   const langToggle = document.createElement('button');
   const currentLang = localStorage.getItem('lang') || 'pt';
-  langToggle.textContent = currentLang === 'pt' ? 'BR' : 'EN';
+  langToggle.textContent = currentLang === 'pt' ? 'PT' : 'EN';
   langToggle.style.color = 'var(--text-primary)';
   langToggle.style.padding = '8px';
   langToggle.style.borderRadius = '50%';
@@ -92,7 +92,7 @@ export function renderNavbar(lang, translations, customLinks = null) {
   langToggle.style.fontWeight = 'bold';
   langToggle.style.lineHeight = '1.2';
   langToggle.style.transition = 'background 0.3s ease';
-  langToggle.title = 'Switch Language';
+  langToggle.title = translations[lang].navbar.langTooltip;
 
   langToggle.addEventListener('mouseenter', () => {
     langToggle.style.background = 'linear-gradient(90deg, rgba(255, 0, 0, 0.1), rgba(0, 255, 0, 0.1), rgba(0, 0, 255, 0.1))';
@@ -131,6 +131,7 @@ export function renderNavbar(lang, translations, customLinks = null) {
     const a = document.createElement('a');
     a.href = `#${link.id}`;
     a.textContent = link.name;
+    a.style.color = 'var(--text-primary)';
     a.style.fontSize = '0.9rem';
     a.style.fontFamily = 'var(--font-mono)';
 
@@ -163,8 +164,8 @@ export function renderNavbar(lang, translations, customLinks = null) {
   // Scroll Dynamics - Background only, no size change
   window.addEventListener('scroll', () => {
     if (window.scrollY > 20) {
-      nav.style.backgroundColor = 'rgba(13, 17, 23, 0.95)';
-      nav.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.5)';
+      nav.style.backgroundColor = 'var(--nav-bg-scroll)';
+      nav.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.3)';
       nav.style.backdropFilter = 'blur(15px)';
     } else {
       nav.style.backgroundColor = 'var(--nav-bg)';

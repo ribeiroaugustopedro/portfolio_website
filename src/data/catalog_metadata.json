@@ -1,0 +1,42 @@
+[
+    {
+        "table_name": "users",
+        "column_name": "user_id",
+        "non_null": "587,934",
+        "distinct": "587,934",
+        "samples": ["87006288", "81118697", "13318749", "88655584", "54092515", "73639000", "70643263", "83507597"],
+        "type": "number"
+    },
+    {
+        "table_name": "users",
+        "column_name": "user_product",
+        "non_null": "587,934",
+        "distinct": "5",
+        "samples": ["BRONZE", "DIAMOND", "GOLD", "PLATINUM", "SILVER"],
+        "type": "text"
+    },
+    {
+        "table_name": "users",
+        "column_name": "user_type",
+        "non_null": "587,934",
+        "distinct": "4",
+        "samples": ["ASSOCIATION", "CORPORATE", "INDIVIDUAL", "SMALL BUSINESS"],
+        "type": "text"
+    },
+    {
+        "table_name": "providers",
+        "column_name": "prov_id",
+        "non_null": "349",
+        "distinct": "349",
+        "samples": ["81542", "44089", "60874", "17468"],
+        "type": "number"
+    },
+    {
+        "table_name": "providers",
+        "column_name": "prov_name",
+        "non_null": "349",
+        "distinct": "66",
+        "samples": ["NASHVILLE MERCY HOSPITAL", "UNITY PRIVATE CLINIC"],
+        "type": "text"
+    }
+]

@@ -22,8 +22,7 @@
   --rainbow-gradient: var(--rainbow-soft);
 
   --nav-bg: rgba(13, 17, 23, 0.85);
-
-  --nav-bg: rgba(13, 17, 23, 0.85);
+  --nav-bg-scroll: rgba(13, 17, 23, 0.95);
 }
 
 [data-theme="light"] {
@@ -35,6 +34,7 @@
   --surface-color: #ffffff;
   --border-color: #e2e8f0;
   --nav-bg: rgba(248, 250, 252, 0.85);
+  --nav-bg-scroll: rgba(248, 250, 252, 0.95);
 }
 
 [data-theme="light"] h1,
@@ -1086,13 +1086,6 @@ footer .social-btn:hover::after {
   transform: translateZ(0);
   backface-visibility: hidden;
   will-change: background-position;
-  cursor: pointer;
-}
-
-
-
-.brand-dynamic-rainbow:hover {
-  filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.4));
 }
 
 @keyframes brandRainbowSlide {

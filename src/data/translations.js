@@ -12,7 +12,9 @@ export const translations = {
             work: 'Trabalhos',
             projects: 'Projetos',
             about: 'Sobre',
-            playground: 'Playground'
+            playground: 'Playground',
+            themeTooltip: 'Alternar Modo Claro/Escuro',
+            langTooltip: 'Alterar Idioma'
         },
         highlights: {
             title: 'Destaques'
@@ -132,6 +134,37 @@ export const translations = {
                 'Espanhol | Intermediário'
             ]
         },
+        playground: {
+            title: 'Interactive Playground',
+            launchButton: 'Launch IDE',
+            windowTitle: 'pedro_augusto_ribeiro — playground',
+            tooltips: {
+                close: 'Fechar Playground',
+                collapse: 'Minimizar',
+                fullscreen: 'Tela Cheia',
+                workspace: 'Espaço de Trabalho',
+                catalog: 'Catálogo de Dados',
+                newFile: 'Novo Arquivo',
+                newFolder: 'Nova Pasta',
+                refresh: 'Atualizar',
+                collapseAll: 'Recolher Tudo',
+                run: 'Executar (Ctrl+Enter)',
+                restart: 'Reiniciar Kernel',
+                clear: 'Limpar Output'
+            },
+            sidebars: {
+                workspace: 'WORKSPACE',
+                catalog: 'CATÁLOGO'
+            },
+            terminal: {
+                title: 'OUTPUT',
+                ready: 'Pronto.',
+                running: 'Executando...',
+                restarting: 'Reiniciando kernel...',
+                restarted: '✓ Kernel reiniciado. Pronto.',
+                executedSuccess: 'Executado com sucesso (sem output).'
+            }
+        },
         footer: {
             rights: '&copy; 2026 {NAME}. Construído com Vite & Three.js.'
         }
@@ -149,7 +182,9 @@ export const translations = {
             work: 'Work',
             projects: 'Projects',
             about: 'About',
-            playground: 'Playground'
+            playground: 'Playground',
+            themeTooltip: 'Toggle Light/Dark Mode',
+            langTooltip: 'Switch Language'
         },
         highlights: {
             title: 'Selected Work'
@@ -268,6 +303,37 @@ export const translations = {
                 'English | Advanced',
                 'Spanish | Intermediate'
             ]
+        },
+        playground: {
+            title: 'Interactive Playground',
+            launchButton: 'Launch IDE',
+            windowTitle: 'pedro_augusto_ribeiro — playground',
+            tooltips: {
+                close: 'Close Playground',
+                collapse: 'Minimize',
+                fullscreen: 'Full Screen',
+                workspace: 'Workspace',
+                catalog: 'Data Catalog',
+                newFile: 'New File',
+                newFolder: 'New Folder',
+                refresh: 'Refresh',
+                collapseAll: 'Collapse All',
+                run: 'Run (Ctrl+Enter)',
+                restart: 'Restart Kernel',
+                clear: 'Clear Output'
+            },
+            sidebars: {
+                workspace: 'WORKSPACE',
+                catalog: 'CATALOG'
+            },
+            terminal: {
+                title: 'OUTPUT',
+                ready: 'Ready.',
+                running: 'Running...',
+                restarting: 'Restarting kernel...',
+                restarted: '✓ Kernel restarted. Ready.',
+                executedSuccess: 'Executed successfully (no output).'
+            }
         },
         footer: {
             rights: '&copy; 2026 {NAME}. Built with Vite & Three.js.'

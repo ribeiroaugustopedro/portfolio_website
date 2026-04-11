@@ -54,17 +54,29 @@ export function openPreviewModal(url, titleText) {
   const closeBtn = modal.querySelector('#close-project-modal');
   const overlay = modal.querySelector('.modal-overlay');
 
+  const handleEsc = (e) => {
+    if (e.key === 'Escape') closeModal();
+  };
+  const handleFsChange = () => {
+    if (!document.fullscreenElement) closeModal();
+  };
+  window.addEventListener('keydown', handleEsc);
+  document.addEventListener('fullscreenchange', handleFsChange);
+
   const closeModal = () => {
+    window.removeEventListener('keydown', handleEsc);
+    document.removeEventListener('fullscreenchange', handleFsChange);
     if (document.fullscreenElement) {
-        document.exitFullscreen();
+        document.exitFullscreen().catch(() => {});
     }
     modal.classList.add('closing');
     setTimeout(() => {
-      document.body.removeChild(modal);
+      if (document.body.contains(modal)) {
+        document.body.removeChild(modal);
+      }
       document.body.style.overflow = '';
     }, 400);
   };
-
 
   closeBtn.onclick = closeModal;
   overlay.onclick = closeModal;

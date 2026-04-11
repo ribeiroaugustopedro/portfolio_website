@@ -18,56 +18,40 @@
     "highlight": true
   },
   {
+    "id": 8,
+    "title": {
+      "en": "Custom Playground IDE",
+      "pt": "IDE Playground Customizada"
+    },
+    "description": {
+      "en": "A professional-grade, browser-based coding environment with inline renaming, OS-like file management, and integrated Python execution kernel.",
+      "pt": "Um ambiente de codificação baseado em navegador de nível profissional, com renomeação inline, gerenciamento de arquivos tipo OS e kernel de execução Python integrado."
+    },
+    "tags": [
+      "JavaScript",
+      "Web Architecture",
+      "UI/UX"
+    ],
+    "link": "#ide",
+    "highlight": true
+  },
+  {
     "id": 1,
     "title": {
-      "en": "Databricks Data Warehouse",
-      "pt": "Data Warehouse no Databricks"
+      "en": "Modern Data Warehouse",
+      "pt": "Modern Data Warehouse"
     },
     "description": {
-      "en": "Architected a Databricks-based Data Warehouse, migrating legacy Oracle workflows into scalable SQL logic. Built reliable data marts for CX, Sales, and Finance.",
-      "pt": "Arquitetei um Data Warehouse no Databricks, migrando fluxos legado Oracle para lógica SQL escalável. Construí data marts confiáveis para CX, Vendas e Finanças."
+      "en": "High-performance hybrid analytics architecture using DuckDB for local processing and MotherDuck for cloud scale, migrating legacy workflows into ultra-fast SQL structures.",
+      "pt": "Arquitetura analítica híbrida de alta performance usando DuckDB para processamento local e MotherDuck para escala em nuvem, migrando fluxos legado para estruturas SQL ultra-rápidas."
     },
     "tags": [
+      "DuckDB",
+      "MotherDuck",
       "SQL",
-      "Databricks",
-      "ETL"
+      "Python"
     ],
-    "link": "#",
-    "highlight": true
-  },
-  {
-    "id": 3,
-    "title": {
-      "en": "BI Governance Framework",
-      "pt": "Framework de Governança de BI"
-    },
-    "description": {
-      "en": "Restructured 50+ Power BI dashboards, establishing visual standards and naming conventions, reducing team maintenance effort by 50%.",
-      "pt": "Reestruturei mais de 50 dashboards Power BI, estabelecendo padrões visuais e convenções de nomenclatura, reduzindo o esforço de manutenção da equipe em 50%."
-    },
-    "tags": [
-      "Power BI",
-      "DAX"
-    ],
-    "link": "#",
-    "highlight": true
-  },
-  {
-    "id": 4,
-    "title": {
-      "en": "Sales Commission Engine",
-      "pt": "Motor de Comissões de Vendas"
-    },
-    "description": {
-      "en": "Automated complex corporate sales commission calculations using Python (Polars/Pandas), eliminating manual operational errors.",
-      "pt": "Automatizei cálculos complexos de comissões de vendas corporativas usando Python (Polars/Pandas), eliminando erros operacionais manuais."
-    },
-    "tags": [
-      "Python",
-      "SQL",
-      "Polars"
-    ],
-    "link": "#",
+    "link": "#catalog",
     "highlight": true
   },
   {
@@ -77,32 +61,15 @@
       "pt": "Estudo de Mobilidade Metropolitana"
     },
     "description": {
-      "en": "Redesigned the Metropolitan Mobility Bulletin for SETRANS-RJ, including a COVID-19 impact study using Power Query.",
-      "pt": "Redesenhei o Boletim de Mobilidade Metropolitana para a SETRANS-RJ, incluindo um estudo de impacto da COVID-19 usando Power Query."
+      "en": "Redesigned the Metropolitan Mobility Bulletin for SETRANS-RJ, providing deep insights into public transport patterns and COVID-19 socioeconomic impacts.",
+      "pt": "Redesenhei o Boletim de Mobilidade Metropolitana para a SETRANS-RJ, fornecendo insights profundos sobre padrões de transporte público e impactos socioeconômicos da COVID-19."
     },
     "tags": [
+      "Data Analysis",
       "Power BI",
-      "Excel"
+      "Policy"
     ],
-    "link": "#",
-    "highlight": false
-  },
-  {
-    "id": 6,
-    "title": {
-      "en": "GenieAI Team Integration",
-      "pt": "Integração GenieAI para Equipes"
-    },
-    "description": {
-      "en": "Integrated NLP models into internal systems and MS Teams, enabling automated query generation for non-technical stakeholders.",
-      "pt": "Integrei modelos de NLP em sistemas internos e MS Teams, permitindo a geração automatizada de consultas para stakeholders não técnicos."
-    },
-    "tags": [
-      "Python",
-      "NLP",
-      "LLM"
-    ],
-    "link": "#",
-    "highlight": false
+    "link": "/boletim_mobilidade.pdf",
+    "highlight": true
   }
 ]
