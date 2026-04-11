@@ -24,6 +24,7 @@ export function renderProjectCard(project, lang, translations) {
   const tags = document.createElement('div');
   tags.style.display = 'flex';
   tags.style.flexWrap = 'wrap';
+  tags.style.justifyContent = 'center';
   tags.style.gap = '8px';
   tags.style.marginBottom = '20px';
 
@@ -57,15 +58,15 @@ export function renderProjectCard(project, lang, translations) {
   linkIndicator.style.paddingBottom = '4px';
   linkIndicator.style.transition = 'all 0.3s ease';
   linkIndicator.style.textDecoration = 'none';
-  linkIndicator.onclick = (e) => { 
-    e.preventDefault(); 
-    e.stopPropagation(); 
+  linkIndicator.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (project.link === '#catalog') {
       if (window.openIDE) window.openIDE('catalog', true, window.pageYOffset);
     } else if (project.link === '#ide') {
       if (window.openIDE) window.openIDE('explorer', true, window.pageYOffset);
     } else {
-      openPreviewModal(project.link, titleText); 
+      openPreviewModal(project.link, titleText);
     }
   };
   card.appendChild(title);

@@ -1067,25 +1067,30 @@ footer .social-btn:hover::after {
 
 
 .brand-dynamic-rainbow {
-  background-image: var(--rainbow-vibrant) !important;
-  background-size: 200% auto !important;
-  background-repeat: repeat !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  color: transparent !important;
-  animation: brandRainbowSlide 8s linear infinite !important;
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  background: none !important;
   display: inline-block !important;
   font-family: var(--font-mono) !important;
   font-weight: 800 !important;
   line-height: 1 !important;
   vertical-align: top !important;
-  /* Stabilization */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  transition: all 0.3s ease;
   transform: translateZ(0);
-  backface-visibility: hidden;
-  will-change: background-position;
+  cursor: default !important;
+  pointer-events: none; /* Disable link-like interactions */
+
+  /* Permanent 'blinking' (rainbow glow) effect on white text */
+  animation: rainbowGlow 1.5s ease-in-out infinite !important;
+}
+
+.brand-link {
+  text-decoration: none !important;
+  cursor: default !important;
+}
+
+.brand-link::after {
+  display: none !important;
 }
 
 @keyframes brandRainbowSlide {
