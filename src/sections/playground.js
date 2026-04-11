@@ -10,41 +10,46 @@ export function renderIDE(lang, translations) {
   let currentFiles = { ...files };
   let openTabs = ['pipeline.py'];
   let collapsedFolders = new Set();
-  const currentSession = {
-    fileName: 'pipeline.py',
-    sidebar: 'explorer', // 'explorer' or 'catalog'
-    namingNew: null, // { resultType: 'file'|'folder', parent: string, initialName?: string, isRename?: boolean }
-    selectedFile: 'pipeline.py'
-  };
+    const currentSession = {
+      fileName: 'pipeline.py',
+      sidebar: 'explorer', // 'explorer' or 'catalog'
+      activeCatalogItem: null, // { name, type, parentPath }
+      activeCatalogTab: 'overview', // 'overview' or 'details'
+      namingNew: null, // { resultType: 'file'|'folder', parent: string, initialName?: string, isRename?: boolean }
+      selectedFile: 'pipeline.py'
+    };
 
   const CATALOG_TYPE_ICONS = {
     text: '<span class="type-pill type-text">TEXT</span>',
     number: '<span class="type-pill type-number">INT64</span>',
-    decimal: '<span class="type-pill type-number">DECIMAL</span>',
-    date: '<span class="type-pill type-date">DATE</span>'
+    decimal: '<span class="type-pill type-decimal">DECIMAL</span>',
+    date: '<span class="type-pill type-date">DATE</span>',
+    boolean: '<span class="type-pill type-bool">BOOL</span>'
   };
 
   // Automated Catalog Builder
-  const buildCatalogHierarchy = (metadata) => {
-    const tableMap = {};
-    
-    metadata.forEach(col => {
-      if (!tableMap[col.table_name]) {
-        tableMap[col.table_name] = {
-          name: col.table_name,
-          type: 'table',
-          rows: col.non_null, // Uses the non_null of the first column found as row count
-          columns: []
-        };
-      }
-      tableMap[col.table_name].columns.push({
-        name: col.column_name,
-        type: col.type,
-        nonNull: col.non_null,
-        distinct: col.distinct,
-        samples: col.samples
+    const buildCatalogHierarchy = (data) => {
+      const metadata = data.metadata || data; // Handle new or old format
+      const tableMap = {};
+      
+      metadata.forEach(col => {
+        if (!tableMap[col.table_name]) {
+          tableMap[col.table_name] = {
+            name: col.table_name,
+            type: 'table',
+            columns: [],
+            rows: col.non_null
+          };
+        }
+        
+        tableMap[col.table_name].columns.push({
+          name: col.column_name,
+          type: col.type,
+          nonNull: col.non_null,
+          distinct: col.distinct,
+          samples: col.samples
+        });
       });
-    });
 
     const tables = Object.values(tableMap).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -85,7 +90,7 @@ export function renderIDE(lang, translations) {
   const CATALOG_ICONS = {
     database: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>', // Layered
     schema: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>', // Cube
-    table: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>'
+    table: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7ee787" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>'
   };
 
 
@@ -182,8 +187,10 @@ export function renderIDE(lang, translations) {
                   <div class="sidebar-action-btn" title="${translations[lang].playground.tooltips.refresh}" id="btn-refresh">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                   </div>
-                  <div class="sidebar-action-btn" title="${translations[lang].playground.tooltips.collapseAll}" id="btn-collapse">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path><line x1="12" y1="15" x2="19" y2="15"></line></svg>
+                  <div class="sidebar-action-btn" title="Toggle All" id="btn-toggle-workspace">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="toggle-icon-workspace">
+                      <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
                   </div>
                 </div>
               </div>
@@ -199,8 +206,10 @@ export function renderIDE(lang, translations) {
                   <div class="sidebar-action-btn" title="${translations[lang].playground.tooltips.refresh}" id="btn-refresh-catalog">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                   </div>
-                  <div class="sidebar-action-btn" title="${translations[lang].playground.tooltips.collapseAll}" id="btn-collapse-catalog">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path><line x1="12" y1="15" x2="19" y2="15"></line></svg>
+                  <div class="sidebar-action-btn" title="Toggle All" id="btn-toggle-catalog">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="toggle-icon-catalog">
+                      <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
                   </div>
                 </div>
               </div>
@@ -215,6 +224,7 @@ export function renderIDE(lang, translations) {
               <div class="line-numbers-sidebar" id="line-numbers"></div>
               <textarea id="ide-textarea" class="ide-textarea" spellcheck="false"></textarea>
               <pre id="ide-pre" class="ide-pre"><code id="ide-code"></code></pre>
+              <div id="catalog-explorer-view" class="catalog-explorer" style="display: none;"></div>
             </div>
           </div>
           <div class="ide-terminal">
@@ -327,6 +337,7 @@ export function renderIDE(lang, translations) {
           </div>`;
       }
       container.innerHTML = itemsHtml;
+      updateWorkspaceToggleIcon();
       if (currentSession.namingNew) {
         const input = container.querySelector('#naming-input');
         if (currentSession.namingNew.initialName) input.value = currentSession.namingNew.initialName;
@@ -410,11 +421,196 @@ export function renderIDE(lang, translations) {
 
     function renderTabs(container) {
       if (!container) return;
-      container.innerHTML = openTabs.map(fileName => `
-        <div class="ide-tab ${fileName === currentSession.fileName ? 'active' : ''}" data-file="${fileName}">
-          <div class="tab-main">${getFileIcon(fileName)}<span>${fileName}</span></div>
-          <div class="tab-close" data-close="${fileName}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg></div>
-        </div>`).join('');
+      container.innerHTML = openTabs.map(tabId => {
+        const isCatalog = tabId.startsWith('catalog://');
+        const displayName = isCatalog ? tabId.split('/').pop() : tabId;
+        const icon = isCatalog ? CATALOG_ICONS[tabId.split('/')[2]] || CATALOG_ICONS.table : getFileIcon(tabId);
+        const isActive = !isCatalog && currentSession.fileName === tabId;
+        
+        return `
+        <div class="ide-tab ${isActive ? 'active' : ''}" data-tab-id="${tabId}">
+          <div class="tab-main">${icon}<span>${displayName}</span></div>
+          <div class="tab-close" data-close="${tabId}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg></div>
+        </div>`;
+      }).join('');
+    }
+
+    const renderCatalogExplorer = () => {
+      const explorerView = section.querySelector('#catalog-explorer-view');
+      const item = currentSession.activeCatalogItem;
+      const activeTab = currentSession.activeCatalogTab || 'overview';
+      if (!explorerView || !item) return;
+
+      const pathParts = item.parentPath.split('/').filter(p => p);
+      const icon = CATALOG_ICONS[item.type];
+      
+      const detailsMap = {
+        catalog: {
+          'Browse only': 'false',
+          'Catalog ID': 'warehouse_db_881',
+          'Created at': 'Dec 10, 2024, 02:41 PM',
+          'Created by': 'pedro@warehouse.ai',
+          'Type': 'MOTHERDUCK_MANAGED',
+          'Updated at': catalogMetadata.updated_at || 'Apr 11, 2026, 09:44 AM'
+        },
+        schema: {
+          'Schema ID': 'sch_gold_001',
+          'Catalog': 'warehouse',
+          'Created at': 'Dec 11, 2024, 10:15 AM',
+          'Managed by': 'MotherDuck',
+          'Updated at': 'Apr 11, 2026, 10:20 AM'
+        },
+        table: {
+          'Table ID': 'tbl_' + Math.random().toString(36).substr(2, 6),
+          'Full Name': `warehouse.${pathParts[1] || 'gold'}.${item.name}`,
+          'Columns': item.columns ? item.columns.length : 'N/A',
+          'Rows': item.rows || 'N/A',
+          'Format': 'Delta / Parquet',
+          'Updated at': 'Apr 11, 2026, 11:30 AM'
+        }
+      };
+
+      const details = detailsMap[item.type] || {};
+
+      explorerView.innerHTML = `
+        <div class="catalog-explorer">
+          <div class="explorer-header">
+            <div class="breadcrumb">Catalog Explorer &rsaquo; ${item.parentPath.split('/').join(' &rsaquo; ')}</div>
+            <div class="explorer-title" style="display: flex; align-items: center; gap: 8px;">
+              <div class="icon-wrap-table" style="color: #7ee787; display: flex; align-items: center;">${CATALOG_ICONS.table}</div>
+              <h1>${item.name}</h1>
+            </div>
+            <div class="explorer-tabs">
+              <div class="explorer-tab ${activeTab === 'overview' ? 'active' : ''}" data-tab="overview">Overview</div>
+              <div class="explorer-tab ${activeTab === 'details' ? 'active' : ''}" data-tab="details">Details</div>
+            </div>
+          </div>
+          <div class="explorer-content" id="explorer-content-root">
+            ${activeTab === 'overview' ? `
+              ${item.type === 'table' ? `
+                <div class="preview-section">
+                  <div class="preview-header">
+                    <div class="sql-badge" style="display:flex; align-items:center; gap:8px;">
+                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                       <span>SELECT * FROM <b>warehouse.${pathParts[1] || 'gold'}.${item.name}</b> LIMIT 100</span>
+                    </div>
+                  </div>
+                  <div class="top-scrollbar" id="top-scrollbar">
+                    <div class="top-scrollbar-content" id="top-scrollbar-content"></div>
+                  </div>
+                  <div class="preview-table-container" id="preview-table-container">
+                    <table class="preview-table">
+                      <thead>
+                        <tr>
+                          ${item.columns ? item.columns.map(c => `
+                            <th>
+                              ${c.name}<br>
+                              <small style="opacity: 0.6; font-weight: normal; font-size: 9px;">
+                                ${c.type === 'number' ? 'INT64' : c.type.toUpperCase()}
+                              </small>
+                            </th>
+                          `).join('') : ''}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${(() => {
+                          const previews = catalogMetadata.previews || {};
+                          const rows = previews[item.name] || [];
+                          if (rows.length === 0) return `<tr><td colspan="${item.columns.length}">No data samples available in MotherDuck</td></tr>`;
+                          
+                          return rows.map((row, r) => `
+                            <tr>
+                              ${item.columns ? item.columns.map(c => `<td>${row[c.name] !== undefined ? row[c.name] : '...'}</td>`).join('') : ''}
+                            </tr>
+                          `).join('');
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ` : ''}
+            ` : `
+              <div class="detail-section">
+                <h2>Details</h2>
+                <div class="detail-grid">
+                  ${Object.entries(details).map(([k, v]) => `
+                    <div class="detail-label">${k}</div>
+                    <div class="detail-value">${v}</div>
+                  `).join('')}
+                </div>
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+
+      // Synchronize horizontal scrolls
+      const topScroll = explorerView.querySelector('#top-scrollbar');
+      const bottomScroll = explorerView.querySelector('#preview-table-container');
+      const table = explorerView.querySelector('.preview-table');
+      const topContent = explorerView.querySelector('#top-scrollbar-content');
+
+      if (topScroll && bottomScroll && table) {
+        setTimeout(() => {
+          topContent.style.width = table.offsetWidth + 'px';
+        }, 100);
+
+        topScroll.onscroll = () => {
+          bottomScroll.scrollLeft = topScroll.scrollLeft;
+        };
+        bottomScroll.onscroll = () => {
+          topScroll.scrollLeft = bottomScroll.scrollLeft;
+        };
+      }
+
+      explorerView.querySelectorAll('.explorer-tab').forEach(tab => {
+        tab.onclick = () => {
+          currentSession.activeCatalogTab = tab.dataset.tab;
+          renderCatalogExplorer();
+        };
+      });
+    }
+
+    function switchView(tabId) {
+      if (tabId.startsWith('catalog://')) {
+        const pathParts = tabId.slice(10).split('/'); // warehouse/gold/users
+        const name = pathParts[pathParts.length - 1];
+        const type = pathParts.length === 1 ? 'catalog' : pathParts.length === 2 ? 'schema' : 'table';
+        
+        let nodeRef = null;
+        const findNodeRecursive = (list, path = '') => {
+          for (const item of list) {
+            const currentPath = path ? `${path}/${item.name}` : item.name;
+            if (currentPath === tabId.slice(10)) { nodeRef = item; return true; }
+            if (item.children && findNodeRecursive(item.children, currentPath)) return true;
+          }
+          return false;
+        };
+        findNodeRecursive(catalogData);
+
+        currentSession.activeCatalogItem = {
+          name: nodeRef ? nodeRef.name : name,
+          type: nodeRef ? nodeRef.type : type,
+          parentPath: pathParts.slice(0, -1).join('/'),
+          id: tabId,
+          columns: nodeRef ? nodeRef.columns : [],
+          rows: nodeRef ? nodeRef.rows : '0'
+        };
+        currentSession.fileName = null;
+
+        section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = 'none');
+        section.querySelector('.ide-tabs').style.display = 'none'; // Hide tabs
+        section.querySelector('#catalog-explorer-view').style.display = 'flex';
+        renderCatalogExplorer();
+      } else {
+        currentSession.activeCatalogItem = null;
+        switchFile(tabId);
+        section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = '');
+        section.querySelector('.ide-tabs').style.display = 'flex'; // Show tabs
+        section.querySelector('#catalog-explorer-view').style.display = 'none';
+      }
+      renderFileList(fileListContainer);
+      renderTabs(tabsContainer);
     }
 
     function renderCatalog() {
@@ -426,7 +622,7 @@ export function renderIDE(lang, translations) {
 
         let html = `
           <div class="catalog-node ${node.open ? 'open' : ''}" style="padding-left: ${depth * 15 + 10}px" data-node-name="${node.name}">
-            <span class="catalog-arrow" style="font-size: 8px; opacity: 0.5;">${node.children ? (node.open ? '▼' : '▶') : ' '}</span>
+            <span class="catalog-arrow" style="font-size: 8px; opacity: 0.5;">${(node.children || node.columns) ? (node.open ? '▼' : '▶') : ' '}</span>
             <span class="catalog-icon" style="color: ${color}" title="${node.type.charAt(0).toUpperCase() + node.type.slice(1)}">${icon}</span>
             <span class="catalog-name">${node.name}</span>
             <div class="catalog-node-meta">
@@ -469,15 +665,15 @@ export function renderIDE(lang, translations) {
                           <span class="count">${col.distinct}</span>
                         </div>
                         <div class="unique-values-list">
-                          ${col.samples.slice(0, col.showAll ? col.samples.length : 8).map(s => `<div class="value-item"><span>${s}</span></div>`).join('')}
+                          ${col.samples.slice(0, col.showAll ? 100 : 8).map(s => `<div class="value-item"><span>${s}</span></div>`).join('')}
                           ${!col.showAll && col.samples.length > 8 ? `
-                            <div class="value-item show-more-btn" data-column-name="${col.name}" data-table-name="${node.name}" title="Show all ${col.samples.length} values">
-                              <span>...</span>
+                            <div class="value-item show-more-btn" data-column-name="${col.name}" data-table-name="${node.name}" title="Show more values">
+                              ...
                             </div>
                           ` : ''}
                         </div>
                         <div class="stats-footer">
-                          <span>NULLS: ${parseInt(node.rows.replace(/,/g, '')) - parseInt(col.nonNull.replace(/,/g, ''))}</span>
+                          <span>NULLS: ${ (parseInt(node.rows.toString().replace(/,/g, '')) - parseInt(col.nonNull.toString().replace(/,/g, ''))) || 0 }</span>
                         </div>
                       </div>
                     ` : ''}
@@ -492,6 +688,41 @@ export function renderIDE(lang, translations) {
       }
 
       catalogTreeContainer.innerHTML = catalogData.map(db => renderNode(db)).join('');
+      updateToggleIcon();
+    }
+
+    function updateWorkspaceToggleIcon() {
+      const btn = section.querySelector('#btn-toggle-workspace');
+      if (!btn) return;
+      const icon = btn.querySelector('#toggle-icon-workspace');
+      const allFolders = Object.keys(currentFiles).filter(key => key.endsWith('/'));
+      const isAnyOpen = allFolders.some(f => !collapsedFolders.has(f));
+
+      if (isAnyOpen) {
+        icon.innerHTML = '<line x1="5" y1="12" x2="19" y2="12"></line>'; // Minus
+      } else {
+        icon.innerHTML = '<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>'; // Plus
+      }
+    }
+
+    function updateToggleIcon() {
+      const btn = section.querySelector('#btn-toggle-catalog');
+      if (!btn) return;
+      const icon = btn.querySelector('#toggle-icon-catalog');
+      
+      const isAnyOpen = (list) => {
+        for(const item of list) {
+          if (item.open) return true;
+          if (item.children && isAnyOpen(item.children)) return true;
+        }
+        return false;
+      };
+
+      if (isAnyOpen(catalogData)) {
+        icon.innerHTML = '<line x1="5" y1="12" x2="19" y2="12"></line>'; // Minus
+      } else {
+        icon.innerHTML = '<line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>'; // Plus
+      }
     }
 
     function switchSidebar(view) {
@@ -502,10 +733,31 @@ export function renderIDE(lang, translations) {
         activityBar.querySelector('#v-explorer').classList.add('active');
         explorerSidebar.style.display = 'flex';
         catalogSidebar.style.display = 'none';
+        
+        // Restore file view if we were in catalog mode
+        currentSession.activeCatalogItem = null;
+        if (!currentSession.fileName && openTabs.length > 0) {
+           switchFile(openTabs[0]); // Default to first tab
+        } else if (currentSession.fileName) {
+           switchFile(currentSession.fileName);
+        }
+        section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = '');
+        section.querySelector('.ide-tabs').style.display = 'flex';
+        section.querySelector('#catalog-explorer-view').style.display = 'none';
       } else {
         activityBar.querySelector('#v-catalog').classList.add('active');
         explorerSidebar.style.display = 'none';
         catalogSidebar.style.display = 'flex';
+        
+        // Hide editor and tabs when going to catalog if no item selected yet or if one is
+        section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = 'none');
+        section.querySelector('.ide-tabs').style.display = 'none';
+        if (currentSession.activeCatalogItem) {
+          section.querySelector('#catalog-explorer-view').style.display = 'flex';
+          renderCatalogExplorer();
+        } else {
+           section.querySelector('#catalog-explorer-view').style.display = 'none';
+        }
         renderCatalog();
       }
     }
@@ -528,7 +780,13 @@ export function renderIDE(lang, translations) {
       const log = document.createElement('div');
       log.className = 'info';
       log.style.color = '#79c0ff';
-      log.innerHTML = `[catalog] Syncing with MotherDuck...<br>[catalog] Fetching schema for 'warehouse.gold'...<br>[catalog] Done. Found 2 tables.`;
+      log.innerHTML = `
+        <span style="color: #7ee787">[catalog]</span> Connecting to MotherDuck (token: md_***...)...<br>
+        <span style="color: #7ee787">[catalog]</span> Authenticated as pedro@levesaude.com.br<br>
+        <span style="color: #7ee787">[catalog]</span> Discovering schemas in 'warehouse'...<br>
+        <span style="color: #7ee787">[catalog]</span> Fetching column metadata for 'gold.users' and 'gold.providers'...<br>
+        <span style="color: #7ee787">[catalog]</span> Done. Catalog hierarchy updated with real-time stats.
+      `;
       output.appendChild(log);
       output.scrollTop = output.scrollHeight;
 
@@ -600,19 +858,38 @@ export function renderIDE(lang, translations) {
       }
 
       if (node) {
-        const name = node.dataset.nodeName;
-        const findAndToggle = (list) => {
+        const nodeName = node.dataset.nodeName;
+        let targetNode = null;
+        let parentPath = '';
+
+        const findNode = (list, path = '') => {
           for (const item of list) {
-            if (item.name === name) {
-              item.open = !item.open;
+            if (item.name === nodeName) {
+              targetNode = item;
+              parentPath = path;
               return true;
             }
-            if (item.children && findAndToggle(item.children)) return true;
+            if (item.children && findNode(item.children, path ? `${path}/${item.name}` : item.name)) return true;
           }
           return false;
         };
-        findAndToggle(catalogData);
-        renderCatalog();
+
+        findNode(catalogData);
+
+        if (targetNode) {
+          if (targetNode.type === 'table') {
+            targetNode.open = !targetNode.open; // Allow expansion on click
+            const tabId = `catalog://${parentPath}/${nodeName}`;
+            switchView(tabId);
+            renderCatalog();
+          } else {
+            targetNode.open = !targetNode.open;
+            // Clear explorer view if clicking a schema/item that isn't a table
+            currentSession.activeCatalogItem = null;
+            section.querySelector('#catalog-explorer-view').style.display = 'none';
+            renderCatalog();
+          }
+        }
         return;
       }
 
@@ -775,15 +1052,28 @@ export function renderIDE(lang, translations) {
       currentSession.namingNew = { resultType: 'folder', parent: '' };
       renderFileList(explorerSidebar.querySelector('#file-tree') || fileListContainer);
     };
-    catalogSidebar.querySelector('#btn-collapse-catalog').onclick = () => {
-      const collapse = (list) => {
+    catalogSidebar.querySelector('#btn-toggle-catalog').onclick = () => {
+      const isAnyOpen = (list) => {
+        for(const item of list) {
+          if (item.open) return true;
+          if (item.children && isAnyOpen(item.children)) return true;
+        }
+        return false;
+      };
+
+      const shouldOpen = !isAnyOpen(catalogData);
+      const setStates = (list) => {
         list.forEach(item => {
-          item.open = false;
-          if (item.children) collapse(item.children);
-          if (item.columns) item.columns.forEach(c => { c.showStats = false; c.showAll = false; });
+          item.open = shouldOpen;
+          if (item.children) setStates(item.children);
+          if (!shouldOpen && item.columns) item.columns.forEach(c => { c.showStats = false; c.showAll = false; });
         });
       };
-      collapse(catalogData);
+      setStates(catalogData);
+      if (!shouldOpen) {
+        currentSession.activeCatalogItem = null;
+        section.querySelector('#catalog-explorer-view').style.display = 'none';
+      }
       renderCatalog();
     };
 
@@ -878,17 +1168,20 @@ export function renderIDE(lang, translations) {
       renderFileList(fileListContainer);
     };
 
-    section.querySelector('#btn-collapse').onclick = () => {
+    section.querySelector('#btn-toggle-workspace').onclick = () => {
       const allFolders = Object.keys(currentFiles).filter(key => key.endsWith('/'));
-      const allCollapsed = allFolders.every(f => collapsedFolders.has(f));
+      const isAnyOpen = allFolders.some(f => !collapsedFolders.has(f));
 
-      if (allCollapsed) {
-        collapsedFolders.clear();
-      } else {
+      if (isAnyOpen) {
         allFolders.forEach(f => collapsedFolders.add(f));
+      } else {
+        collapsedFolders.clear();
       }
       renderFileList(fileListContainer);
+      updateWorkspaceToggleIcon();
     };
+
+
 
     // Window Closing
     section.querySelector('#win-close').onclick = () => {
@@ -995,7 +1288,7 @@ export function renderIDE(lang, translations) {
         return;
       }
 
-      if (tab) switchFile(tab.dataset.file);
+      if (tab) switchView(tab.dataset.tabId);
     };
 
     const launchPlaceholder = document.createElement('div');
