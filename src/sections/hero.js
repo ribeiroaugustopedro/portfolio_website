@@ -142,7 +142,6 @@ export function renderHero(lang, translations) {
   const resumeBtn = document.createElement('a');
   const resumeFile = lang === 'pt' ? 'cv_pedro_augusto_ribeiro_pt-br.pdf' : 'cv_pedro_augusto_ribeiro_en-us.pdf';
   resumeBtn.href = `./${resumeFile}`;
-  resumeBtn.download = resumeFile;
   resumeBtn.target = '_blank';
   resumeBtn.className = 'btn-outline';
   resumeBtn.innerHTML = `
