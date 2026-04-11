@@ -33,7 +33,9 @@ export function renderResume(lang, translations) {
 
   const downloadLink = document.createElement('a');
   downloadLink.className = 'project-link-indicator';
-  downloadLink.href = './cv_pedro_augusto_ribeiro_en-us.pdf';
+  const resumeFile = lang === 'pt' ? 'cv_pedro_augusto_ribeiro_pt-br.pdf' : 'cv_pedro_augusto_ribeiro_en-us.pdf';
+  downloadLink.href = `./${resumeFile}`;
+  downloadLink.download = resumeFile;
   downloadLink.target = '_blank';
   downloadLink.innerHTML = `${t.downloadResume} &rarr;`;
   downloadLink.style.marginTop = 'auto';
