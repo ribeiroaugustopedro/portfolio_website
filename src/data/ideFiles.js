@@ -90,5 +90,16 @@ st_folium(m, width=700)`
   border-radius: 8px;
   padding: 20px;
 }`
+  },
+  'README.md': {
+    name: 'README.md',
+    language: 'markdown',
+    content: `# 🚀 Data Platform Project
+This repository contains the end-to-end data pipeline for the corporate warehouse.
+
+## Features:
+- **Scalable ETL** with PySpark
+- **Gold Layer Modeling** via SQL
+- **Real-time Dashboards** with Streamlit`
   }
 };

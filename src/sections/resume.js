@@ -68,8 +68,8 @@ export function renderResume(lang, translations) {
     const item = document.createElement('div');
     item.className = 'resume-item';
     item.style.textAlign = 'left';
-    const descriptionHTML = Array.isArray(job.description) 
-      ? `<ul style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 10px; padding-left: 18px; text-align: justify;">${job.description.map(point => `<li style="margin-bottom: 6px; line-height: 1.5;">${point}</li>`).join('')}</ul>` 
+    const descriptionHTML = Array.isArray(job.description)
+      ? `<ul style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 10px; padding-left: 18px; text-align: justify;">${job.description.map(point => `<li style="margin-bottom: 6px; line-height: 1.5;">${point}</li>`).join('')}</ul>`
       : `<p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 8px; text-align: justify;">${job.description}</p>`;
     item.innerHTML = `<h4>${job.role}</h4><span class="company">${job.company} | ${job.period}</span>${descriptionHTML}`;
     expSection.appendChild(item);
@@ -81,16 +81,16 @@ export function renderResume(lang, translations) {
   rightCol.style.display = 'flex';
   rightCol.style.flexDirection = 'column';
   rightCol.style.justifyContent = 'space-between';
-  
+
   const skillsWrap = document.createElement('div');
   skillsWrap.style.textAlign = 'left';
   skillsWrap.innerHTML = `<h3 style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">${t.skillsTitle}</h3>`;
-  
+
   t.skillCategories.forEach(skillSet => {
     const group = document.createElement('div');
     group.className = 'skill-group';
     group.innerHTML = `<h4 style="font-size: 1rem; color: var(--text-primary); margin-bottom: 8px;">${skillSet.name}</h4>`;
-    
+
     const tagsContainer = document.createElement('div');
     tagsContainer.className = 'tags';
     tagsContainer.style.justifyContent = 'flex-start';
@@ -140,7 +140,7 @@ export function renderResume(lang, translations) {
   const eduSection = document.createElement('div');
   eduSection.style.textAlign = 'left';
   eduSection.innerHTML = `<h3 style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">${t.educationTitle}</h3>`;
-  
+
   t.education.forEach(edu => {
     const item = document.createElement('div');
     item.className = 'resume-item';

@@ -10,14 +10,15 @@ export function renderIDE(lang, translations) {
   let currentFiles = { ...files };
   let openTabs = ['pipeline.py'];
   let collapsedFolders = new Set();
-    const currentSession = {
-      fileName: 'pipeline.py',
-      sidebar: 'explorer', // 'explorer' or 'catalog'
-      activeCatalogItem: null, // { name, type, parentPath }
-      activeCatalogTab: 'overview', // 'overview' or 'details'
-      namingNew: null, // { resultType: 'file'|'folder', parent: string, initialName?: string, isRename?: boolean }
-      selectedFile: 'pipeline.py'
-    };
+  let isInitialLoad = true;
+  const currentSession = {
+    fileName: 'pipeline.py',
+    sidebar: 'explorer', // 'explorer' or 'catalog'
+    activeCatalogItem: null, // { name, type, parentPath }
+    activeCatalogTab: 'overview', // 'overview' or 'details'
+    namingNew: null, // { resultType: 'file'|'folder', parent: string, initialName?: string, isRename?: boolean }
+    selectedFile: 'pipeline.py'
+  };
 
   const CATALOG_TYPE_ICONS = {
     text: '<span class="type-pill type-text">TEXT</span>',
@@ -28,28 +29,28 @@ export function renderIDE(lang, translations) {
   };
 
   // Automated Catalog Builder
-    const buildCatalogHierarchy = (data) => {
-      const metadata = data.metadata || data; // Handle new or old format
-      const tableMap = {};
-      
-      metadata.forEach(col => {
-        if (!tableMap[col.table_name]) {
-          tableMap[col.table_name] = {
-            name: col.table_name,
-            type: 'table',
-            columns: [],
-            rows: col.non_null
-          };
-        }
-        
-        tableMap[col.table_name].columns.push({
-          name: col.column_name,
-          type: col.type,
-          nonNull: col.non_null,
-          distinct: col.distinct,
-          samples: col.samples
-        });
+  const buildCatalogHierarchy = (data) => {
+    const metadata = data.metadata || data; // Handle new or old format
+    const tableMap = {};
+
+    metadata.forEach(col => {
+      if (!tableMap[col.table_name]) {
+        tableMap[col.table_name] = {
+          name: col.table_name,
+          type: 'table',
+          columns: [],
+          rows: col.non_null
+        };
+      }
+
+      tableMap[col.table_name].columns.push({
+        name: col.column_name,
+        type: col.type,
+        nonNull: col.non_null,
+        distinct: col.distinct,
+        samples: col.samples
       });
+    });
 
     const tables = Object.values(tableMap).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -77,7 +78,7 @@ export function renderIDE(lang, translations) {
     py: '<img src="https://raw.githubusercontent.com/PKief/vscode-material-icon-theme/master/icons/python.svg" width="16" height="16">',
     html: '<img src="https://raw.githubusercontent.com/PKief/vscode-material-icon-theme/master/icons/html.svg" width="16" height="16">',
     css: '<img src="https://raw.githubusercontent.com/PKief/vscode-material-icon-theme/master/icons/css.svg" width="16" height="16">',
-    sql: '<img src="https://raw.githubusercontent.com/PKief/vscode-material-icon-theme/master/icons/database.svg" width="16" height="16">',
+    sql: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3eb0ef" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>',
     json: '<img src="https://raw.githubusercontent.com/PKief/vscode-material-icon-theme/master/icons/json.svg" width="16" height="16">',
     md: '<img src="https://raw.githubusercontent.com/PKief/vscode-material-icon-theme/master/icons/markdown.svg" width="16" height="16">',
     txt: '<img src="https://raw.githubusercontent.com/PKief/vscode-material-icon-theme/master/icons/document.svg" width="16" height="16">',
@@ -89,7 +90,7 @@ export function renderIDE(lang, translations) {
 
   const CATALOG_ICONS = {
     database: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>', // Layered
-    schema: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>', // Cube
+    schema: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b392f0" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>', // Cube
     table: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7ee787" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="3" x2="9" y2="21"/></svg>'
   };
 
@@ -97,8 +98,8 @@ export function renderIDE(lang, translations) {
 
   section.innerHTML = `
     <style>
-      .folder-chevron { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; color: var(--ide-text); transition: transform 0.2s; margin-right: 4px; }
-      .folder-chevron.expanded { transform: rotate(90deg); }
+      .folder-chevron, .catalog-arrow { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; color: var(--ide-text); transition: transform 0.2s; margin-right: 4px; }
+      .folder-chevron.expanded, .catalog-arrow.expanded { transform: rotate(90deg); }
       .folder-indent { width: 18px; }
       .file-main { display: flex; align-items: center; width: 100%; white-space: nowrap; height: 100%; }
       .file-icon-wrap { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
@@ -107,23 +108,85 @@ export function renderIDE(lang, translations) {
       .ide-tab { width: 160px; flex-shrink: 0; justify-content: space-between; overflow: hidden; }
       .ide-tab .tab-main { display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; flex: 1; }
       .ide-tab .tab-main span { overflow: hidden; text-overflow: ellipsis; }
+      .ide-tabs { 
+        display: flex; 
+        overflow-x: auto; 
+        scrollbar-width: none; 
+        -ms-overflow-style: none;
+        scroll-behavior: smooth;
+      }
+      .ide-tabs::-webkit-scrollbar { display: none; }
+      
+      .ide-file-item { 
+        display: flex; align-items: center; height: 32px; padding: 0 12px; cursor: pointer; color: var(--ide-text); 
+        gap: 6px; border-left: none; transition: all 0.2s;
+      }
+      .ide-file-item:hover { background: rgba(255, 255, 255, 0.05); }
+      .ide-file-item.active-selection { 
+        background: linear-gradient(to right, rgba(153, 255, 255, 0.08), rgba(255, 153, 255, 0.08)) !important;
+        position: relative;
+      }
+      
+      .ide-file-item.active-selection::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--rainbow-soft);
+        background-size: 200% auto;
+        animation: rainbowSlide 5s linear infinite;
+        box-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+        z-index: 10;
+      }
       
       .ide-file-item.drag-over { 
-        background: rgba(126, 231, 135, 0.1) !important;
-        border-left: 3px solid #7ee787 !important;
+        background: rgba(153, 255, 255, 0.05) !important;
+        box-shadow: inset 0 0 10px rgba(153, 255, 255, 0.2);
+        border-left: 3px solid transparent !important;
+        border-image: linear-gradient(to bottom, #99ffff, #ff99ff) 1;
+      }
+      .ide-sidebar.drag-over-container {
+        background: rgba(255, 255, 255, 0.05);
+        box-shadow: inset 0 0 20px rgba(153, 255, 255, 0.15);
+        transition: background 0.2s, box-shadow 0.2s;
+      }
+      
+      .catalog-node.active-selection { 
+        background: linear-gradient(to right, rgba(153, 255, 255, 0.08), rgba(255, 153, 255, 0.08)) !important;
+        position: relative;
+      }
+
+      .catalog-node.active-selection::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--rainbow-soft);
+        background-size: 200% auto;
+        animation: rainbowSlide 5s linear infinite;
+        box-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+        z-index: 10;
       }
 
       /* Custom Modal Style */
-      .ide-modal-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 1000; display:flex; align-items:center; justify-content:center; }
-      .ide-modal { background: var(--ide-bg); border: 1px solid var(--ide-accent); border-radius: 8px; width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; }
-      .ide-modal-header { padding: 12px 16px; background: rgba(255,255,255,0.05); font-weight: bold; font-size: 13px; color: var(--ide-text-bright); border-bottom: 1px solid rgba(255,255,255,0.05); }
-      .ide-modal-body { padding: 20px 16px; font-size: 14px; color: var(--ide-text); line-height: 1.5; }
-      .ide-modal-footer { padding: 12px 16px; display:flex; justify-content: flex-end; gap: 8px; background: rgba(0,0,0,0.2); }
-      .modal-btn { padding: 6px 16px; border-radius: 4px; border: none; font-size: 12px; cursor: pointer; transition: all 0.2s; }
-      .modal-btn.cancel { background: transparent; color: var(--ide-text); border: 1px solid rgba(255,255,255,0.1); }
-      .modal-btn.cancel:hover { background: rgba(255,255,255,0.05); }
-      .modal-btn.confirm { background: var(--ide-accent); color: white; }
-      .modal-btn.confirm:hover { filter: brightness(1.1); }
+      .ide-modal-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); z-index: 1000; display:flex; align-items:center; justify-content:center; backdrop-filter: blur(2px); }
+      .ide-modal { background: var(--ide-sidebar); border: 1px solid var(--ide-border); border-radius: 12px; width: 400px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6); overflow: hidden; }
+      .ide-modal-header { padding: 18px 24px; background: var(--ide-header); font-weight: bold; font-size: 15px; color: var(--text-primary); border-bottom: 1px solid var(--ide-border); }
+      .ide-modal-body { padding: 24px; font-size: 14px; color: var(--ide-text); line-height: 1.6; }
+      .ide-modal-footer { padding: 16px 24px; display:flex; justify-content: flex-end; gap: 12px; background: rgba(0, 0, 0, 0.2); }
+      .modal-btn { padding: 8px 20px; border-radius: 6px; border: none; font-size: 13px; cursor: pointer; transition: all 0.2s; font-family: var(--font-mono); }
+      .modal-btn.cancel { background: transparent; color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.1); }
+      .modal-btn.cancel:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-primary); }
+      .modal-btn.confirm { background: rgba(255, 255, 255, 0.05); color: var(--text-primary); font-weight: bold; border: 1px solid rgba(255, 255, 255, 0.2); }
+      .modal-btn.confirm:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-1px); border-color: rgba(255, 255, 255, 0.4); }
+
+      .workspace-copy-btn { opacity: 0; padding: 4px; border-radius: 4px; cursor: pointer; transition: all 0.2s; color: var(--ide-text); display: flex; align-items: center; justify-content: center; margin-left: auto; }
+      .ide-file-item:hover .workspace-copy-btn { opacity: 1; }
+      .workspace-copy-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--ide-text-bright); }
 
       @keyframes pulse-ring {
         0% { transform: scale(0.8); opacity: 0.5; }
@@ -320,9 +383,12 @@ export function renderIDE(lang, translations) {
             <div class="ide-file-item ${fileName === currentSession.fileName || fileName === currentSession.selectedFile ? 'active-selection' : ''} ${fileName === currentSession.fileName ? 'active' : ''}" 
                  data-file="${fileName}" draggable="true" style="padding-left: ${10 + indent}px">
               <div class="file-main">
-                ${isFolder ? `<div class="folder-chevron ${isExpanded ? 'expanded' : ''}">${ICONS.chevron}</div>` : '<div class="folder-indent"></div>'}
+                ${isFolder ? `<div class="folder-chevron ${isExpanded ? 'expanded' : ''}" data-folder-toggle="${fileName}">${ICONS.chevron}</div>` : '<div class="folder-indent"></div>'}
                 <div class="file-icon-wrap">${getFileIcon(fileName)}</div>
                 <span>${displayName}</span>
+                <div class="workspace-copy-btn" title="Copy Path" data-copy="${fileName}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </div>
               </div>
             </div>`;
         }).join('');
@@ -426,13 +492,25 @@ export function renderIDE(lang, translations) {
         const displayName = isCatalog ? tabId.split('/').pop() : tabId;
         const icon = isCatalog ? CATALOG_ICONS[tabId.split('/')[2]] || CATALOG_ICONS.table : getFileIcon(tabId);
         const isActive = !isCatalog && currentSession.fileName === tabId;
-        
+
         return `
         <div class="ide-tab ${isActive ? 'active' : ''}" data-tab-id="${tabId}">
           <div class="tab-main">${icon}<span>${displayName}</span></div>
           <div class="tab-close" data-close="${tabId}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"></path></svg></div>
         </div>`;
       }).join('');
+
+      setTimeout(scrollActiveTabIntoView, 50);
+    }
+
+    function scrollActiveTabIntoView() {
+      if (isInitialLoad) return;
+      const activeTab = tabsContainer.querySelector('.ide-tab.active');
+      if (activeTab && tabsContainer) {
+        // Safe manual scroll that NEVER affects the whole window
+        const targetScroll = activeTab.offsetLeft - (tabsContainer.offsetWidth / 2) + (activeTab.offsetWidth / 2);
+        tabsContainer.scrollTo({ left: targetScroll, behavior: 'smooth' });
+      }
     }
 
     const renderCatalogExplorer = () => {
@@ -443,7 +521,7 @@ export function renderIDE(lang, translations) {
 
       const pathParts = item.parentPath.split('/').filter(p => p);
       const icon = CATALOG_ICONS[item.type];
-      
+
       const detailsMap = {
         catalog: {
           'Browse only': 'false',
@@ -477,7 +555,7 @@ export function renderIDE(lang, translations) {
           <div class="explorer-header">
             <div class="breadcrumb">Catalog Explorer &rsaquo; ${item.parentPath.split('/').join(' &rsaquo; ')}</div>
             <div class="explorer-title" style="display: flex; align-items: center; gap: 8px;">
-              <div class="icon-wrap-table" style="color: #7ee787; display: flex; align-items: center;">${CATALOG_ICONS.table}</div>
+              <div class="icon-wrap-table" style="display: flex; align-items: center;">${CATALOG_ICONS.table}</div>
               <h1>${item.name}</h1>
             </div>
             <div class="explorer-tabs">
@@ -514,16 +592,16 @@ export function renderIDE(lang, translations) {
                       </thead>
                       <tbody>
                         ${(() => {
-                          const previews = catalogMetadata.previews || {};
-                          const rows = previews[item.name] || [];
-                          if (rows.length === 0) return `<tr><td colspan="${item.columns.length}">No data samples available in MotherDuck</td></tr>`;
-                          
-                          return rows.map((row, r) => `
+              const previews = catalogMetadata.previews || {};
+              const rows = previews[item.name] || [];
+              if (rows.length === 0) return `<tr><td colspan="${item.columns.length}">No data samples available in MotherDuck</td></tr>`;
+
+              return rows.map((row, r) => `
                             <tr>
                               ${item.columns ? item.columns.map(c => `<td>${row[c.name] !== undefined ? row[c.name] : '...'}</td>`).join('') : ''}
                             </tr>
                           `).join('');
-                        })()}
+            })()}
                       </tbody>
                     </table>
                   </div>
@@ -576,7 +654,7 @@ export function renderIDE(lang, translations) {
         const pathParts = tabId.slice(10).split('/'); // warehouse/gold/users
         const name = pathParts[pathParts.length - 1];
         const type = pathParts.length === 1 ? 'catalog' : pathParts.length === 2 ? 'schema' : 'table';
-        
+
         let nodeRef = null;
         const findNodeRecursive = (list, path = '') => {
           for (const item of list) {
@@ -616,13 +694,15 @@ export function renderIDE(lang, translations) {
     function renderCatalog() {
       if (!catalogTreeContainer) return;
 
-      function renderNode(node, depth = 0) {
+      function renderNode(node, depth = 0, path = 'catalog://') {
         const icon = CATALOG_ICONS[node.type];
-        const color = node.type === 'database' ? '#79c0ff' : node.type === 'schema' ? 'var(--text-secondary)' : '#7ee787';
+        const color = node.type === 'database' ? '#79c0ff' : node.type === 'schema' ? '#b392f0' : '#7ee787';
+        const nodeId = `${path}${node.name}`;
+        const isActive = currentSession.activeCatalogItem && currentSession.activeCatalogItem.id === nodeId;
 
         let html = `
-          <div class="catalog-node ${node.open ? 'open' : ''}" style="padding-left: ${depth * 15 + 10}px" data-node-name="${node.name}">
-            <span class="catalog-arrow" style="font-size: 8px; opacity: 0.5;">${(node.children || node.columns) ? (node.open ? '▼' : '▶') : ' '}</span>
+          <div class="catalog-node ${node.open ? 'open' : ''} ${isActive ? 'active-selection' : ''}" style="padding-left: ${depth * 15 + 10}px" data-node-name="${node.name}">
+            <span class="catalog-arrow ${node.open ? 'expanded' : ''}" data-catalog-toggle="true" style="font-size: 8px; opacity: 0.5;">${(node.children || node.columns) ? ICONS.chevron : ' '}</span>
             <span class="catalog-icon" style="color: ${color}" title="${node.type.charAt(0).toUpperCase() + node.type.slice(1)}">${icon}</span>
             <span class="catalog-name">${node.name}</span>
             <div class="catalog-node-meta">
@@ -637,7 +717,7 @@ export function renderIDE(lang, translations) {
         `;
 
         if (node.open && node.children) {
-          html += node.children.map(child => renderNode(child, depth + 1)).join('');
+          html += node.children.map(child => renderNode(child, depth + 1, `${nodeId}/`)).join('');
         }
 
         if (node.open && node.type === 'table' && node.columns) {
@@ -673,7 +753,7 @@ export function renderIDE(lang, translations) {
                           ` : ''}
                         </div>
                         <div class="stats-footer">
-                          <span>NULLS: ${ (parseInt(node.rows.toString().replace(/,/g, '')) - parseInt(col.nonNull.toString().replace(/,/g, ''))) || 0 }</span>
+                          <span>NULLS: ${(parseInt(node.rows.toString().replace(/,/g, '')) - parseInt(col.nonNull.toString().replace(/,/g, ''))) || 0}</span>
                         </div>
                       </div>
                     ` : ''}
@@ -709,9 +789,9 @@ export function renderIDE(lang, translations) {
       const btn = section.querySelector('#btn-toggle-catalog');
       if (!btn) return;
       const icon = btn.querySelector('#toggle-icon-catalog');
-      
+
       const isAnyOpen = (list) => {
-        for(const item of list) {
+        for (const item of list) {
           if (item.open) return true;
           if (item.children && isAnyOpen(item.children)) return true;
         }
@@ -733,13 +813,13 @@ export function renderIDE(lang, translations) {
         activityBar.querySelector('#v-explorer').classList.add('active');
         explorerSidebar.style.display = 'flex';
         catalogSidebar.style.display = 'none';
-        
+
         // Restore file view if we were in catalog mode
         currentSession.activeCatalogItem = null;
         if (!currentSession.fileName && openTabs.length > 0) {
-           switchFile(openTabs[0]); // Default to first tab
+          switchFile(openTabs[0]); // Default to first tab
         } else if (currentSession.fileName) {
-           switchFile(currentSession.fileName);
+          switchFile(currentSession.fileName);
         }
         section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = '');
         section.querySelector('.ide-tabs').style.display = 'flex';
@@ -748,7 +828,7 @@ export function renderIDE(lang, translations) {
         activityBar.querySelector('#v-catalog').classList.add('active');
         explorerSidebar.style.display = 'none';
         catalogSidebar.style.display = 'flex';
-        
+
         // Hide editor and tabs when going to catalog if no item selected yet or if one is
         section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = 'none');
         section.querySelector('.ide-tabs').style.display = 'none';
@@ -756,7 +836,7 @@ export function renderIDE(lang, translations) {
           section.querySelector('#catalog-explorer-view').style.display = 'flex';
           renderCatalogExplorer();
         } else {
-           section.querySelector('#catalog-explorer-view').style.display = 'none';
+          section.querySelector('#catalog-explorer-view').style.display = 'none';
         }
         renderCatalog();
       }
@@ -768,13 +848,21 @@ export function renderIDE(lang, translations) {
     section.querySelector('#btn-refresh').onclick = () => {
       const btn = section.querySelector('#btn-refresh');
       btn.style.animation = 'spin 1s linear';
+
+      const log = document.createElement('div');
+      log.className = 'info';
+      log.style.color = '#79c0ff';
+      log.innerHTML = `<span style="color: #7ee787">[workspace]</span> Syncing file system...<br><span style="color: #7ee787">[workspace]</span> Re-indexed ${Object.keys(currentFiles).length} files. UI updated.`;
+      terminal.appendChild(log);
+      terminal.scrollTop = terminal.scrollHeight;
+
       setTimeout(() => { btn.style.animation = ''; renderFileList(fileListContainer); }, 1000);
     };
 
     section.querySelector('#btn-refresh-catalog').onclick = () => {
       const btn = section.querySelector('#btn-refresh-catalog');
       btn.style.animation = 'spin 1s linear';
-      
+
       // Simulate fetching truth from MotherDuck
       const output = section.querySelector('#terminal-output');
       const log = document.createElement('div');
@@ -782,7 +870,7 @@ export function renderIDE(lang, translations) {
       log.style.color = '#79c0ff';
       log.innerHTML = `
         <span style="color: #7ee787">[catalog]</span> Connecting to MotherDuck (token: md_***...)...<br>
-        <span style="color: #7ee787">[catalog]</span> Authenticated as pedro@levesaude.com.br<br>
+        <span style="color: #7ee787">[catalog]</span> Authenticated as pedro@warehouse.ai<br>
         <span style="color: #7ee787">[catalog]</span> Discovering schemas in 'warehouse'...<br>
         <span style="color: #7ee787">[catalog]</span> Fetching column metadata for 'gold.users' and 'gold.providers'...<br>
         <span style="color: #7ee787">[catalog]</span> Done. Catalog hierarchy updated with real-time stats.
@@ -790,61 +878,20 @@ export function renderIDE(lang, translations) {
       output.appendChild(log);
       output.scrollTop = output.scrollHeight;
 
-      setTimeout(() => { 
-        btn.style.animation = ''; 
-        renderCatalog(); 
+      setTimeout(() => {
+        btn.style.animation = '';
+        renderCatalog();
       }, 1000);
     };
 
-    // Drag and Drop
-    let draggedFile = null;
-    fileListContainer.addEventListener('dragstart', (e) => {
-      const item = e.target.closest('.ide-file-item');
-      if (item) {
-        draggedFile = item.dataset.file;
-        e.dataTransfer.setData('text/plain', draggedFile);
-        item.style.opacity = '0.5';
-      }
-    });
-
-    fileListContainer.addEventListener('dragend', (e) => {
-      const item = e.target.closest('.ide-file-item');
-      if (item) item.style.opacity = '1';
-      draggedFile = null;
-      fileListContainer.querySelectorAll('.ide-file-item').forEach(el => el.classList.remove('drag-over'));
-    });
-
-    fileListContainer.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      const item = e.target.closest('.ide-file-item');
-      if (item && item.dataset.file.endsWith('/')) item.classList.add('drag-over');
-    });
-
-    fileListContainer.addEventListener('dragleave', (e) => {
-      const item = e.target.closest('.ide-file-item');
-      if (item) item.classList.remove('drag-over');
-    });
-
-    fileListContainer.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const target = e.target.closest('.ide-file-item');
-      if (target) target.classList.remove('drag-over');
-      if (target && target.dataset.file.endsWith('/') && draggedFile) {
-        const newName = target.dataset.file + draggedFile.split('/').pop();
-        if (!currentFiles[newName]) {
-          currentFiles[newName] = currentFiles[draggedFile];
-          delete currentFiles[draggedFile];
-          if (currentSession.fileName === draggedFile) currentSession.fileName = newName;
-          renderFileList(fileListContainer);
-          renderTabs(tabsContainer);
-        }
-      }
-    });
+    // Drag and Drop (Moved and Consolidated below)
 
     catalogTreeContainer.onclick = (e) => {
-      const node = e.target.closest('.catalog-node');
+      const arrow = e.target.closest('.catalog-arrow');
+      const nodeEl = e.target.closest('.catalog-node');
       const column = e.target.closest('.column-item');
       const copyBtn = e.target.closest('.copy-table-btn, .copy-col-btn');
+      const isShowMore = e.target.closest('.show-more-btn');
 
       if (copyBtn) {
         e.stopPropagation();
@@ -857,43 +904,65 @@ export function renderIDE(lang, translations) {
         return;
       }
 
-      if (node) {
-        const nodeName = node.dataset.nodeName;
-        let targetNode = null;
-        let parentPath = '';
-
-        const findNode = (list, path = '') => {
+      if (arrow) {
+        e.stopPropagation();
+        const nodeName = nodeEl.dataset.nodeName;
+        const findAndToggle = (list) => {
           for (const item of list) {
             if (item.name === nodeName) {
-              targetNode = item;
-              parentPath = path;
+              item.open = !item.open;
               return true;
             }
-            if (item.children && findNode(item.children, path ? `${path}/${item.name}` : item.name)) return true;
+            if (item.children && findAndToggle(item.children)) return true;
           }
           return false;
         };
-
-        findNode(catalogData);
-
-        if (targetNode) {
-          if (targetNode.type === 'table') {
-            targetNode.open = !targetNode.open; // Allow expansion on click
-            const tabId = `catalog://${parentPath}/${nodeName}`;
-            switchView(tabId);
-            renderCatalog();
-          } else {
-            targetNode.open = !targetNode.open;
-            // Clear explorer view if clicking a schema/item that isn't a table
-            currentSession.activeCatalogItem = null;
-            section.querySelector('#catalog-explorer-view').style.display = 'none';
-            renderCatalog();
-          }
-        }
+        findAndToggle(catalogData);
+        renderCatalog();
         return;
       }
 
-      const isShowMore = e.target.closest('.show-more-btn');
+      if (nodeEl) {
+        const nodeName = nodeEl.dataset.nodeName;
+        const findNode = (list, path = 'catalog://') => {
+          for (const node of list) {
+            const nodeId = `${path}${node.name}`;
+            if (node.name === nodeName) return { ...node, id: nodeId };
+            if (node.children) {
+              const res = findNode(node.children, `${nodeId}/`);
+              if (res) return res;
+            }
+          }
+          return null;
+        };
+        const node = findNode(catalogData);
+        if (node) {
+          const wasSelected = nodeEl.classList.contains('active-selection');
+
+          if (node.type === 'table') {
+            switchView(node.id);
+          } else {
+            currentSession.activeCatalogItem = { id: node.id, type: node.type, name: node.name };
+          }
+
+          // Harmony with Workspace: Toggle expansion only if already selected
+          if (wasSelected) {
+            const updateObject = (list) => {
+              for (let i = 0; i < list.length; i++) {
+                if (list[i].name === node.name) {
+                  list[i].open = !list[i].open;
+                  return true;
+                }
+                if (list[i].children && updateObject(list[i].children)) return true;
+              }
+              return false;
+            };
+            updateObject(catalogData);
+          }
+          renderCatalog();
+        }
+        return;
+      }
 
       if (column || isShowMore) {
         const target = column || isShowMore;
@@ -909,7 +978,7 @@ export function renderIDE(lang, translations) {
                   col.showAll = true;
                 } else {
                   col.showStats = !col.showStats;
-                  if (!col.showStats) col.showAll = false; // Reset on close
+                  if (!col.showStats) col.showAll = false;
                 }
                 return true;
               }
@@ -921,7 +990,7 @@ export function renderIDE(lang, translations) {
         toggleColumn(catalogData);
         renderCatalog();
       }
-    }
+    };
 
     function syncEditor() {
       const file = currentFiles[currentSession.fileName];
@@ -966,13 +1035,18 @@ export function renderIDE(lang, translations) {
           </div>
         </div>
       `;
-      section.appendChild(modal);
+      section.querySelector('#ide-window').appendChild(modal);
 
-      modal.querySelector('.cancel').onclick = () => modal.remove();
-      modal.querySelector('.confirm').onclick = () => {
-        onConfirm();
-        modal.remove();
+      const close = () => { if(modal && modal.parentNode) modal.remove(); window.removeEventListener('keydown', handleKey); };
+      const confirm = () => { onConfirm(); close(); };
+      const handleKey = (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); confirm(); }
+        if (e.key === 'Escape') { e.preventDefault(); close(); }
       };
+
+      modal.querySelector('.cancel').onclick = close;
+      modal.querySelector('.confirm').onclick = confirm;
+      window.addEventListener('keydown', handleKey);
     }
 
     function renameFile(name) {
@@ -1054,7 +1128,7 @@ export function renderIDE(lang, translations) {
     };
     catalogSidebar.querySelector('#btn-toggle-catalog').onclick = () => {
       const isAnyOpen = (list) => {
-        for(const item of list) {
+        for (const item of list) {
           if (item.open) return true;
           if (item.children && isAnyOpen(item.children)) return true;
         }
@@ -1077,8 +1151,7 @@ export function renderIDE(lang, translations) {
       renderCatalog();
     };
 
-    // Drag and Drop Logic with Indicators
-
+    let draggedFile = null;
     fileListContainer.addEventListener('dragstart', (e) => {
       const item = e.target.closest('.ide-file-item');
       if (item) {
@@ -1095,28 +1168,43 @@ export function renderIDE(lang, translations) {
       fileListContainer.querySelectorAll('.ide-file-item').forEach(el => el.classList.remove('drag-over'));
     });
 
-    fileListContainer.addEventListener('dragover', (e) => {
+    explorerSidebar.addEventListener('dragover', (e) => {
       e.preventDefault();
       const item = e.target.closest('.ide-file-item');
       if (item && item.dataset.file.endsWith('/')) {
         item.classList.add('drag-over');
+        explorerSidebar.classList.remove('drag-over-container');
+      } else {
+        explorerSidebar.classList.add('drag-over-container');
+        explorerSidebar.querySelectorAll('.ide-file-item').forEach(el => el.classList.remove('drag-over'));
       }
     });
 
-    fileListContainer.addEventListener('dragleave', (e) => {
+    explorerSidebar.addEventListener('dragleave', (e) => {
       const item = e.target.closest('.ide-file-item');
       if (item) item.classList.remove('drag-over');
+      if (e.target === explorerSidebar || e.target.id === 'sidebar-explorer' || e.target.id === 'ide-file-list') {
+        explorerSidebar.classList.remove('drag-over-container');
+      }
     });
 
-    fileListContainer.addEventListener('drop', (e) => {
+    explorerSidebar.addEventListener('drop', (e) => {
       e.preventDefault();
+      explorerSidebar.classList.remove('drag-over-container');
       const targetItem = e.target.closest('.ide-file-item');
       if (targetItem) targetItem.classList.remove('drag-over');
 
-      if (targetItem && targetItem.dataset.file.endsWith('/') && draggedFile) {
-        const targetFolder = targetItem.dataset.file;
+      if (draggedFile) {
         const fileNameOnly = draggedFile.split('/').pop();
-        const newName = targetFolder + fileNameOnly;
+        let newName;
+
+        if (targetItem && targetItem.dataset.file.endsWith('/')) {
+          // Drop into folder
+          newName = targetItem.dataset.file + fileNameOnly;
+        } else {
+          // Drop to root
+          newName = fileNameOnly;
+        }
 
         if (newName !== draggedFile && !currentFiles[newName]) {
           currentFiles[newName] = currentFiles[draggedFile];
@@ -1154,7 +1242,7 @@ export function renderIDE(lang, translations) {
     }
 
     // Event Bindings
-    section.querySelector('#btn-refresh').onclick = () => renderFileList(fileListContainer);
+    // (Workspace refresh handled above)
 
     section.querySelector('#btn-new-file').onclick = (e) => {
       e.stopPropagation();
@@ -1206,21 +1294,43 @@ export function renderIDE(lang, translations) {
       }, 300);
     };
 
-    // CONSOLIDATED FILE LIST HANDLER
     fileListContainer.onclick = (e) => {
+      const copyBtn = e.target.closest('.workspace-copy-btn');
+      if (copyBtn) {
+        e.stopPropagation();
+        const text = copyBtn.dataset.copy;
+        navigator.clipboard.writeText(text).then(() => {
+          const original = copyBtn.innerHTML;
+          copyBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7ee787" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+          setTimeout(() => copyBtn.innerHTML = original, 1500);
+        });
+        return;
+      }
+
+      const chevron = e.target.closest('.folder-chevron');
+      if (chevron) {
+        e.stopPropagation();
+        const folder = chevron.dataset.folderToggle;
+        if (collapsedFolders.has(folder)) collapsedFolders.delete(folder);
+        else collapsedFolders.add(folder);
+        renderFileList(fileListContainer);
+        return;
+      }
+
       const item = e.target.closest('.ide-file-item');
       if (item && !item.classList.contains('naming-item')) {
         const file = item.dataset.file;
+        const wasSelected = item.classList.contains('active-selection');
         currentSession.selectedFile = file;
-
-        fileListContainer.querySelectorAll('.ide-file-item').forEach(el => el.classList.remove('active-selection'));
-        item.classList.add('active-selection');
 
         if (!file.endsWith('/')) {
           switchFile(file);
         } else {
-          if (collapsedFolders.has(file)) collapsedFolders.delete(file);
-          else collapsedFolders.add(file);
+          // If already selected, toggle expansion (sensitivity fix)
+          if (wasSelected) {
+            if (collapsedFolders.has(file)) collapsedFolders.delete(file);
+            else collapsedFolders.add(file);
+          }
           renderFileList(fileListContainer);
         }
       }
@@ -1320,7 +1430,7 @@ export function renderIDE(lang, translations) {
     restoreFab.style.cursor = 'pointer';
     restoreFab.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
     restoreFab.style.boxShadow = '0 0 20px rgba(153, 255, 255, 0.3)';
-    restoreFab.style.animation = 'rainbowSlide 3s linear infinite';
+    restoreFab.style.animation = 'rainbowSlide 5s linear infinite';
 
     const fabInner = document.createElement('div');
     fabInner.className = 'fab-inner';
@@ -1350,11 +1460,11 @@ export function renderIDE(lang, translations) {
     let isMinimizing = false;
     let isManualExit = false;
     let lastFullscreenWasIDE = false;
-    
+
     // State preservation for when opened via Projects
     let savedPlaygroundState = {
-        wasPlaceholderVisible: true,
-        wasFabVisible: false
+      wasPlaceholderVisible: true,
+      wasFabVisible: false
     };
 
     const scrollToProjectsTop = () => {
@@ -1385,21 +1495,21 @@ export function renderIDE(lang, translations) {
 
     section.querySelector('#win-close').onclick = () => {
       const isFromProject = returnPositionY !== null;
-      
+
       const finalizeClose = () => {
-          if (isFromProject) {
-              scrollToProjectsTop();
-              returnPositionY = null;
-              // Reset section to pristine state
-              ideWindow.style.display = 'none';
-              launchPlaceholder.style.display = 'block';
-              restoreFab.style.display = 'none';
-          } else {
-              scrollToPlaygroundTop();
-              ideWindow.style.display = 'none';
-              launchPlaceholder.style.display = 'block';
-              restoreFab.style.display = 'none';
-          }
+        if (isFromProject) {
+          scrollToProjectsTop();
+          returnPositionY = null;
+          // Reset section to pristine state
+          ideWindow.style.display = 'none';
+          launchPlaceholder.style.display = 'block';
+          restoreFab.style.display = 'none';
+        } else {
+          scrollToPlaygroundTop();
+          ideWindow.style.display = 'none';
+          launchPlaceholder.style.display = 'block';
+          restoreFab.style.display = 'none';
+        }
       };
 
       if (document.fullscreenElement) {
@@ -1472,8 +1582,8 @@ export function renderIDE(lang, translations) {
       if (!document.fullscreenElement) {
         lastFullscreenWasIDE = true;
         ideWindow.requestFullscreen().catch(err => {
-            console.error(err);
-            lastFullscreenWasIDE = false;
+          console.error(err);
+          lastFullscreenWasIDE = false;
         });
       } else {
         if (returnPositionY !== null) {
@@ -1481,15 +1591,15 @@ export function renderIDE(lang, translations) {
           // Just go back to projects, don't hide IDE, don't mess with site below
           isManualExit = true;
           document.exitFullscreen().then(() => {
-              setTimeout(() => {
-                  scrollToProjectsTop();
-                  returnPositionY = null;
-                  isManualExit = false;
-              }, 300);
-          }).catch(() => {
+            setTimeout(() => {
               scrollToProjectsTop();
               returnPositionY = null;
               isManualExit = false;
+            }, 300);
+          }).catch(() => {
+            scrollToProjectsTop();
+            returnPositionY = null;
+            isManualExit = false;
           });
         } else {
           isManualExit = true;
@@ -1519,9 +1629,9 @@ export function renderIDE(lang, translations) {
 
     window.openIDE = (mode = 'explorer', shouldFullscreen = false, returnY = null) => {
       if (returnY !== null) {
-          // Save the current state of the playground section
-          savedPlaygroundState.wasPlaceholderVisible = launchPlaceholder.style.display !== 'none';
-          savedPlaygroundState.wasFabVisible = restoreFab.style.display === 'flex';
+        // Save the current state of the playground section
+        savedPlaygroundState.wasPlaceholderVisible = launchPlaceholder.style.display !== 'none';
+        savedPlaygroundState.wasFabVisible = restoreFab.style.display === 'flex';
       }
 
       const placeholder = section.querySelector('#btn-launch-ide')?.parentElement;
@@ -1563,7 +1673,7 @@ export function renderIDE(lang, translations) {
             setTimeout(scrollToPlaygroundTop, 600);
           }
         }
-        
+
         // Reset the tracker after handling
         lastFullscreenWasIDE = false;
       }
@@ -1571,6 +1681,8 @@ export function renderIDE(lang, translations) {
 
     // Initial Render
     switchFile('pipeline.py');
+    // Lock auto-scrolls for a longer period to ensure stability
+    setTimeout(() => { isInitialLoad = false; }, 500);
   }, 0);
 
   return section;
