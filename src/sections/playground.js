@@ -5,11 +5,34 @@ import * as duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0
 let db = null;
 let conn = null;
 
+// Multi-Terminal State (Global)
+let terminalInstances = [{ id: 1, name: 'sql', content: '' }];
+let activeTerminalId = 1;
+let updateTerminalUIBound = null;
+
+const logToTerminal = (content, type = 'info', append = false) => {
+  const active = terminalInstances.find(t => t.id === activeTerminalId);
+  if (!active) return;
+  
+  let html = content;
+  if (type === 'error') html = `<span class="error">${content}</span>`;
+  if (type === 'success') html = `<span class="success">${content}</span>`;
+  if (type === 'info') {
+    if (content.includes('class="spinner"')) html = content; 
+    else html = `<span class="info">${content}</span>`;
+  }
+
+  if (append) active.content += (active.content ? '<br>' : '') + html;
+  else active.content = html;
+  
+  if (updateTerminalUIBound) updateTerminalUIBound();
+};
+
 async function initDuckDB() {
   if (db) return { db, conn };
-  
+
   const terminal = document.querySelector('.terminal-output');
-  if (terminal) terminal.innerHTML = `<span class="info"><svg class="spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:8px;"><circle cx="12" cy="12" r="10"></circle></svg>Loading Data Warehouse (Parquet Engine)...</span>`;
+  if (terminal) logToTerminal(`<span class="info"><svg class="spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:8px;"><circle cx="12" cy="12" r="10"></circle></svg>Loading Data Warehouse (Parquet Engine)...</span>`);
 
   try {
     const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
@@ -22,29 +45,29 @@ async function initDuckDB() {
     const db_instance = new duckdb.AsyncDuckDB(logger, worker);
     await db_instance.instantiate(bundle.mainModule, bundle.pthreadWorker);
     URL.revokeObjectURL(worker_url);
-    
+
     const connection = await db_instance.connect();
-    
+
     // Register Parquet Files
     const providersUrl = new URL('/data/providers.parquet', window.location.origin).href;
     const usersUrl = new URL('/data/users.parquet', window.location.origin).href;
-    
+
     await db_instance.registerFileURL('providers.parquet', providersUrl, duckdb.DuckDBDataProtocol.HTTP, false);
     await db_instance.registerFileURL('users.parquet', usersUrl, duckdb.DuckDBDataProtocol.HTTP, false);
-    
+
     // Create Tables from Parquet
     await connection.query(`CREATE TABLE providers AS SELECT * FROM 'providers.parquet'`);
     await connection.query(`CREATE TABLE users AS SELECT * FROM 'users.parquet'`);
 
     if (terminal) {
-      terminal.innerHTML = `<span class="info" style="color:#7ee787">✓ Warehouse ready. Data loaded from Parquet.</span><br>`;
+      logToTerminal(`✓ Warehouse ready. Data loaded from Parquet.`, 'success');
     }
 
     db = db_instance;
     conn = connection;
     return { db, conn };
   } catch (err) {
-    if (terminal) terminal.innerHTML += `<span class="error">DuckDB Init Error: ${err.message}</span><br>`;
+    if (terminal) logToTerminal(`DuckDB Init Error: ${err.message}`, 'error', true);
     throw err;
   }
 }
@@ -262,6 +285,31 @@ export function renderIDE(lang, translations) {
         background: var(--ide-accent);
         animation: pulse-ring 1.5s ease-out infinite;
       }
+
+      .terminal-instance-select {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--ide-text);
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        outline: none;
+        cursor: pointer;
+        font-family: var(--ide-font-mono);
+      }
+      .terminal-instance-select:hover { background: rgba(255, 255, 255, 0.1); }
+      .terminal-add-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        color: var(--ide-text);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .terminal-add-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--ide-text-bright); }
     </style>
     <h2 class="rainbow-title-center reveal" style="color: var(--text-primary); font-family: var(--font-mono);">${translations[lang].playground.title}</h2>
     
@@ -355,7 +403,15 @@ export function renderIDE(lang, translations) {
           </div>
           <div class="ide-terminal">
             <div class="terminal-header">
-              <span>${translations[lang].playground.terminal.title}</span>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span>${translations[lang].playground.terminal.title}</span>
+                <div style="display: flex; align-items: center; gap: 4px;">
+                  <select id="terminal-select" class="terminal-instance-select"></select>
+                  <div id="terminal-add" class="terminal-add-btn" title="New Terminal">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </div>
+                </div>
+              </div>
               <div class="terminal-actions">
                 <button id="run-btn" class="run-btn" title="${translations[lang].playground.tooltips.run}" style="padding-top: 2px;">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
@@ -365,9 +421,7 @@ export function renderIDE(lang, translations) {
                 </button>
               </div>
             </div>
-            <div class="terminal-output" id="terminal-output">
-              <span class="info">${translations[lang].playground.terminal.ready}</span>
-            </div>
+            <div class="terminal-output" id="terminal-output"></div>
           </div>
         </div>
       </div>
@@ -391,11 +445,37 @@ export function renderIDE(lang, translations) {
     const catalogTreeContainer = section.querySelector('#catalog-tree');
     const tabsContainer = section.querySelector('#ide-tabs');
     const statusInfo = section.querySelector('#status-info');
-    const ideWindow = section.querySelector('#ide-window');
-    const activityBar = section.querySelector('.ide-activity-bar');
-
     const explorerSidebar = section.querySelector('#sidebar-explorer');
     const catalogSidebar = section.querySelector('#sidebar-catalog');
+    const terminalSelect = section.querySelector('#terminal-select');
+    const terminalAdd = section.querySelector('#terminal-add');
+
+
+    function updateTerminalUI() {
+      if (!terminalSelect) return;
+      terminalSelect.innerHTML = terminalInstances.map(t => 
+        `<option value="${t.id}" ${t.id === activeTerminalId ? 'selected' : ''}>${t.id}: ${t.name}</option>`
+      ).join('');
+      
+      const active = terminalInstances.find(t => t.id === activeTerminalId);
+      terminal.innerHTML = active.content || '';
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+    updateTerminalUIBound = updateTerminalUI;
+
+    terminalSelect.onchange = (e) => {
+      activeTerminalId = parseInt(e.target.value);
+      updateTerminalUI();
+    };
+
+    terminalAdd.onclick = () => {
+      const newId = terminalInstances.length > 0 ? Math.max(...terminalInstances.map(t => t.id)) + 1 : 1;
+      terminalInstances.push({ id: newId, name: 'bash', content: '' });
+      activeTerminalId = newId;
+      updateTerminalUI();
+    };
+
+    updateTerminalUI();
 
     let pyodide = null;
 
@@ -418,14 +498,14 @@ export function renderIDE(lang, translations) {
           const aParts = a.split('/');
           const bParts = b.split('/');
           const minLen = Math.min(aParts.length, bParts.length);
-          
+
           for (let i = 0; i < minLen; i++) {
             if (aParts[i] !== bParts[i]) {
               const aIsLast = i === aParts.length - 1;
               const bIsLast = i === bParts.length - 1;
               const aIsFolder = !aIsLast || a.endsWith('/');
               const bIsFolder = !bIsLast || b.endsWith('/');
-              
+
               if (aIsFolder !== bIsFolder) return bIsFolder ? 1 : -1;
               return aParts[i].localeCompare(bParts[i]);
             }
@@ -672,15 +752,15 @@ export function renderIDE(lang, translations) {
                       </thead>
                       <tbody>
                         ${(() => {
-                          const previews = catalogMetadata.previews || {};
-                          const rows = previews[item.name] || [];
-                          if (rows.length === 0) return `<tr><td colspan="${item.columns.length}">No data samples available in MotherDuck</td></tr>`;
-                          return rows.map((row, r) => `
+              const previews = catalogMetadata.previews || {};
+              const rows = previews[item.name] || [];
+              if (rows.length === 0) return `<tr><td colspan="${item.columns.length}">No data samples available in MotherDuck</td></tr>`;
+              return rows.map((row, r) => `
                             <tr>
                               ${item.columns ? item.columns.map(c => `<td>${row[c.name] !== undefined ? row[c.name] : '...'}</td>`).join('') : ''}
                             </tr>
                           `).join('');
-                        })()}
+            })()}
                       </tbody>
                     </table>
                   </div>
@@ -754,7 +834,7 @@ export function renderIDE(lang, translations) {
       // Flowchart Logic
       const flowContainer = explorerView.querySelector('.catalog-flow-container');
       const flowSvg = explorerView.querySelector('#flow-svg');
-      
+
       const drawLines = () => {
         if (!flowContainer || !flowSvg) return;
         const parent = flowContainer.querySelector('.flow-node[data-level="0"]');
@@ -894,10 +974,10 @@ export function renderIDE(lang, translations) {
                           <span class="count">${col.distinct}</span>
                         </div>
                          <div class="unique-values-list">
-                          ${[...col.samples].sort((a,b) => a.toString().localeCompare(b.toString()))
-                            .slice(0, col.showAll ? 100 : 8).map(s => {
-                              return `<div class="value-item" title="${s}"><span>${s}</span></div>`;
-                          }).join('')}
+                          ${[...col.samples].sort((a, b) => a.toString().localeCompare(b.toString()))
+                .slice(0, col.showAll ? 100 : 8).map(s => {
+                  return `<div class="value-item" title="${s}"><span>${s}</span></div>`;
+                }).join('')}
                          </div>
                           ${!col.showAll && col.samples.length > 8 ? `
                             <div class="value-item show-more-btn" 
@@ -1173,13 +1253,13 @@ export function renderIDE(lang, translations) {
           }
           currentSession.selectedFiles = currentSession.selectedFiles.filter(f => f !== p);
         });
-        
+
         if (!currentSession.fileName && openTabs.length > 0) {
-           switchFile(openTabs[0]);
+          switchFile(openTabs[0]);
         }
-        
+
         if (currentSession.lastSelectedFile && !currentFiles[currentSession.lastSelectedFile]) {
-           currentSession.lastSelectedFile = currentSession.selectedFiles[0] || null;
+          currentSession.lastSelectedFile = currentSession.selectedFiles[0] || null;
         }
 
         renderFileList(fileListContainer);
@@ -1254,6 +1334,25 @@ export function renderIDE(lang, translations) {
         log.innerHTML = `<span style="opacity:0.6">[workspace]</span> Local session state persisted.`;
         terminal.appendChild(log);
         terminal.scrollTop = terminal.scrollHeight;
+      }
+
+      // Ctrl + ` : Toggle Terminal visibility
+      if (e.ctrlKey && (e.key === '`')) {
+        e.preventDefault();
+        const isCollapsed = ideTerminal.offsetHeight < 60; // Just header height
+        if (isCollapsed) {
+          ideTerminal.style.height = '200px';
+        } else {
+          ideTerminal.style.height = '36px';
+        }
+      }
+
+      // Ctrl + Shift + ` : Open IDE Fullscreen
+      if (e.ctrlKey && e.shiftKey && (e.key === '~' || e.key === '`')) {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          section.querySelector('#win-max').click();
+        }
       }
 
       // Ctrl + B: Toggle Sidebar
@@ -1366,10 +1465,10 @@ export function renderIDE(lang, translations) {
           currentSession.lastSelectedFile = file;
           renderFileList(fileListContainer);
         }
-        
+
         draggedFiles = [...currentSession.selectedFiles];
         e.dataTransfer.setData('text/plain', JSON.stringify(draggedFiles));
-        
+
         // Dim all dragged items
         fileListContainer.querySelectorAll('.ide-file-item').forEach(el => {
           if (currentSession.selectedFiles.includes(el.dataset.file)) {
@@ -1414,19 +1513,19 @@ export function renderIDE(lang, translations) {
       if (draggedFiles.length > 0) {
         const targetDir = (targetItem && targetItem.dataset.file.endsWith('/')) ? targetItem.dataset.file : '';
         let movedCount = 0;
-        
+
         // Move each selected file/folder
         // Sort by path length to ensure we don't move a child before its parent
         const sorted = [...draggedFiles].sort((a, b) => a.length - b.length);
-        
+
         sorted.forEach(oldPath => {
           // If the item doesn't exist anymore, it might have been moved as part of a parent folder
           if (!currentFiles[oldPath]) return;
 
-          const fileNameOnly = oldPath.endsWith('/') 
-            ? oldPath.split('/').slice(-2, -1)[0] + '/' 
+          const fileNameOnly = oldPath.endsWith('/')
+            ? oldPath.split('/').slice(-2, -1)[0] + '/'
             : oldPath.split('/').pop();
-          
+
           let newName = targetDir + fileNameOnly;
           if (newName === oldPath) return;
 
@@ -1437,19 +1536,19 @@ export function renderIDE(lang, translations) {
 
           // Recursive move logic for folders (flat map style)
           const allChildren = Object.keys(currentFiles).filter(p => p.startsWith(oldPath));
-          
+
           allChildren.forEach(childOldPath => {
             const childNewPath = childOldPath.replace(oldPath, newName);
             currentFiles[childNewPath] = currentFiles[childOldPath];
             delete currentFiles[childOldPath];
-            
+
             // Sync UI states
             if (currentSession.fileName === childOldPath) currentSession.fileName = childNewPath;
             if (currentSession.lastSelectedFile === childOldPath) currentSession.lastSelectedFile = childNewPath;
-            
+
             const tabIdx = openTabs.indexOf(childOldPath);
             if (tabIdx !== -1) openTabs[tabIdx] = childNewPath;
-            
+
             movedCount++;
           });
         });
@@ -1458,7 +1557,7 @@ export function renderIDE(lang, translations) {
           currentSession.selectedFiles = []; // Clear selection to avoid dangling references
           renderFileList(fileListContainer);
           renderTabs(tabsContainer);
-          
+
           // Log to terminal
           const log = document.createElement('div');
           log.className = 'info';
@@ -1524,7 +1623,7 @@ export function renderIDE(lang, translations) {
 
     const handleGlobalClick = (e) => {
       if (currentSession.selectedFiles.length === 0) return;
-      
+
       const isFileItem = e.target.closest('.ide-file-item');
       const isSidebarAction = e.target.closest('.sidebar-action-btn, .badge-dot, .naming-input, .workspace-badge');
       const isTab = e.target.closest('.ide-tab');
@@ -1602,7 +1701,7 @@ export function renderIDE(lang, translations) {
       if (item && !item.classList.contains('naming-item')) {
         const file = item.dataset.file;
         const wasSelected = currentSession.selectedFiles.includes(file);
-        
+
         // Multi-selection logic
         if (e.ctrlKey || e.metaKey) {
           if (currentSession.selectedFiles.includes(file)) {
@@ -1670,10 +1769,10 @@ export function renderIDE(lang, translations) {
       // Handle SQL execution
       if (fileName.endsWith('.sql')) {
         terminal.innerHTML = `<span class="info"><svg class="spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:8px;"><circle cx="12" cy="12" r="10"></circle></svg>Connecting to MotherDuck...</span>`;
-        
+
         setTimeout(() => {
           terminal.innerHTML = `<span class="info" style="color:#7ee787">[catalog] Executing query on MotherDuck cluster...</span><br>`;
-          
+
           setTimeout(async () => {
             try {
               // 1. Strip MotherDuck-style namespaces (e.g. warehouse.gold.users -> users)
@@ -1690,7 +1789,7 @@ export function renderIDE(lang, translations) {
               // Real SQL execution via DuckDB-WASM on the real warehouse.db
               const duck = await initDuckDB();
               const result = await duck.conn.query(cleanContent);
-              
+
               // Handle results: DuckDB returns an Apache Arrow table, convert to array
               const rows = result.toArray().map(row => {
                 const obj = {};
@@ -1704,7 +1803,7 @@ export function renderIDE(lang, translations) {
               });
 
               if (rows.length === 0) {
-                terminal.innerHTML += `<span class="info" style="opacity:0.6">Query executed successfully. No rows returned.</span>`;
+                logToTerminal(`Query executed successfully. No rows returned.`, 'info', true);
                 return;
               }
 
@@ -1712,7 +1811,7 @@ export function renderIDE(lang, translations) {
 
               let html = `<div class="sql-result-wrapper" style="margin-top:10px;">`;
               html += `<div class="sql-result-meta">Query executed successfully. ${rows.length} rows returned.</div>`;
-              
+
               html += `<div style="overflow-x:auto; margin-top:8px; max-height:250px; border:1px solid var(--ide-border); border-radius:8px;">
                 <table class="preview-table" style="width:100%; border-collapse:collapse;">
                   <thead style="position:sticky; top:0; background:var(--ide-header); z-index:10;">
@@ -1720,30 +1819,29 @@ export function renderIDE(lang, translations) {
                   </thead>
                   <tbody>
                     ${rows.slice(0, 50).map(row => `<tr>${columns.map(c => {
-                        let val = row[c];
-                        let displayVal = val;
-                        if (val === null || val === undefined) displayVal = '<span style="opacity:0.3">NULL</span>';
-                        else if (typeof val === 'number') {
-                          displayVal = !Number.isInteger(val) ? 
-                            val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) : 
-                            val.toLocaleString('en-US');
-                        } else if (typeof val === 'object' && val.toString) displayVal = val.toString();
-                        return `<td style="padding:8px 10px; font-size:12px; opacity:0.8; font-family:var(--ide-font-mono);">${displayVal}</td>`;
-                      }).join('')}</tr>`).join('')}
+                let val = row[c];
+                let displayVal = val;
+                if (val === null || val === undefined) displayVal = '<span style="opacity:0.3">NULL</span>';
+                else if (typeof val === 'number') {
+                  displayVal = !Number.isInteger(val) ?
+                    val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) :
+                    val.toLocaleString('en-US');
+                } else if (typeof val === 'object' && val.toString) displayVal = val.toString();
+                return `<td style="padding:8px 10px; font-size:12px; opacity:0.8; font-family:var(--ide-font-mono);">${displayVal}</td>`;
+              }).join('')}</tr>`).join('')}
                   </tbody>
                 </table>
               </div>`;
-              
+
               if (rows.length > 50) {
                 html += `<div style="font-size:10px; opacity:0.5; margin-top:5px; text-align:center;">Showing first 50 rows only.</div>`;
               }
-              
+
               html += `</div>`;
-              terminal.innerHTML += html;
+              logToTerminal(html, null, true);
             } catch (err) {
-              terminal.innerHTML += `<span class="error">SQL Error: ${err.message}</span>`;
+              logToTerminal(`SQL Error: ${err.message}`, 'error', true);
             }
-            terminal.scrollTop = terminal.scrollHeight;
           }, 800);
         }, 500);
         return;
@@ -1766,14 +1864,14 @@ export function renderIDE(lang, translations) {
         runBtn.disabled = false;
         runBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
       }
-      terminal.innerHTML = `<span class="info">${translations[lang].playground.terminal.running}</span>`;
+      logToTerminal(`${translations[lang].playground.terminal.running}`, 'info');
       try {
         pyodide.runPython(`import sys\nimport io\nsys.stdout = io.StringIO()`);
         await pyodide.runPythonAsync(content);
         const stdout = pyodide.runPython("sys.stdout.getvalue()");
-        terminal.innerHTML = stdout ? stdout.replace(/\n/g, '<br>') : `<span class="success">${translations[lang].playground.terminal.executedSuccess}</span>`;
+        logToTerminal(stdout ? stdout.replace(/\n/g, '<br>') : `${translations[lang].playground.terminal.executedSuccess}`, stdout ? 'info' : 'success');
       } catch (err) {
-        terminal.innerHTML = `<span class="error">${err.message}</span>`;
+        logToTerminal(`${err.message}`, 'error');
       }
     };
 
@@ -1873,23 +1971,21 @@ export function renderIDE(lang, translations) {
       wasFabVisible: false
     };
 
-    const scrollToProjectsTop = (instant = false) => {
-      if (returnPositionY !== null) {
-        window.scrollTo({ top: returnPositionY, behavior: instant ? 'auto' : 'smooth' });
-        return;
-      }
+    const scrollToProjectsTop = () => {
       const projectsSec = document.getElementById('projects');
       if (projectsSec) {
         const targetY = projectsSec.offsetTop - 20;
-        window.scrollTo({ top: targetY, behavior: instant ? 'auto' : 'smooth' });
+        window.scrollTo({ top: targetY, behavior: 'smooth' });
       }
     };
 
     section.id = 'playground';
 
-    // This one is now a wrapper for scrollToIDE for consistency
     const scrollToPlaygroundTop = () => {
-      scrollToIDE(300);
+      const el = document.getElementById('playground');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
     };
 
     const handleReturnNavigation = () => {
@@ -1994,22 +2090,45 @@ export function renderIDE(lang, translations) {
           lastFullscreenWasIDE = false;
         });
       } else {
-        // Always return to Playground view, regardless of where we came from
-        isManualExit = true;
-        document.exitFullscreen().then(() => {
-          scrollToIDE(300);
-          returnPositionY = null;
-          setTimeout(() => { isManualExit = false; }, 400);
-        }).catch(() => {
-          scrollToIDE(100);
-          returnPositionY = null;
-          isManualExit = false;
-        });
+        if (returnPositionY !== null) {
+          // Erro 3 Fix: Green button from project = Soft Exit
+          // Just go back to projects, don't hide IDE, don't mess with site below
+          isManualExit = true;
+          document.exitFullscreen().then(() => {
+            setTimeout(() => {
+              scrollToProjectsTop();
+              returnPositionY = null;
+              isManualExit = false;
+            }, 300);
+          }).catch(() => {
+            scrollToProjectsTop();
+            returnPositionY = null;
+            isManualExit = false;
+          });
+        } else {
+          isManualExit = true;
+          document.exitFullscreen()
+            .then(() => {
+              setTimeout(scrollToPlaygroundTop, 300);
+              setTimeout(scrollToPlaygroundTop, 600);
+              setTimeout(() => { isManualExit = false; }, 700);
+            })
+            .catch(() => {
+              scrollToPlaygroundTop();
+              isManualExit = false;
+            });
+        }
       }
     };
 
 
-    clearBtn.onclick = () => { terminal.innerHTML = ''; };
+    clearBtn.onclick = () => { 
+      const active = terminalInstances.find(t => t.id === activeTerminalId);
+      if (active) {
+        active.content = '';
+        updateTerminalUI();
+      }
+    };
 
     window.openIDE = (mode = 'explorer', shouldFullscreen = false, returnY = null) => {
       if (returnY !== null) {
@@ -2048,9 +2167,14 @@ export function renderIDE(lang, translations) {
         if (!lastFullscreenWasIDE) return;
 
         if (!isManualExit) {
-          // ESC Key / Browser Exit
-          scrollToIDE(300);
-          returnPositionY = null;
+          if (returnPositionY !== null) {
+            scrollToProjectsTop();
+            returnPositionY = null;
+          } else if (ideWindow.style.display !== 'none' || restoreFab.style.display === 'flex') {
+            // Stabilize scroll after FS transition
+            setTimeout(scrollToPlaygroundTop, 300);
+            setTimeout(scrollToPlaygroundTop, 600);
+          }
         }
 
         // Reset the tracker after handling
@@ -2068,42 +2192,42 @@ export function renderIDE(lang, translations) {
     setTimeout(() => { isInitialLoad = false; }, 500);
   }, 0);
 
-    // Terminal Resizer Logic
-    const resizer = section.querySelector('#terminal-resizer');
-    const terminalEl = section.querySelector('.ide-terminal');
-    const editorMainEl = section.querySelector('.ide-editor-main');
-    let isResizing = false;
+  // Terminal Resizer Logic
+  const resizer = section.querySelector('#terminal-resizer');
+  const terminalEl = section.querySelector('.ide-terminal');
+  const editorMainEl = section.querySelector('.ide-editor-main');
+  let isResizing = false;
 
-    resizer.onmousedown = (e) => {
-      isResizing = true;
-      document.body.style.cursor = 'row-resize';
-      document.body.style.userSelect = 'none';
-      
-      const onMouseMove = (e) => {
-        if (!isResizing) return;
-        const containerRect = section.querySelector('.ide-editor-container').getBoundingClientRect();
-        const relativeY = e.clientY - containerRect.top;
-        const totalHeight = containerRect.height;
-        let terminalHeight = totalHeight - relativeY - 3;
-        
-        if (terminalHeight > 60 && terminalHeight < totalHeight - 150) {
-          terminalEl.style.height = `${terminalHeight}px`;
-          terminalEl.style.flex = 'none';
-          editorMainEl.style.flex = '1';
-        }
-      };
+  resizer.onmousedown = (e) => {
+    isResizing = true;
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
 
-      const onMouseUp = () => {
-        isResizing = false;
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-      };
+    const onMouseMove = (e) => {
+      if (!isResizing) return;
+      const containerRect = section.querySelector('.ide-editor-container').getBoundingClientRect();
+      const relativeY = e.clientY - containerRect.top;
+      const totalHeight = containerRect.height;
+      let terminalHeight = totalHeight - relativeY - 3;
 
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
+      if (terminalHeight > 60 && terminalHeight < totalHeight - 150) {
+        terminalEl.style.height = `${terminalHeight}px`;
+        terminalEl.style.flex = 'none';
+        editorMainEl.style.flex = '1';
+      }
     };
 
-    return section;
-  }
+    const onMouseUp = () => {
+      isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
+
+  return section;
+}
