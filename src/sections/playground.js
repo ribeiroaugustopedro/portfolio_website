@@ -296,21 +296,22 @@ export function renderIDE(lang, translations) {
         border: 1px solid var(--ide-border);
         color: var(--ide-text);
         font-size: 11px;
-        padding: 4px 28px 4px 10px;
-        border-radius: 8px;
+        padding: 2px 28px 2px 8px;
+        border-radius: 4px;
         cursor: pointer;
         font-family: var(--ide-font-mono);
         position: relative;
         transition: all 0.2s;
-        min-width: 100px;
+        min-width: 90px;
         display: flex;
         align-items: center;
         user-select: none;
+        height: 22px;
       }
       .custom-select-trigger::after {
         content: "";
         position: absolute;
-        right: 10px;
+        right: 8px;
         top: 50%;
         transform: translateY(-50%);
         width: 10px;
@@ -324,24 +325,23 @@ export function renderIDE(lang, translations) {
       }
       .custom-select-trigger:hover { 
         background-color: rgba(255, 255, 255, 0.1); 
-        border-color: rgba(255, 255, 255, 0.3);
       }
       [data-theme="light"] .custom-select-trigger { background-color: rgba(0, 0, 0, 0.03); }
       [data-theme="light"] .custom-select-trigger:hover { background-color: rgba(0, 0, 0, 0.06); }
 
       .custom-select-options {
         position: absolute;
-        bottom: calc(100% + 8px);
+        top: calc(100% + 4px);
         left: 0;
-        right: 0;
+        min-width: 120px;
         background: var(--ide-sidebar);
         border: 1px solid var(--ide-border);
-        border-radius: 8px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         display: none;
         z-index: 1001;
         overflow: hidden;
-        padding: 4px;
+        padding: 2px;
       }
       .custom-select-options.active { display: block; }
       
@@ -360,46 +360,11 @@ export function renderIDE(lang, translations) {
         color: var(--ide-text-bright);
       }
       .custom-select-option.selected {
-        background: rgba(255, 255, 255, 0.1);
+        background: linear-gradient(to right, rgba(153, 255, 255, 0.12), rgba(255, 153, 255, 0.12));
         color: var(--ide-text-bright);
         font-weight: bold;
       }
 
-      .custom-select-options {
-        position: absolute;
-        bottom: calc(100% + 8px);
-        left: 0;
-        right: 0;
-        background: var(--ide-sidebar);
-        border: 1px solid var(--ide-border);
-        border-radius: 8px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        display: none;
-        z-index: 1001;
-        overflow: hidden;
-        padding: 4px;
-      }
-      .custom-select-options.active { display: block; }
-      
-      .custom-select-option {
-        padding: 6px 10px;
-        font-size: 11px;
-        color: var(--ide-text);
-        cursor: pointer;
-        border-radius: 4px;
-        transition: all 0.2s;
-        font-family: var(--ide-font-mono);
-      }
-      .custom-select-option:hover {
-        background: rgba(255, 255, 255, 0.08);
-        animation: rainbowSimultaneous 4s linear infinite;
-        color: var(--ide-text-bright);
-      }
-      .custom-select-option.selected {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--ide-text-bright);
-        font-weight: bold;
-      }
       .terminal-add-btn {
         display: flex;
         align-items: center;
@@ -585,6 +550,14 @@ export function renderIDE(lang, translations) {
           e.stopPropagation();
           activeTerminalId = parseInt(opt.dataset.id);
           terminalSelectOptions.classList.remove('active');
+          
+          // Re-render immediate update
+          const newActive = terminalInstances.find(t => t.id === activeTerminalId);
+          if (newActive) {
+            terminal.innerHTML = newActive.content || '';
+            terminal.scrollTop = terminal.scrollHeight;
+          }
+          
           updateTerminalUI();
         };
       });
