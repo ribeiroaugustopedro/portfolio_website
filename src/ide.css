@@ -507,7 +507,7 @@
 .ide-terminal {
   height: 200px;
   background: var(--ide-terminal);
-  border: none;
+  border-top: 1px solid var(--ide-border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -1988,14 +1988,18 @@
 }
 
 .ide-terminal-resizer:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   opacity: 1;
+}
+
+[data-theme="light"] .ide-terminal-resizer:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .resizer-bar {
   width: 30px;
   height: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--ide-border);
   border-radius: 1px;
 }
 
