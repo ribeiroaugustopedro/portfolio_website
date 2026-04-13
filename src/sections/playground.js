@@ -408,6 +408,12 @@ export function renderIDE(lang, translations) {
         border-bottom-left-radius: 8px;
         border-bottom-right-radius: 8px;
         user-select: none;
+        transition: all 0.3s;
+      }
+      [data-theme="dark"] .ide-status-bar {
+        background: linear-gradient(-45deg, #1d2b2b, #2b1d22, #2b2b1d, #1d212b);
+        background-size: 400% 400%;
+        color: rgba(255, 255, 255, 0.8);
       }
       .status-left, .status-right { display: flex; align-items: center; gap: 16px; }
       .status-item { display: flex; align-items: center; gap: 4px; }
@@ -547,10 +553,10 @@ export function renderIDE(lang, translations) {
             <span>main</span>
           </div>
           <div class="status-item" title="Python Runtime">
-            <span>Python: Pyodide 0.23.4</span>
+            <span>Python <span style="opacity: 0.6;">Pyodide 0.23.4</span></span>
           </div>
           <div class="status-item" title="SQL Engine">
-             <span>SQL: DuckDB WASM</span>
+             <span>SQL <span style="opacity: 0.6;">DuckDB WASM</span></span>
           </div>
         </div>
         <div class="status-right" id="status-info">
