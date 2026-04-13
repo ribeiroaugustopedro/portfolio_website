@@ -445,6 +445,8 @@ export function renderIDE(lang, translations) {
     const catalogTreeContainer = section.querySelector('#catalog-tree');
     const tabsContainer = section.querySelector('#ide-tabs');
     const statusInfo = section.querySelector('#status-info');
+    const ideWindow = section.querySelector('#ide-window');
+    const activityBar = section.querySelector('.ide-activity-bar');
     const explorerSidebar = section.querySelector('#sidebar-explorer');
     const catalogSidebar = section.querySelector('#sidebar-catalog');
     const terminalSelect = section.querySelector('#terminal-select');
