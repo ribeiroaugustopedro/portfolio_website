@@ -741,7 +741,7 @@ export function renderIDE(lang, translations) {
           if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); input.onblur = null; confirmNaming(); }
           if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); input.onblur = null; cancelNaming(); }
         };
-        input.onblur = () => { if (currentSession.namingNew) confirmNaming(); };
+        input.onblur = () => { if (currentSession.namingNew) cancelNaming(); };
       }
     }
 
