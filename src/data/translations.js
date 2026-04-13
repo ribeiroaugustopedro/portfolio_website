@@ -104,11 +104,6 @@ export const translations = {
                     degree: 'Engenharia de Produção',
                     school: 'IBMR',
                     period: '2020 – 2024'
-                },
-                {
-                    degree: 'Engenharia de Produção',
-                    school: 'IBMEC',
-                    period: '2016 – 2018'
                 }
             ],
             skillCategories: [
@@ -296,11 +291,6 @@ A barra lateral de **Catalog** oferece uma visão técnica do Warehouse:
                     degree: 'Production Engineering',
                     school: 'IBMR',
                     period: '2020 – 2024'
-                },
-                {
-                    degree: 'Production Engineering',
-                    school: 'IBMEC',
-                    period: '2016 – 2018'
                 }
             ],
             skillCategories: [
