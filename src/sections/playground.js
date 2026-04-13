@@ -2053,7 +2053,6 @@ export function renderIDE(lang, translations) {
               logToTerminal(`SQL Error: ${err.message}`, 'error', true);
             }
           }, 800);
-        }, 300);
         return;
       }
 
