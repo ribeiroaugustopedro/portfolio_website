@@ -10,6 +10,7 @@ export const techColors = {
   // MotherDuck & DuckDB (Beige/Yellow variants)
   'DuckDB': '#FFEE58',     // Lemon Yellow
   'MotherDuck': '#FDE68A', // Beige-Yellow
+  'DuckDB WASM': '#e435f0', // Vivid Orchid
 
   // Diverse secondary colors to avoid repetition
   'AWS': '#FF9900',        // AWS Orange
