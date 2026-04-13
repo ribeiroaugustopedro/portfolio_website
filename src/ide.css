@@ -379,23 +379,29 @@
 }
 
 .naming-item {
-  background: rgba(0, 122, 204, 0.1) !important;
-  border: 1px solid var(--ide-accent);
-  padding: 4px 15px !important;
-  margin: 1px 12px;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid transparent;
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  animation: rainbowSyncBg 10s linear infinite !important;
+  padding: 6px 15px !important;
+  margin: 4px 12px;
   border-radius: 8px;
+  display: flex !important;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .naming-input {
-  background: var(--ide-bg);
-  border: 1px solid var(--ide-border);
+  background: transparent;
+  border: none;
   color: var(--ide-text-bright);
   font-size: 13px;
   font-family: var(--font-mono);
   outline: none;
   width: 100%;
-  margin-left: 8px;
-  padding: 2px 4px;
+  margin-left: 10px;
+  padding: 0;
 }
 
 .ide-editor-wrapper {
@@ -583,8 +589,48 @@
 }
 
 [data-theme="light"] .token.boolean {
-  color: #0550ae !important;
-  font-weight: bold !important;
+  color: #cf222e !important;
+}
+
+/* Dark Mode Syntax (Default) */
+.token.punctuation,
+.token.operator {
+  color: #cccccc;
+}
+
+.token.keyword {
+  color: #569cd6; /* Blue for keywords */
+  font-weight: bold;
+}
+
+.token.sql-keyword, 
+.language-sql .token.keyword {
+  color: #ff7b72 !important; /* Reddish/Pink for SQL Keywords */
+}
+
+.token.string {
+  color: #ce9178;
+}
+
+.token.function {
+  color: #dcdcaa; /* Yellowish */
+}
+
+.language-sql .token.function {
+  color: #d2a8ff !important; /* Purple/Pink for SQL Functions like COUNT, etc. */
+}
+
+.token.comment {
+  color: #6a9955;
+  font-style: italic;
+}
+
+.token.number {
+  color: #b5cea8;
+}
+
+.token.boolean {
+  color: #569cd6;
 }
 
 [data-theme="light"] .line-numbers-sidebar {
@@ -1138,18 +1184,19 @@
 
 .stats-header .count {
   font-size: 11px;
-  color: #7ee787;
+  color: #b0b0b0;
   font-family: var(--font-mono);
 }
 
 .unique-values-list {
-  max-height: 140px;
+  max-height: 160px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin: 12px 0 8px 0;
+  gap: 6px;
+  margin: 12px 0 12px 0;
   padding-right: 6px;
+  padding-bottom: 20px;
 }
 
 .unique-values-list::-webkit-scrollbar {
@@ -1170,12 +1217,48 @@
 }
 
 .value-item {
-  font-size: 10px;
+  width: 100%;
+  height: 26px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  font-size: 11px;
   color: var(--ide-text);
-  padding: 4px 6px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, height 0.2s;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.value-item span {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.value-item:hover {
+  height: auto;
+  min-height: 26px;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.4);
+  padding: 6px 10px;
+  z-index: 10;
+}
+
+.value-item:hover span {
+  white-space: normal;
+  overflow: visible;
+  text-align: center;
+  word-break: break-word;
 }
 
 .value-item.muted {
@@ -1184,13 +1267,13 @@
 }
 
 .show-more-btn {
-  background: transparent !important;
-  color: var(--text-secondary) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  justify-content: center !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #b0b0b0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   cursor: pointer;
-  text-align: center;
-  font-weight: bold;
   letter-spacing: 2px;
+  font-weight: bold;
   transition: all 0.2s;
   padding: 2px 0 !important;
 }
@@ -1202,12 +1285,12 @@
 }
 
 .stats-footer {
-  font-size: 9px;
-  color: var(--text-secondary);
-  opacity: 0.6;
+  font-size: 10px;
+  color: #cccccc;
   text-align: right;
   font-style: italic;
-  margin-top: 4px;
+  font-family: var(--font-mono);
+  opacity: 0.9;
 }
 
 @media (max-width: 768px) {

@@ -817,10 +817,16 @@ export function renderIDE(lang, translations) {
                           <span class="label">UNIQUE VALUES</span>
                           <span class="count">${col.distinct}</span>
                         </div>
-                        <div class="unique-values-list">
-                          ${col.samples.slice(0, col.showAll ? 100 : 8).map(s => `<div class="value-item"><span>${s}</span></div>`).join('')}
+                         <div class="unique-values-list">
+                          ${[...col.samples].sort((a,b) => a.toString().localeCompare(b.toString()))
+                            .slice(0, col.showAll ? 100 : 8).map(s => {
+                              return `<div class="value-item" title="${s}"><span>${s}</span></div>`;
+                          }).join('')}
+                         </div>
                           ${!col.showAll && col.samples.length > 8 ? `
-                            <div class="value-item show-more-btn" data-column-name="${col.name}" data-table-name="${node.name}" title="Show more values">
+                            <div class="value-item show-more-btn" 
+                                 data-column-name="${col.name}" 
+                                 data-table-name="${node.name}">
                               ...
                             </div>
                           ` : ''}
@@ -1059,12 +1065,17 @@ export function renderIDE(lang, translations) {
     };
 
     function syncEditor() {
-      const file = currentFiles[currentSession.fileName];
+      const fileName = currentSession.fileName;
+      const file = currentFiles[fileName];
       if (!file) return;
+
+      const ext = fileName.split('.').pop();
+      const langMap = { py: 'python', sql: 'sql', js: 'javascript', html: 'markup', css: 'css', md: 'markdown', json: 'json' };
+      const lang = langMap[ext] || file.language || 'text';
 
       const code = textarea.value;
       file.content = code;
-      preCode.className = `language-${file.language}`;
+      preCode.className = `language-${lang}`;
       preCode.textContent = code;
       if (window.Prism) window.Prism.highlightElement(preCode);
 
@@ -1301,7 +1312,7 @@ export function renderIDE(lang, translations) {
 
       textarea.value = file.content;
       statusInfo.innerHTML = `<span>UTF-8</span><span></span>`;
-      runBtn.style.display = name.endsWith('.py') ? 'block' : 'none';
+      runBtn.style.display = 'block';
 
       renderFileList(fileListContainer);
       renderTabs(tabsContainer);
@@ -1403,6 +1414,19 @@ export function renderIDE(lang, translations) {
       }
     };
 
+    textarea.onkeydown = (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+
+        // Insert 4 spaces
+        textarea.value = textarea.value.substring(0, start) + "    " + textarea.value.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + 4;
+        syncEditor();
+      }
+    };
+
     textarea.oninput = syncEditor;
     textarea.onscroll = () => {
       section.querySelector('#ide-pre').scrollTop = textarea.scrollTop;
@@ -1411,6 +1435,79 @@ export function renderIDE(lang, translations) {
     };
 
     runBtn.onclick = async () => {
+      const fileName = currentSession.fileName || '';
+      const content = textarea.value.trim();
+
+      if (!content) {
+        terminal.innerHTML = `<span class="error">Empty file. Nothing to run.</span>`;
+        return;
+      }
+
+      // Handle SQL execution
+      if (fileName.endsWith('.sql')) {
+        terminal.innerHTML = `<span class="info"><svg class="spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:8px;"><circle cx="12" cy="12" r="10"></circle></svg>Connecting to MotherDuck...</span>`;
+        
+        setTimeout(() => {
+          terminal.innerHTML = `<span class="info" style="color:#7ee787">[catalog] Executing query on MotherDuck cluster...</span><br>`;
+          
+          setTimeout(() => {
+            // Simple SQL parsing
+            const tableMatch = content.match(/FROM\s+([a-zA-Z0-9_]+\.)*([a-zA-Z0-9_]+)/i);
+            const tableName = tableMatch ? tableMatch[2] : null;
+            const isAggregation = /COUNT\(|SUM\(|AVG\(|GROUP\s+BY/i.test(content);
+            const isWindow = /OVER\s*\(/i.test(content);
+
+            if (!tableName) {
+              terminal.innerHTML += `<span class="error">SQL Error: No table source found in query.</span>`;
+              return;
+            }
+
+            const previews = catalogMetadata.previews || {};
+            const tableData = previews[tableName];
+
+            if (!tableData) {
+              terminal.innerHTML += `<span class="error">SQL Error: Table '<b>${tableName}</b>' not found in catalog.</span>`;
+              return;
+            }
+
+            // High-fidelity Result Table
+            let html = `<div class="sql-result-wrapper" style="margin-top:10px;">`;
+            html += `<div class="sql-result-meta">Query executed successfully. ${tableData.length} rows returned.</div>`;
+            
+            if (isAggregation || isWindow) {
+               // Advanced simulation: Show a "Calculated Result"
+               html += `<div class="sql-result-calc" style="padding:15px; background:rgba(126,231,135,0.05); border:1px solid rgba(126,231,135,0.2); border-radius:8px; margin-top:8px;">
+                 <div style="font-size:11px; opacity:0.6; margin-bottom:10px; text-transform:uppercase;">Aggregation Result (Sample)</div>
+                 <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                   <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><th style="text-align:left; padding:8px;">${content.match(/SELECT\s+(.+?)\s+FROM/i)?.[1] || 'result'}</th></tr></thead>
+                   <tbody><tr><td style="padding:8px; color:#7ee787;">${Math.floor(Math.random() * 1000000).toLocaleString()}</td></tr></tbody>
+                 </table>
+               </div>`;
+            } else {
+               // Regular SELECT table
+               const columns = Object.keys(tableData[0]);
+               html += `<div style="overflow-x:auto; margin-top:8px; max-height:250px; border:1px solid var(--ide-border); border-radius:8px;">
+                 <table class="preview-table" style="width:100%; border-collapse:collapse; background:rgba(0,0,0,0.2);">
+                   <thead style="position:sticky; top:0; background:var(--ide-header); z-index:10;">
+                     <tr>${columns.map(c => `<th style="text-align:left; padding:10px; font-size:11px; border-bottom:1px solid var(--ide-border);">${c}</th>`).join('')}</tr>
+                   </thead>
+                   <tbody>
+                     ${tableData.slice(0, 10).map(row => `
+                       <tr>${columns.map(c => `<td style="padding:8px 10px; font-size:12px; border-bottom:1px solid rgba(255,255,255,0.05); opacity:0.8;">${row[c]}</td>`).join('')}</tr>
+                     `).join('')}
+                   </tbody>
+                 </table>
+               </div>`;
+            }
+            html += `</div>`;
+            terminal.innerHTML += html;
+            terminal.scrollTop = terminal.scrollHeight;
+          }, 800);
+        }, 500);
+        return;
+      }
+
+      // Handle Python execution
       if (!pyodide) {
         runBtn.disabled = true;
         runBtn.innerHTML = '<svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle></svg>';
@@ -1430,7 +1527,7 @@ export function renderIDE(lang, translations) {
       terminal.innerHTML = `<span class="info">${translations[lang].playground.terminal.running}</span>`;
       try {
         pyodide.runPython(`import sys\nimport io\nsys.stdout = io.StringIO()`);
-        await pyodide.runPythonAsync(textarea.value);
+        await pyodide.runPythonAsync(content);
         const stdout = pyodide.runPython("sys.stdout.getvalue()");
         terminal.innerHTML = stdout ? stdout.replace(/\n/g, '<br>') : `<span class="success">✓ ${translations[lang].playground.terminal.executedSuccess}</span>`;
       } catch (err) {
