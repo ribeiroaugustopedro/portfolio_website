@@ -588,7 +588,8 @@ export function renderIDE(lang, translations) {
 
     terminalAdd.onclick = () => {
       const newId = terminalInstances.length > 0 ? Math.max(...terminalInstances.map(t => t.id)) + 1 : 1;
-      terminalInstances.push({ id: newId, name: 'Terminal', content: '' });
+      const welcomeMsg = `<div class="info" style="color: var(--ide-accent); opacity: 0.8; font-size: 11px; margin-bottom: 8px;">[system] Terminal #${newId} initialized. Ready.</div>`;
+      terminalInstances.push({ id: newId, name: 'Terminal', content: welcomeMsg });
       activeTerminalId = newId;
       updateTerminalUI();
     };
