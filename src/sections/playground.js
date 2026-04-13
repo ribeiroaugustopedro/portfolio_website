@@ -868,7 +868,7 @@ export function renderIDE(lang, translations) {
       }
     }
 
-    const renderCatalogExplorer = () => {
+    let renderCatalogExplorer = () => {
       const explorerView = section.querySelector('#catalog-explorer-view');
       const item = currentSession.activeCatalogItem;
       const activeTab = currentSession.activeCatalogTab || 'overview';
