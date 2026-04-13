@@ -6,7 +6,7 @@ let db = null;
 let conn = null;
 
 // Multi-Terminal State (Global)
-let terminalInstances = [{ id: 1, name: 'sql', content: '' }];
+let terminalInstances = [{ id: 1, name: 'Terminal', content: '' }];
 let activeTerminalId = 1;
 let updateTerminalUIBound = null;
 
@@ -291,13 +291,22 @@ export function renderIDE(lang, translations) {
         border: 1px solid rgba(255, 255, 255, 0.1);
         color: var(--ide-text);
         font-size: 11px;
-        padding: 2px 8px;
+        padding: 2px 24px 2px 8px;
         border-radius: 4px;
         outline: none;
         cursor: pointer;
         font-family: var(--ide-font-mono);
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 10px;
       }
-      .terminal-instance-select:hover { background: rgba(255, 255, 255, 0.1); }
+      .terminal-instance-select:hover { background-color: rgba(255, 255, 255, 0.1); }
+      .terminal-instance-select option {
+        background: var(--ide-sidebar);
+        color: var(--ide-text);
+      }
       .terminal-add-btn {
         display: flex;
         align-items: center;
@@ -472,7 +481,7 @@ export function renderIDE(lang, translations) {
 
     terminalAdd.onclick = () => {
       const newId = terminalInstances.length > 0 ? Math.max(...terminalInstances.map(t => t.id)) + 1 : 1;
-      terminalInstances.push({ id: newId, name: 'bash', content: '' });
+      terminalInstances.push({ id: newId, name: 'Terminal', content: '' });
       activeTerminalId = newId;
       updateTerminalUI();
     };
@@ -1339,9 +1348,9 @@ export function renderIDE(lang, translations) {
       }
 
       // Ctrl + ` : Toggle Terminal visibility
-      if (e.ctrlKey && (e.key === '`')) {
+      if (e.ctrlKey && e.code === 'Backquote' && !e.shiftKey) {
         e.preventDefault();
-        const isCollapsed = ideTerminal.offsetHeight < 60; // Just header height
+        const isCollapsed = ideTerminal.offsetHeight < 60; 
         if (isCollapsed) {
           ideTerminal.style.height = '200px';
         } else {
@@ -1349,9 +1358,10 @@ export function renderIDE(lang, translations) {
         }
       }
 
-      // Ctrl + Shift + ` : Open IDE Fullscreen
-      if (e.ctrlKey && e.shiftKey && (e.key === '~' || e.key === '`')) {
+      // Ctrl + Shift + ` : New Terminal + Open IDE Fullscreen
+      if (e.ctrlKey && e.shiftKey && e.code === 'Backquote') {
         e.preventDefault();
+        terminalAdd.click(); // Create new terminal
         if (!document.fullscreenElement) {
           section.querySelector('#win-max').click();
         }
