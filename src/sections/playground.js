@@ -183,7 +183,13 @@ export function renderIDE(lang, translations) {
       .file-main { display: flex; align-items: center; width: 100%; white-space: nowrap; height: 100%; }
       .file-icon-wrap { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
       .file-main span { overflow: hidden; text-overflow: ellipsis; }
-      .ide-tab .tab-close:hover { opacity: 1; background: rgba(255,255,255,0.1); border-radius: 3px; }
+      .ide-tab .tab-close:hover { 
+        opacity: 1; 
+        background: rgba(255, 255, 255, 0.08); 
+        animation: rainbowSimultaneous 4s linear infinite;
+        color: var(--ide-text-bright);
+        border-radius: 4px;
+      }
       .ide-tab { width: 160px; flex-shrink: 0; justify-content: space-between; overflow: hidden; }
       .ide-tab .tab-main { display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; flex: 1; }
       .ide-tab .tab-main span { overflow: hidden; text-overflow: ellipsis; }
@@ -355,9 +361,11 @@ export function renderIDE(lang, translations) {
         font-family: var(--ide-font-mono);
       }
       .custom-select-option:hover {
-        background: rgba(255, 255, 255, 0.08);
-        animation: rainbowSimultaneous 4s linear infinite;
+        background: rgba(255, 255, 255, 0.12);
         color: var(--ide-text-bright);
+      }
+      [data-theme="light"] .custom-select-option:hover {
+        background: rgba(0, 0, 0, 0.05);
       }
       .custom-select-option.selected {
         background: linear-gradient(to right, rgba(153, 255, 255, 0.12), rgba(255, 153, 255, 0.12));
