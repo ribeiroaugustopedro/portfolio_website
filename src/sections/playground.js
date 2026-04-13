@@ -425,7 +425,10 @@ export function renderIDE(lang, translations) {
                 <button id="run-btn" class="run-btn" title="${translations[lang].playground.tooltips.run}" style="padding-top: 2px;">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 </button>
-                <button id="clear-btn" class="run-btn" title="${translations[lang].playground.tooltips.clear}">
+                <button id="refresh-terminal-btn" class="run-btn" title="Clear Output">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                </button>
+                <button id="delete-terminal-btn" class="run-btn" title="Delete Terminal">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
               </div>
@@ -449,7 +452,8 @@ export function renderIDE(lang, translations) {
     const runBtn = section.querySelector('#run-btn');
     const terminal = section.querySelector('#terminal-output');
     const ideTerminal = section.querySelector('.ide-terminal');
-    const clearBtn = section.querySelector('#clear-btn');
+    const refreshTerminalBtn = section.querySelector('#refresh-terminal-btn');
+    const deleteTerminalBtn = section.querySelector('#delete-terminal-btn');
     const fileListContainer = section.querySelector('#ide-file-list');
     const catalogTreeContainer = section.querySelector('#catalog-tree');
     const tabsContainer = section.querySelector('#ide-tabs');
@@ -2134,12 +2138,27 @@ export function renderIDE(lang, translations) {
     };
 
 
-    clearBtn.onclick = () => { 
+    refreshTerminalBtn.onclick = () => { 
       const active = terminalInstances.find(t => t.id === activeTerminalId);
       if (active) {
         active.content = '';
         updateTerminalUI();
       }
+    };
+
+    deleteTerminalBtn.onclick = () => {
+      if (terminalInstances.length <= 1) {
+        // Just clear if it's the last one
+        refreshTerminalBtn.click();
+        return;
+      }
+      
+      const index = terminalInstances.findIndex(t => t.id === activeTerminalId);
+      terminalInstances.splice(index, 1);
+      
+      // Select next available
+      activeTerminalId = terminalInstances[Math.max(0, index - 1)].id;
+      updateTerminalUI();
     };
 
     window.openIDE = (mode = 'explorer', shouldFullscreen = false, returnY = null) => {
