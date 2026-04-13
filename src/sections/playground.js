@@ -26,7 +26,17 @@ const logToTerminal = (content, type = 'info', append = false) => {
   else active.content = html;
 
   if (updateTerminalUIBound) updateTerminalUIBound();
+
+  // Re-init resizers if there's a table in the output
+  if (html.includes('<table')) {
+    setTimeout(() => {
+      const terminal = document.querySelector('.terminal-output');
+      if (terminal && typeof initTableResizersBound === 'function') initTableResizersBound(terminal);
+    }, 50);
+  }
 };
+
+let initTableResizersBound = null;
 
 async function initDuckDB() {
   if (db) return { db, conn };
@@ -89,15 +99,109 @@ export function renderIDE(lang, translations) {
   // Initialize SQL engine
   initDuckDB().catch(e => console.error("DuckDB Init failed:", e));
 
-  const currentSession = {
-    fileName: 'README.md',
-    sidebar: 'explorer', // 'explorer' or 'catalog'
-    activeCatalogItem: null, // { name, type, parentPath }
-    activeCatalogTab: 'overview', // 'overview' or 'details'
-    namingNew: null, // { resultType: 'file'|'folder', parent: string, initialName?: string, isRename?: boolean }
-    selectedFiles: ['README.md'],
-    lastSelectedFile: 'README.md'
-  };
+    const currentSession = {
+      fileName: 'README.md',
+      sidebar: 'explorer', // 'explorer' or 'catalog'
+      activeCatalogItem: null, // { name, type, parentPath }
+      activeCatalogTab: 'overview', // 'overview' or 'details'
+      activeCatalogSort: { column: null, order: null }, // { column: string, order: 'ASC' | 'DESC' | null }
+      namingNew: null, // { resultType: 'file'|'folder', parent: string, initialName?: string, isRename?: boolean }
+      selectedFiles: ['README.md'],
+      lastSelectedFile: 'README.md'
+    };
+
+    // Table Resizer Logic (Universal) - Moved to top for scope availability
+    const initTableResizers = (container) => {
+      if (!container) return;
+      container.querySelectorAll('[data-resizer]').forEach(resizer => {
+        const th = resizer.parentElement;
+        let startX, startWidth;
+
+        resizer.onmousedown = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          startX = e.pageX;
+          startWidth = th.offsetWidth;
+          resizer.classList.add('resizing');
+
+          const onMouseMove = (e) => {
+            const newWidth = Math.max(40, startWidth + (e.pageX - startX));
+            th.style.width = `${newWidth}px`;
+            th.style.minWidth = `${newWidth}px`;
+          };
+
+          const onMouseUp = () => {
+            resizer.classList.remove('resizing');
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          };
+
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        };
+
+        // Auto-fit on Double Click (Pro Calculation for Fixed Layout)
+        resizer.ondblclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const table = th.closest('table');
+          if (table) {
+            const headers = Array.from(table.querySelectorAll('th'));
+            const isIndexResizer = headers.indexOf(th) === 0;
+            
+            if (isIndexResizer) {
+                // GLOBAL AUTO-FIT: Reset all and measure
+                table.style.tableLayout = 'auto';
+                table.style.width = 'auto';
+                headers.forEach((header, idx) => {
+                  if (idx === 0) return;
+                  header.style.width = '';
+                  header.style.minWidth = '';
+                });
+
+                let newTotalWidth = headers[0].offsetWidth; 
+                headers.forEach((header, idx) => {
+                    if (idx === 0) return;
+                    const measuredWidth = header.offsetWidth;
+                    header.style.width = `${measuredWidth}px`;
+                    header.style.minWidth = '40px'; 
+                    newTotalWidth += measuredWidth;
+                });
+                table.style.tableLayout = 'fixed';
+                table.style.width = `${newTotalWidth}px`;
+            } else {
+                // LOCAL AUTO-FIT: Strictly lock others, only reset target
+                const currentWidths = headers.map(h => h.offsetWidth);
+                
+                // 1. Lock all OTHER headers
+                headers.forEach((header, idx) => {
+                  if (header !== th) {
+                    header.style.width = `${currentWidths[idx]}px`;
+                    header.style.minWidth = `${currentWidths[idx]}px`;
+                  } else {
+                    header.style.width = '';
+                    header.style.minWidth = '';
+                  }
+                });
+
+                // 2. Unlock table briefly to measure content
+                table.style.tableLayout = 'auto';
+                table.style.width = 'auto';
+
+                // 3. Measure target only
+                const measuredTargetWidth = th.offsetWidth;
+                th.style.width = `${measuredTargetWidth}px`;
+                th.style.minWidth = '40px';
+
+                // 4. Re-lock table and update total width
+                table.style.tableLayout = 'fixed';
+                let finalTotal = headers.reduce((acc, h) => acc + h.offsetWidth, 0);
+                table.style.width = `${finalTotal}px`;
+            }
+          }
+        };
+      });
+    };
 
   const CATALOG_TYPE_ICONS = {
     text: '<span class="type-pill type-text">TEXT</span>',
@@ -109,7 +213,10 @@ export function renderIDE(lang, translations) {
 
   // Automated Catalog Builder
   const buildCatalogHierarchy = (data) => {
-    const metadata = data.metadata || data; // Handle new or old format
+    // Check if we already have the hierarchy or need to build it from flat metadata
+    if (data.hierarchy) return data.hierarchy;
+
+    const metadata = data.metadata || data;
     const tableMap = {};
 
     metadata.forEach(col => {
@@ -151,6 +258,9 @@ export function renderIDE(lang, translations) {
   };
 
   const catalogData = buildCatalogHierarchy(catalogMetadata);
+
+  // Cache for real table previews to avoid flickering/re-querying
+  let tablePreviewCache = {};
 
   const ICONS = {
     js: '<img src="https://raw.githubusercontent.com/PKief/vscode-material-icon-theme/master/icons/javascript.svg" width="16" height="16">',
@@ -449,11 +559,17 @@ export function renderIDE(lang, translations) {
         transition: background 0.2s;
       }
       .col-resizer:hover {
-        background: rgba(121, 192, 255, 0.3) !important;
+        background: rgba(255, 255, 255, 0.15) !important;
+      }
+      [data-theme="light"] .col-resizer:hover {
+        background: rgba(0, 0, 0, 0.1) !important;
       }
       .col-resizer.resizing {
-        background: rgba(121, 192, 255, 0.6) !important;
-        border-right: 2px solid var(--ide-accent);
+        background: rgba(255, 255, 255, 0.25) !important;
+        border-right: 1px solid var(--ide-border);
+      }
+      [data-theme="light"] .col-resizer.resizing {
+        background: rgba(0, 0, 0, 0.15) !important;
       }
     </style>
     <h2 class="rainbow-title-center reveal" style="color: var(--text-primary); font-family: var(--font-mono);">${translations[lang].playground.title}</h2>
@@ -650,6 +766,9 @@ export function renderIDE(lang, translations) {
       if (active) {
         terminal.innerHTML = active.content || '';
         terminal.scrollTop = terminal.scrollHeight;
+        if (active.content.includes('<table')) {
+          setTimeout(() => initTableResizers(terminal), 50);
+        }
       }
     }
     updateTerminalUIBound = updateTerminalUI;
@@ -932,30 +1051,75 @@ export function renderIDE(lang, translations) {
                     <div class="top-scrollbar-content" id="top-scrollbar-content"></div>
                   </div>
                   <div class="preview-table-container" id="preview-table-container">
-                    <table class="preview-table">
+                        ${(() => {
+              const tableWidth = 20 + ((item.columns || []).length * 150);
+              return `<table class="preview-table" style="width: ${tableWidth}px; min-width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed;">`;
+            })()}
                       <thead>
-                        <tr>
-                          <th style="width: 20px; min-width: 20px; text-align: center; color: var(--ide-text); opacity: 0.4; padding: 10px 2px;">#</th>
-                          ${item.columns ? item.columns.map(c => `
-                            <th style="min-width: 80px;">
+                          <th style="width: 20px; min-width: 20px; max-width: 20px; text-align: center; color: var(--ide-text); opacity: 0.4; padding: 10px 2px; position: relative; background: var(--ide-header); border-right: 1px solid var(--ide-border);">
+                            <div class="col-resizer" data-resizer></div>
+                            #
+                          </th>
+                          ${item.columns ? item.columns.map(c => {
+                            const isSorted = currentSession.activeCatalogSort.column === c.name;
+                            const sortOrder = isSorted ? currentSession.activeCatalogSort.order : null;
+                            const sortIcon = sortOrder === 'ASC' ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 15l-6-6-6 6"/></svg>' : 
+                                            sortOrder === 'DESC' ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>' : 
+                                            '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.3"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>';
+                            
+                            return `
+                            <th style="width: 150px; min-width: 40px; position: relative; text-align: center; border-right: 1px solid var(--ide-border); cursor: pointer;" data-sort-col="${c.name}">
                               <div class="col-resizer" data-resizer></div>
-                              ${c.name}<br>
-                              <small style="opacity: 0.6; font-weight: normal; font-size: 9px;">
-                                ${c.type === 'number' ? 'INT64' : c.type.toUpperCase()}
+                              <div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom: 2px;">
+                                <span style="${isSorted ? 'color: var(--ide-accent); font-weight: bold;' : ''}">${c.name}</span>
+                                <div class="sort-icon">${sortIcon}</div>
+                              </div>
+                              <small style="opacity: 0.6; font-weight: normal; font-size: 9px; display: block; text-align: center;">
+                                ${c.type === 'number' ? 'INT64' : (c.type || 'TEXT').toUpperCase()}
                               </small>
-                            </th>
-                          `).join('') : ''}
+                            </th>`;
+                          }).join('') : ''}
                         </tr>
                       </thead>
                       <tbody>
                         ${(() => {
-              const previews = catalogMetadata.previews || {};
-              const rows = previews[item.name] || [];
-              if (rows.length === 0) return `<tr><td colspan="${item.columns.length + 1}">No data samples available in MotherDuck</td></tr>`;
+              const rows = tablePreviewCache[item.name] || [];
+              if (rows.length === 0) {
+                // Trigger async load from real DuckDB
+                setTimeout(async () => {
+                  try {
+                    const duck = await initDuckDB();
+                    const sort = currentSession.activeCatalogSort;
+                    const orderClause = sort.column && sort.order ? `ORDER BY ${sort.column} ${sort.order}` : "";
+                    const res = await duck.conn.query(`SELECT * FROM ${item.name} ${orderClause} LIMIT 100`);
+                    tablePreviewCache[item.name] = res.toArray().map(r => {
+                       const obj = {};
+                       for(let k of Object.keys(r)) { 
+                         let val = r[k];
+                         if (typeof val === 'bigint') val = Number(val);
+                         obj[k] = val;
+                       }
+                       return obj;
+                    });
+                    renderCatalogExplorer(); // Re-render with real data
+                  } catch (e) {
+                    console.error("Catalog Real Preview failed:", e);
+                  }
+                }, 10);
+                return `<tr><td colspan="${(item.columns || []).length + 1}" style="padding: 40px; text-align: center; opacity:0.5;">
+                  <div style="display:flex; align-items:center; justify-content:center; gap:10px;">
+                    <svg class="spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle></svg>
+                    Fetching live samples...
+                  </div></td></tr>`;
+              }
               return rows.map((row, r) => `
                             <tr>
-                              <td style="text-align: center; opacity: 0.4; font-size: 10px;">${r + 1}</td>
-                              ${item.columns ? item.columns.map(c => `<td>${row[c.name] !== undefined ? row[c.name] : '...'}</td>`).join('') : ''}
+                              <td style="width: 20px; min-width: 20px; max-width: 20px; text-align: center; opacity: 0.4; font-size: 10px; padding: 8px 2px; background: var(--ide-header); border-right: 1px solid var(--ide-border); position: sticky; left: 0; z-index: 1;">${r + 1}</td>
+                              ${item.columns ? item.columns.map(c => {
+                                let val = row[c.name];
+                                if (val === null || val === undefined) val = '<span style="opacity:0.2">NULL</span>';
+                                return `<td style="text-align: center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${val}</td>`;
+                              }).join('') : ''}
                             </tr>
                           `).join('');
             })()}
@@ -1029,8 +1193,30 @@ export function renderIDE(lang, translations) {
         };
       });
 
+      explorerView.querySelectorAll('[data-sort-col]').forEach(th => {
+        th.onclick = (e) => {
+          // Don't trigger sort if clicking the resizer
+          if (e.target.hasAttribute('data-resizer')) return;
+
+          const col = th.dataset.sortCol;
+          const current = currentSession.activeCatalogSort;
+          
+          if (current.column === col) {
+            if (current.order === 'ASC') current.order = 'DESC';
+            else if (current.order === 'DESC') { current.column = null; current.order = null; }
+          } else {
+            current.column = col;
+            current.order = 'ASC';
+          }
+          
+          tablePreviewCache[item.name] = null; // Clear cache to force reload
+          renderCatalogExplorer();
+        };
+      });
+
       // Flowchart Logic
       const flowContainer = explorerView.querySelector('.catalog-flow-container');
+      if (typeof initTableResizers === 'function') initTableResizers(explorerView);
       const flowSvg = explorerView.querySelector('#flow-svg');
 
       const drawLines = () => {
@@ -2051,8 +2237,8 @@ export function renderIDE(lang, translations) {
                 <table class="preview-table" style="width:100%; border-collapse:collapse;">
                   <thead style="position:sticky; top:0; background:var(--ide-header); z-index:10;">
                     <tr>
-                      <th style="width: 20px; min-width: 20px; text-align: center; padding:10px 2px; font-size: 11px; border-bottom: 1px solid var(--ide-border); color: var(--ide-text); opacity: 0.4;">#</th>
-                      ${columns.map(c => `<th style="min-width: 80px; position:relative;">
+                      <th style="width: 20px; min-width: 20px; max-width: 20px; text-align: center; padding: 10px 2px; font-size: 11px; border-bottom: 1px solid var(--ide-border); color: var(--ide-text); opacity: 0.4; position: relative;">#</th>
+                      ${columns.map(c => `<th style="min-width: 80px; position: relative;">
                         <div class="col-resizer" data-resizer></div>
                         ${c}
                       </th>`).join('')}
@@ -2060,7 +2246,7 @@ export function renderIDE(lang, translations) {
                   </thead>
                   <tbody>
                     ${rows.slice(0, 50).map((row, r) => `<tr>
-                      <td style="padding:8px 10px; font-size:10px; text-align:center; opacity:0.4; font-family:var(--ide-font-mono);">${r + 1}</td>
+                      <td style="width: 20px; min-width: 20px; max-width: 20px; padding:8px 2px; font-size:10px; text-align:center; opacity:0.4; font-family:var(--ide-font-mono);">${r + 1}</td>
                       ${columns.map(c => {
                 let val = row[c];
                 let displayVal = val;
@@ -2486,64 +2672,6 @@ export function renderIDE(lang, translations) {
     document.addEventListener('mouseup', onMouseUp);
   };
 
-  // Table Resizer Logic (Universal)
-  const initTableResizers = (container) => {
-    container.querySelectorAll('[data-resizer]').forEach(resizer => {
-      const th = resizer.parentElement;
-      let startX, startWidth;
-
-      resizer.onmousedown = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        startX = e.pageX;
-        startWidth = th.offsetWidth;
-        resizer.classList.add('resizing');
-
-        const onMouseMove = (e) => {
-          const newWidth = Math.max(40, startWidth + (e.pageX - startX));
-          th.style.width = `${newWidth}px`;
-          th.style.minWidth = `${newWidth}px`;
-        };
-
-        const onMouseUp = () => {
-          resizer.classList.remove('resizing');
-          document.removeEventListener('mousemove', onMouseMove);
-          document.removeEventListener('mouseup', onMouseUp);
-        };
-
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-      };
-
-      // Auto-fit on Double Click (Align ALL columns with text)
-      resizer.ondblclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const table = th.closest('table');
-        if (table) {
-          table.querySelectorAll('th').forEach(header => {
-            header.style.width = '';
-            header.style.minWidth = '';
-          });
-        }
-      };
-    });
-  };
-
-  // Add observer or call init manually in render functions
-  const originalRenderCatalogExplorer = renderCatalogExplorer;
-  renderCatalogExplorer = (...args) => {
-    originalRenderCatalogExplorer(...args);
-    const explorerView = section.querySelector('#catalog-explorer-view');
-    if (explorerView) initTableResizers(explorerView);
-  };
-
-  // We need to call it for terminal too
-  const originalLogToTerminal = logToTerminal;
-  logToTerminal = (...args) => {
-    originalLogToTerminal(...args);
-    initTableResizers(terminal);
-  };
-
+  initTableResizersBound = initTableResizers;
   return section;
 }
