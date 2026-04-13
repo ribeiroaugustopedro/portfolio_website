@@ -1963,6 +1963,14 @@ export function renderIDE(lang, translations) {
         return;
       }
 
+      // Check if file is runnable
+      const extension = fileName.split('.').pop().toLowerCase();
+      const runnableExtensions = ['py', 'sql'];
+      if (!runnableExtensions.includes(extension)) {
+        logToTerminal(`File type .${extension.toUpperCase()} is not runnable. Execution is only supported for Python (.py) and SQL (.sql) scripts.`, 'error', true);
+        return;
+      }
+
       // Handle SQL execution
       if (fileName.endsWith('.sql')) {
         terminal.innerHTML = `<span class="info"><svg class="spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:8px;"><circle cx="12" cy="12" r="10"></circle></svg>Connecting to MotherDuck...</span>`;
