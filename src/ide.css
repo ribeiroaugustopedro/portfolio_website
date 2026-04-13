@@ -275,6 +275,11 @@
 .sidebar-action-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   animation: rainbowSimultaneous 4s linear infinite;
+  color: var(--ide-text-bright);
+}
+
+.sidebar-action-btn:active {
+  transform: scale(0.92);
 }
 
 .ide-file-item {
@@ -546,8 +551,13 @@
 }
 
 .run-btn:hover {
-  color: #7ee787;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.08);
+  animation: rainbowSimultaneous 4s linear infinite;
+  color: var(--ide-text-bright);
+}
+
+.run-btn:active {
+  transform: scale(0.92);
 }
 
 .terminal-output {
@@ -654,8 +664,9 @@
 }
 
 [data-theme="light"] .run-btn:hover {
-  color: #1a1f23;
   background: rgba(0, 0, 0, 0.05);
+  animation: rainbowSimultaneous 4s linear infinite;
+  color: var(--ide-text-bright);
 }
 
 /* Theme aware catalog panels */

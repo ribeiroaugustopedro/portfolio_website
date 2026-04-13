@@ -318,7 +318,14 @@ export function renderIDE(lang, translations) {
         cursor: pointer;
         transition: all 0.2s;
       }
-      .terminal-add-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--ide-text-bright); }
+      .terminal-add-btn:hover { 
+        background: rgba(255, 255, 255, 0.08); 
+        animation: rainbowSimultaneous 4s linear infinite;
+        color: var(--ide-text-bright); 
+      }
+      .terminal-add-btn:active {
+        transform: scale(0.92);
+      }
     </style>
     <h2 class="rainbow-title-center reveal" style="color: var(--text-primary); font-family: var(--font-mono);">${translations[lang].playground.title}</h2>
     
