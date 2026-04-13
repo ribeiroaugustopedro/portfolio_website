@@ -1791,6 +1791,11 @@ export function renderIDE(lang, translations) {
     }
 
     const handleGlobalClick = (e) => {
+      // Cancel naming if click is outside naming input
+      if (currentSession.namingNew && !e.target.closest('.naming-input')) {
+        cancelNaming();
+      }
+
       if (currentSession.selectedFiles.length === 0) return;
 
       const isFileItem = e.target.closest('.ide-file-item');
