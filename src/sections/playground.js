@@ -353,7 +353,7 @@ export function renderIDE(lang, translations) {
       .custom-select-options.active { display: block; }
       
       .custom-select-option {
-        padding: 6px 10px;
+        padding: 2px 10px;
         font-size: 11px;
         color: var(--ide-text);
         cursor: pointer;
