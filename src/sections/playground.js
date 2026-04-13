@@ -2023,13 +2023,6 @@ export function renderIDE(lang, translations) {
       }
     };
 
-    restartBtn.onclick = () => {
-      terminal.innerHTML = `<span class="info">${translations[lang].playground.terminal.restarting}</span>`;
-      pyodide = null;
-      setTimeout(() => {
-        terminal.innerHTML = `<span class="success">${translations[lang].playground.terminal.restarted}</span>`;
-      }, 500);
-    };
 
     clearBtn.onclick = () => { terminal.innerHTML = ''; };
 
