@@ -403,7 +403,7 @@ export function renderIDE(lang, translations) {
         justify-content: space-between;
         padding: 0 12px;
         font-size: 11px;
-        color: rgba(0, 0, 0, 0.7);
+        color: rgba(0, 0, 0, 0.9);
         font-weight: 500;
         border-bottom-left-radius: 8px;
         border-bottom-right-radius: 8px;
@@ -411,9 +411,9 @@ export function renderIDE(lang, translations) {
         transition: all 0.3s;
       }
       [data-theme="dark"] .ide-status-bar {
-        background: linear-gradient(-45deg, #1d2b2b, #2b1d22, #2b2b1d, #1d212b);
+        background: linear-gradient(-45deg, #0e1111, #110e0f, #11110e, #0e0f11);
         background-size: 400% 400%;
-        color: rgba(255, 255, 255, 0.8);
+        color: rgba(255, 255, 255, 0.95);
       }
       .status-left, .status-right { display: flex; align-items: center; gap: 16px; }
       .status-item { display: flex; align-items: center; gap: 4px; }
