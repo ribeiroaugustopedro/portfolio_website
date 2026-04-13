@@ -311,7 +311,7 @@ The **Catalog** sidebar provides a deep technical view of the Warehouse:
         position: absolute;
         top: calc(100% + 4px);
         left: 0;
-        min-width: 120px;
+        width: 100%;
         background: var(--ide-sidebar);
         border: 1px solid var(--ide-border);
         border-radius: 4px;
@@ -320,6 +320,7 @@ The **Catalog** sidebar provides a deep technical view of the Warehouse:
         z-index: 1001;
         overflow: hidden;
         padding: 2px;
+        box-sizing: border-box;
       }
       .custom-select-options.active { display: block; }
       
@@ -340,7 +341,7 @@ The **Catalog** sidebar provides a deep technical view of the Warehouse:
         background: rgba(0, 0, 0, 0.05);
       }
       .custom-select-option.selected {
-        background: linear-gradient(to right, rgba(153, 255, 255, 0.12), rgba(255, 153, 255, 0.12));
+        background: rgba(255, 255, 255, 0.15);
         color: var(--ide-text-bright);
         font-weight: bold;
       }
