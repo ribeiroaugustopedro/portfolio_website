@@ -1887,11 +1887,9 @@ export function renderIDE(lang, translations) {
 
     section.id = 'playground';
 
+    // This one is now a wrapper for scrollToIDE for consistency
     const scrollToPlaygroundTop = () => {
-      const el = document.getElementById('playground');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
+      scrollToIDE(300);
     };
 
     const handleReturnNavigation = () => {
@@ -1999,13 +1997,11 @@ export function renderIDE(lang, translations) {
         // Always return to Playground view, regardless of where we came from
         isManualExit = true;
         document.exitFullscreen().then(() => {
-          setTimeout(() => {
-            scrollToPlaygroundTop();
-            returnPositionY = null;
-            isManualExit = false;
-          }, 150);
+          scrollToIDE(300);
+          returnPositionY = null;
+          setTimeout(() => { isManualExit = false; }, 400);
         }).catch(() => {
-          scrollToPlaygroundTop();
+          scrollToIDE(100);
           returnPositionY = null;
           isManualExit = false;
         });
@@ -2052,9 +2048,8 @@ export function renderIDE(lang, translations) {
         if (!lastFullscreenWasIDE) return;
 
         if (!isManualExit) {
-          // If the exit was triggered by the user (e.g. ESC key)
-          // we always want to land at the playground section
-          setTimeout(scrollToPlaygroundTop, 150);
+          // ESC Key / Browser Exit
+          scrollToIDE(300);
           returnPositionY = null;
         }
 
