@@ -13,18 +13,18 @@ let updateTerminalUIBound = null;
 const logToTerminal = (content, type = 'info', append = false) => {
   const active = terminalInstances.find(t => t.id === activeTerminalId);
   if (!active) return;
-  
+
   let html = content;
   if (type === 'error') html = `<span class="error">${content}</span>`;
   if (type === 'success') html = `<span class="success">${content}</span>`;
   if (type === 'info') {
-    if (content.includes('class="spinner"')) html = content; 
+    if (content.includes('class="spinner"')) html = content;
     else html = `<span class="info">${content}</span>`;
   }
 
   if (append) active.content += (active.content ? '<br>' : '') + html;
   else active.content = html;
-  
+
   if (updateTerminalUIBound) updateTerminalUIBound();
 };
 
@@ -392,6 +392,33 @@ export function renderIDE(lang, translations) {
       .terminal-add-btn:active {
         transform: scale(0.92);
       }
+      
+      .ide-status-bar {
+        height: 22px;
+        background: var(--rainbow-gradient);
+        background-size: 200% 200%;
+        animation: rainbowSlide 5s linear infinite;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 12px;
+        font-size: 11px;
+        color: rgba(0, 0, 0, 0.7);
+        font-weight: 500;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        user-select: none;
+      }
+      .status-left, .status-right { display: flex; align-items: center; gap: 16px; }
+      .status-item { display: flex; align-items: center; gap: 4px; }
+      .status-dot-pulse {
+        width: 6px; height: 6px;
+        background: currentColor;
+        opacity: 0.6;
+        border-radius: 50%;
+        animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      @keyframes status-pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } }
     </style>
     <h2 class="rainbow-title-center reveal" style="color: var(--text-primary); font-family: var(--font-mono);">${translations[lang].playground.title}</h2>
     
@@ -514,8 +541,24 @@ export function renderIDE(lang, translations) {
         </div>
       </div>
       <div class="ide-status-bar">
-        <div class="status-left"></div>
-        <div class="status-right" id="status-info"><span>UTF-8</span><span>Text</span></div>
+        <div class="status-left" id="status-engines">
+          <div class="status-item" title="Current Branch">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;"><path d="M6 3v12"></path><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+            <span>main</span>
+          </div>
+          <div class="status-item" title="Python Runtime">
+            <div class="status-dot-pulse"></div>
+            <span>Python: Pyodide 0.23.4</span>
+          </div>
+          <div class="status-item" title="SQL Engine">
+             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+             <span>SQL: DuckDB WASM</span>
+          </div>
+        </div>
+        <div class="status-right" id="status-info">
+          <div class="status-item"><span>UTF-8</span></div>
+          <div class="status-item" id="status-lang-badge"><span>Plain Text</span></div>
+        </div>
       </div>
     </div>
   `;
@@ -545,11 +588,11 @@ export function renderIDE(lang, translations) {
 
     function updateTerminalUI() {
       if (!terminalSelectTrigger || !terminalSelectOptions) return;
-      
+
       const active = terminalInstances.find(t => t.id === activeTerminalId);
       terminalSelectTrigger.innerText = active ? `${active.id}: ${active.name}` : translations[lang].playground.terminal.title;
 
-      terminalSelectOptions.innerHTML = terminalInstances.map(t => 
+      terminalSelectOptions.innerHTML = terminalInstances.map(t =>
         `<div class="custom-select-option ${t.id === activeTerminalId ? 'selected' : ''}" data-id="${t.id}">${t.id}: ${t.name}</div>`
       ).join('');
 
@@ -558,18 +601,18 @@ export function renderIDE(lang, translations) {
           e.stopPropagation();
           activeTerminalId = parseInt(opt.dataset.id);
           terminalSelectOptions.classList.remove('active');
-          
+
           // Re-render immediate update
           const newActive = terminalInstances.find(t => t.id === activeTerminalId);
           if (newActive) {
             terminal.innerHTML = newActive.content || '';
             terminal.scrollTop = terminal.scrollHeight;
           }
-          
+
           updateTerminalUI();
         };
       });
-      
+
       if (active) {
         terminal.innerHTML = active.content || '';
         terminal.scrollTop = terminal.scrollHeight;
@@ -588,8 +631,7 @@ export function renderIDE(lang, translations) {
 
     terminalAdd.onclick = () => {
       const newId = terminalInstances.length > 0 ? Math.max(...terminalInstances.map(t => t.id)) + 1 : 1;
-      const welcomeMsg = `<div class="info" style="color: var(--ide-accent); opacity: 0.8; font-size: 11px; margin-bottom: 8px;">[system] Terminal #${newId} initialized. Ready.</div>`;
-      terminalInstances.push({ id: newId, name: 'Terminal', content: welcomeMsg });
+      terminalInstances.push({ id: newId, name: 'Terminal', content: '' });
       activeTerminalId = newId;
       updateTerminalUI();
     };
@@ -1458,7 +1500,7 @@ export function renderIDE(lang, translations) {
       // Ctrl + ` : Toggle Terminal visibility
       if (e.ctrlKey && e.code === 'Backquote' && !e.shiftKey) {
         e.preventDefault();
-        const isCollapsed = ideTerminal.offsetHeight < 60; 
+        const isCollapsed = ideTerminal.offsetHeight < 60;
         if (isCollapsed) {
           ideTerminal.style.height = '200px';
         } else {
@@ -1706,8 +1748,14 @@ export function renderIDE(lang, translations) {
         return;
       }
 
+      const langBadge = section.querySelector('#status-lang-badge span');
+      if (langBadge) {
+        const ext = name.split('.').pop().toUpperCase();
+        const langMap = { 'PY': 'Python', 'SQL': 'SQL (MotherDuck)', 'MD': 'Markdown', 'JSON': 'JSON' };
+        langBadge.innerText = langMap[ext] || 'Text';
+      }
+
       textarea.value = file.content;
-      statusInfo.innerHTML = `<span>UTF-8</span><span></span>`;
       runBtn.style.display = 'block';
 
       renderFileList(fileListContainer);
@@ -2261,7 +2309,7 @@ export function renderIDE(lang, translations) {
     };
 
 
-    refreshTerminalBtn.onclick = () => { 
+    refreshTerminalBtn.onclick = () => {
       const active = terminalInstances.find(t => t.id === activeTerminalId);
       if (active) {
         active.content = '';
@@ -2275,10 +2323,10 @@ export function renderIDE(lang, translations) {
         refreshTerminalBtn.click();
         return;
       }
-      
+
       const index = terminalInstances.findIndex(t => t.id === activeTerminalId);
       terminalInstances.splice(index, 1);
-      
+
       // Select next available
       activeTerminalId = terminalInstances[Math.max(0, index - 1)].id;
       updateTerminalUI();
