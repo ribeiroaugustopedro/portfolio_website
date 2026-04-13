@@ -395,27 +395,28 @@ export function renderIDE(lang, translations) {
       
       .ide-status-bar {
         height: 22px;
-        background: var(--rainbow-gradient);
-        background-size: 200% 200%;
-        animation: rainbowSlide 5s linear infinite;
+        background: linear-gradient(-45deg, #0e1111, #110e0f, #11110e, #0e0f11);
+        background-size: 400% 400%;
+        animation: rainbowSlide 10s linear infinite;
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: 0 12px;
         font-size: 11px;
-        color: rgba(0, 0, 0, 0.9) !important;
+        color: rgba(255, 255, 255, 0.95) !important;
         font-weight: 500;
         border-bottom-left-radius: 8px;
         border-bottom-right-radius: 8px;
         user-select: none;
-        transition: color 0.3s, background 0.3s;
+        transition: all 0.3s ease;
       }
       .ide-status-bar * { color: inherit !important; }
       
-      [data-theme="dark"] .ide-status-bar {
-        background: linear-gradient(-45deg, #0e1111, #110e0f, #11110e, #0e0f11);
-        background-size: 400% 400%;
-        color: rgba(255, 255, 255, 0.95) !important;
+      [data-theme="light"] .ide-status-bar {
+        background: var(--rainbow-gradient);
+        background-size: 200% 200%;
+        animation: rainbowSlide 5s linear infinite;
+        color: rgba(0, 0, 0, 0.9) !important;
       }
       .status-left, .status-right { display: flex; align-items: center; gap: 16px; }
       .status-item { display: flex; align-items: center; gap: 4px; }
