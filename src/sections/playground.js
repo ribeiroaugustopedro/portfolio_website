@@ -8,16 +8,20 @@ export function renderIDE(lang, translations) {
 
   // State Management
   let currentFiles = { ...files };
-  let openTabs = ['pipeline.py'];
+  if (currentFiles['README.md'] && translations[lang]?.playground?.readmeContent) {
+    currentFiles['README.md'].content = translations[lang].playground.readmeContent;
+  }
+  let openTabs = ['README.md'];
   let collapsedFolders = new Set();
   let isInitialLoad = true;
   const currentSession = {
-    fileName: 'pipeline.py',
+    fileName: 'README.md',
     sidebar: 'explorer', // 'explorer' or 'catalog'
     activeCatalogItem: null, // { name, type, parentPath }
     activeCatalogTab: 'overview', // 'overview' or 'details'
     namingNew: null, // { resultType: 'file'|'folder', parent: string, initialName?: string, isRename?: boolean }
-    selectedFile: 'pipeline.py'
+    selectedFiles: ['README.md'],
+    lastSelectedFile: 'README.md'
   };
 
   const CATALOG_TYPE_ICONS = {
@@ -127,7 +131,8 @@ export function renderIDE(lang, translations) {
         position: relative;
       }
       
-      .ide-file-item.active-selection::before {
+      .ide-file-item.active-selection::before,
+      .ide-file-item.active::before {
         content: "";
         position: absolute;
         left: 0px;
@@ -355,10 +360,26 @@ export function renderIDE(lang, translations) {
       if (!container) return;
       let itemsHtml = Object.keys(currentFiles)
         .sort((a, b) => {
-          const aIsFolder = a.endsWith('/');
-          const bIsFolder = b.endsWith('/');
-          if (aIsFolder !== bIsFolder) return bIsFolder ? 1 : -1;
-          return a.localeCompare(b);
+          // Force README to the absolute top of the root
+          if (a === 'README.md') return -1;
+          if (b === 'README.md') return 1;
+
+          const aParts = a.split('/');
+          const bParts = b.split('/');
+          const minLen = Math.min(aParts.length, bParts.length);
+          
+          for (let i = 0; i < minLen; i++) {
+            if (aParts[i] !== bParts[i]) {
+              const aIsLast = i === aParts.length - 1;
+              const bIsLast = i === bParts.length - 1;
+              const aIsFolder = !aIsLast || a.endsWith('/');
+              const bIsFolder = !bIsLast || b.endsWith('/');
+              
+              if (aIsFolder !== bIsFolder) return bIsFolder ? 1 : -1;
+              return aParts[i].localeCompare(bParts[i]);
+            }
+          }
+          return aParts.length - bParts.length;
         })
         .map(fileName => {
           const parts = fileName.split('/');
@@ -384,7 +405,7 @@ export function renderIDE(lang, translations) {
               </div>`;
           }
           return `
-            <div class="ide-file-item ${fileName === currentSession.fileName || fileName === currentSession.selectedFile ? 'active-selection' : ''} ${fileName === currentSession.fileName ? 'active' : ''}" 
+            <div class="ide-file-item ${currentSession.selectedFiles.includes(fileName) ? 'active-selection' : ''} ${fileName === currentSession.fileName ? 'active' : ''}" 
                  data-file="${fileName}" draggable="true" style="padding-left: ${10 + indent}px">
               <div class="file-main">
                 ${isFolder ? `<div class="folder-chevron ${isExpanded ? 'expanded' : ''}" data-folder-toggle="${fileName}">${ICONS.chevron}</div>` : '<div class="folder-indent"></div>'}
@@ -448,7 +469,10 @@ export function renderIDE(lang, translations) {
               currentFiles[newName] = currentFiles[oldName];
               delete currentFiles[oldName];
               if (currentSession.fileName === oldName) currentSession.fileName = newName;
-              if (currentSession.selectedFile === oldName) currentSession.selectedFile = newName;
+              if (currentSession.selectedFiles.includes(oldName)) {
+                currentSession.selectedFiles = currentSession.selectedFiles.map(f => f === oldName ? newName : f);
+              }
+              if (currentSession.lastSelectedFile === oldName) currentSession.lastSelectedFile = newName;
               const tabIdx = openTabs.indexOf(oldName);
               if (tabIdx !== -1) openTabs[tabIdx] = newName;
             }
@@ -830,7 +854,6 @@ export function renderIDE(lang, translations) {
                               ...
                             </div>
                           ` : ''}
-                        </div>
                         <div class="stats-footer">
                           <span>NULLS: ${(parseInt(node.rows.toString().replace(/,/g, '')) - parseInt(col.nonNull.toString().replace(/,/g, ''))) || 0}</span>
                         </div>
@@ -1084,16 +1107,29 @@ export function renderIDE(lang, translations) {
     }
 
     function deleteFile(name) {
-      if (!name || name === 'pipeline.py') return;
-      showIDEModal(`Delete File`, `Are you sure you want to delete <b>${name}</b>?`, () => {
-        delete currentFiles[name];
-        if (currentSession.fileName === name) {
-          currentSession.fileName = null;
-          textarea.value = '';
-          preCode.textContent = '';
-          lineNumbers.innerHTML = '';
+      if (!name || name === 'README.md') return;
+      showIDEModal(`Delete Item`, `Are you sure you want to delete <b>${name}</b>${name.endsWith('/') ? ' and all its contents' : ''}?`, () => {
+        const toDelete = Object.keys(currentFiles).filter(f => f.startsWith(name));
+        toDelete.forEach(p => {
+          delete currentFiles[p];
+          openTabs = openTabs.filter(t => t !== p);
+          if (currentSession.fileName === p) {
+            currentSession.fileName = null;
+            textarea.value = '';
+            preCode.textContent = '';
+            lineNumbers.innerHTML = '';
+          }
+          currentSession.selectedFiles = currentSession.selectedFiles.filter(f => f !== p);
+        });
+        
+        if (!currentSession.fileName && openTabs.length > 0) {
+           switchFile(openTabs[0]);
         }
-        openTabs = openTabs.filter(t => t !== name);
+        
+        if (currentSession.lastSelectedFile && !currentFiles[currentSession.lastSelectedFile]) {
+           currentSession.lastSelectedFile = currentSession.selectedFiles[0] || null;
+        }
+
         renderFileList(fileListContainer);
         renderTabs(tabsContainer);
       });
@@ -1133,7 +1169,7 @@ export function renderIDE(lang, translations) {
       renderFileList(fileListContainer);
     }
 
-    let clipboardFile = null;
+    let clipboardFiles = [];
 
     // Keyboard Shortcuts (Global)
     const handleGlobalShortcuts = (e) => {
@@ -1141,15 +1177,9 @@ export function renderIDE(lang, translations) {
       const isInputSource = ['INPUT', 'TEXTAREA'].includes(e.target.tagName);
 
       // ESC: Close/Exit IDE and return to Projects
+      // ESC: Deselect all files
       if (e.key === 'Escape') {
-        if (currentSession.namingNew) return; // Let renderFileList handle its Esc
-        if (section.querySelector('.ide-modal-overlay')) return; // Prioritize closing modal
-
-        // Only close IDE if it's currently visible
-        if (ideWindow.style.display !== 'none') {
-          e.preventDefault();
-          section.querySelector('#win-close').click();
-        }
+        deselectAll();
         return;
       }
 
@@ -1162,33 +1192,77 @@ export function renderIDE(lang, translations) {
         runBtn.click();
       }
 
+      // Ctrl + S: Save (Simulate and prevent browser dialog)
+      if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        const log = document.createElement('div');
+        log.style.color = '#7ee787';
+        log.style.fontSize = '12px';
+        log.style.marginTop = '4px';
+        log.innerHTML = `<span style="opacity:0.6">[workspace]</span> Local session state persisted.`;
+        terminal.appendChild(log);
+        terminal.scrollTop = terminal.scrollHeight;
+      }
+
+      // Ctrl + B: Toggle Sidebar
+      if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault();
+        const sidebar = section.querySelector('.ide-sidebar');
+        if (sidebar) {
+          sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
+        }
+      }
+
+      // Ctrl + PageUp: Previous Tab
+      if (e.ctrlKey && e.key === 'PageUp') {
+        e.preventDefault();
+        const idx = openTabs.indexOf(currentSession.fileName);
+        if (idx > 0) switchFile(openTabs[idx - 1]);
+      }
+
+      // Ctrl + PageDown: Next Tab
+      if (e.ctrlKey && e.key === 'PageDown') {
+        e.preventDefault();
+        const idx = openTabs.indexOf(currentSession.fileName);
+        if (idx < openTabs.length - 1) switchFile(openTabs[idx + 1]);
+      }
+
+      // Ctrl + W: Close Tab
+      if (e.ctrlKey && e.key === 'w') {
+        e.preventDefault();
+        if (currentSession.fileName) closeTab(currentSession.fileName);
+      }
+
       // F2: Rename
       if (e.key === 'F2') {
         e.preventDefault();
-        renameFile(currentSession.selectedFile || currentSession.fileName);
+        renameFile(currentSession.lastSelectedFile || currentSession.fileName);
       }
 
       // Delete
       if (e.key === 'Delete' && !isInputSource) {
         e.preventDefault();
-        deleteFile(currentSession.selectedFile || currentSession.fileName);
+        (currentSession.selectedFiles.length > 0 ? [...currentSession.selectedFiles] : [currentSession.fileName]).forEach(f => deleteFile(f));
       }
 
       // Ctrl + C: Copy File (only if not in editor)
       if (e.ctrlKey && e.key === 'c' && !isInputSource) {
-        clipboardFile = currentSession.selectedFile || currentSession.fileName;
+        clipboardFiles = currentSession.selectedFiles.length > 0 ? [...currentSession.selectedFiles] : [currentSession.fileName];
       }
 
       // Clipboard Pasting
-      if (e.ctrlKey && e.key === 'v' && !isInputSource && clipboardFile) {
+      if (e.ctrlKey && e.key === 'v' && !isInputSource && clipboardFiles.length > 0) {
         e.preventDefault();
-        const baseName = clipboardFile.split('/').pop();
-        const ext = baseName.includes('.') ? baseName.slice(baseName.lastIndexOf('.')) : '';
-        const namePart = baseName.includes('.') ? baseName.slice(0, baseName.lastIndexOf('.')) : baseName;
-        let newName = namePart + '_copy' + ext;
-        let counter = 1;
-        while (currentFiles[newName]) { newName = namePart + '_copy' + (counter++) + ext; }
-        currentFiles[newName] = { ...currentFiles[clipboardFile], name: newName };
+        clipboardFiles.forEach(cf => {
+          if (!cf) return;
+          const baseName = cf.split('/').pop();
+          const ext = baseName.includes('.') ? baseName.slice(baseName.lastIndexOf('.')) : '';
+          const namePart = baseName.includes('.') ? baseName.slice(0, baseName.lastIndexOf('.')) : baseName;
+          let newName = namePart + '_copy' + ext;
+          let counter = 1;
+          while (currentFiles[newName]) { newName = namePart + '_copy' + (counter++) + ext; }
+          currentFiles[newName] = { ...currentFiles[cf], name: newName };
+        });
         renderFileList(fileListContainer);
       }
     };
@@ -1228,20 +1302,34 @@ export function renderIDE(lang, translations) {
       renderCatalog();
     };
 
-    let draggedFile = null;
+    let draggedFiles = [];
     fileListContainer.addEventListener('dragstart', (e) => {
       const item = e.target.closest('.ide-file-item');
       if (item) {
-        draggedFile = item.dataset.file;
-        e.dataTransfer.setData('text/plain', draggedFile);
-        item.style.opacity = '0.5';
+        const file = item.dataset.file;
+        // If the dragged file is NOT part of the current selection, 
+        // we select only it (standard behavior)
+        if (!currentSession.selectedFiles.includes(file)) {
+          currentSession.selectedFiles = [file];
+          currentSession.lastSelectedFile = file;
+          renderFileList(fileListContainer);
+        }
+        
+        draggedFiles = [...currentSession.selectedFiles];
+        e.dataTransfer.setData('text/plain', JSON.stringify(draggedFiles));
+        
+        // Dim all dragged items
+        fileListContainer.querySelectorAll('.ide-file-item').forEach(el => {
+          if (currentSession.selectedFiles.includes(el.dataset.file)) {
+            el.style.opacity = '0.5';
+          }
+        });
       }
     });
 
     fileListContainer.addEventListener('dragend', (e) => {
-      const item = e.target.closest('.ide-file-item');
-      if (item) item.style.opacity = '1';
-      draggedFile = null;
+      fileListContainer.querySelectorAll('.ide-file-item').forEach(el => el.style.opacity = '1');
+      draggedFiles = [];
       fileListContainer.querySelectorAll('.ide-file-item').forEach(el => el.classList.remove('drag-over'));
     });
 
@@ -1271,24 +1359,61 @@ export function renderIDE(lang, translations) {
       const targetItem = e.target.closest('.ide-file-item');
       if (targetItem) targetItem.classList.remove('drag-over');
 
-      if (draggedFile) {
-        const fileNameOnly = draggedFile.split('/').pop();
-        let newName;
+      if (draggedFiles.length > 0) {
+        const targetDir = (targetItem && targetItem.dataset.file.endsWith('/')) ? targetItem.dataset.file : '';
+        let movedCount = 0;
+        
+        // Move each selected file/folder
+        // Sort by path length to ensure we don't move a child before its parent
+        const sorted = [...draggedFiles].sort((a, b) => a.length - b.length);
+        
+        sorted.forEach(oldPath => {
+          // If the item doesn't exist anymore, it might have been moved as part of a parent folder
+          if (!currentFiles[oldPath]) return;
 
-        if (targetItem && targetItem.dataset.file.endsWith('/')) {
-          // Drop into folder
-          newName = targetItem.dataset.file + fileNameOnly;
-        } else {
-          // Drop to root
-          newName = fileNameOnly;
-        }
+          const fileNameOnly = oldPath.endsWith('/') 
+            ? oldPath.split('/').slice(-2, -1)[0] + '/' 
+            : oldPath.split('/').pop();
+          
+          let newName = targetDir + fileNameOnly;
+          if (newName === oldPath) return;
 
-        if (newName !== draggedFile && !currentFiles[newName]) {
-          currentFiles[newName] = currentFiles[draggedFile];
-          delete currentFiles[draggedFile];
-          if (currentSession.fileName === draggedFile) currentSession.fileName = newName;
+          // If there's a conflict, generate unique name
+          if (currentFiles[newName]) {
+            newName = getUniqueName(newName);
+          }
+
+          // Recursive move logic for folders (flat map style)
+          const allChildren = Object.keys(currentFiles).filter(p => p.startsWith(oldPath));
+          
+          allChildren.forEach(childOldPath => {
+            const childNewPath = childOldPath.replace(oldPath, newName);
+            currentFiles[childNewPath] = currentFiles[childOldPath];
+            delete currentFiles[childOldPath];
+            
+            // Sync UI states
+            if (currentSession.fileName === childOldPath) currentSession.fileName = childNewPath;
+            if (currentSession.lastSelectedFile === childOldPath) currentSession.lastSelectedFile = childNewPath;
+            
+            const tabIdx = openTabs.indexOf(childOldPath);
+            if (tabIdx !== -1) openTabs[tabIdx] = childNewPath;
+            
+            movedCount++;
+          });
+        });
+
+        if (movedCount > 0) {
+          currentSession.selectedFiles = []; // Clear selection to avoid dangling references
           renderFileList(fileListContainer);
           renderTabs(tabsContainer);
+          
+          // Log to terminal
+          const log = document.createElement('div');
+          log.className = 'info';
+          log.style.color = '#79c0ff';
+          log.innerHTML = `<span style="color: #7ee787">[workspace]</span> Moved ${movedCount} items.`;
+          terminal.appendChild(log);
+          terminal.scrollTop = terminal.scrollHeight;
         }
       }
     });
@@ -1296,7 +1421,10 @@ export function renderIDE(lang, translations) {
     function switchFile(name) {
       if (name.endsWith('/')) return;
       currentSession.fileName = name;
-      currentSession.selectedFile = name;
+      if (!currentSession.selectedFiles.includes(name)) {
+        currentSession.selectedFiles = [name];
+        currentSession.lastSelectedFile = name;
+      }
 
       // Add to open tabs if not already there
       if (!openTabs.includes(name)) {
@@ -1333,6 +1461,29 @@ export function renderIDE(lang, translations) {
       currentSession.namingNew = { isRename: false, resultType: 'folder', parent: '' };
       renderFileList(fileListContainer);
     };
+
+    function deselectAll() {
+      if (currentSession.selectedFiles.length > 0) {
+        currentSession.selectedFiles = [];
+        currentSession.lastSelectedFile = null;
+        renderFileList(fileListContainer);
+      }
+    }
+
+    const handleGlobalClick = (e) => {
+      if (currentSession.selectedFiles.length === 0) return;
+      
+      const isFileItem = e.target.closest('.ide-file-item');
+      const isSidebarAction = e.target.closest('.sidebar-action-btn, .badge-dot, .naming-input, .workspace-badge');
+      const isTab = e.target.closest('.ide-tab');
+      // Clicking editor zone SHOULD deselect explorer items per user request
+      const isModal = e.target.closest('.ide-modal');
+
+      if (!isFileItem && !isSidebarAction && !isTab && !isModal) {
+        deselectAll();
+      }
+    };
+    window.addEventListener('mousedown', handleGlobalClick);
 
     section.querySelector('#btn-toggle-workspace').onclick = () => {
       const allFolders = Object.keys(currentFiles).filter(key => key.endsWith('/'));
@@ -1398,19 +1549,40 @@ export function renderIDE(lang, translations) {
       const item = e.target.closest('.ide-file-item');
       if (item && !item.classList.contains('naming-item')) {
         const file = item.dataset.file;
-        const wasSelected = item.classList.contains('active-selection');
-        currentSession.selectedFile = file;
-
-        if (!file.endsWith('/')) {
-          switchFile(file);
-        } else {
-          // If already selected, toggle expansion (sensitivity fix)
-          if (wasSelected) {
-            if (collapsedFolders.has(file)) collapsedFolders.delete(file);
-            else collapsedFolders.add(file);
+        const wasSelected = currentSession.selectedFiles.includes(file);
+        
+        // Multi-selection logic
+        if (e.ctrlKey || e.metaKey) {
+          if (currentSession.selectedFiles.includes(file)) {
+            currentSession.selectedFiles = currentSession.selectedFiles.filter(f => f !== file);
+          } else {
+            currentSession.selectedFiles.push(file);
           }
-          renderFileList(fileListContainer);
+          currentSession.lastSelectedFile = file;
+        } else if (e.shiftKey && currentSession.lastSelectedFile) {
+          const allVisibleFiles = Array.from(fileListContainer.querySelectorAll('.ide-file-item')).map(el => el.dataset.file);
+          const startIdx = allVisibleFiles.indexOf(currentSession.lastSelectedFile);
+          const endIdx = allVisibleFiles.indexOf(file);
+          if (startIdx !== -1 && endIdx !== -1) {
+            const range = allVisibleFiles.slice(Math.min(startIdx, endIdx), Math.max(startIdx, endIdx) + 1);
+            currentSession.selectedFiles = [...new Set([...currentSession.selectedFiles, ...range])];
+          }
+        } else {
+          currentSession.selectedFiles = [file];
+          currentSession.lastSelectedFile = file;
+          if (!file.endsWith('/')) {
+            switchFile(file);
+          } else {
+            // Only toggle if previously selected
+            if (wasSelected) {
+              if (collapsedFolders.has(file)) collapsedFolders.delete(file);
+              else collapsedFolders.add(file);
+            }
+          }
         }
+        renderFileList(fileListContainer);
+      } else {
+        // Handled by global click listener
       }
     };
 
@@ -1529,7 +1701,7 @@ export function renderIDE(lang, translations) {
         pyodide.runPython(`import sys\nimport io\nsys.stdout = io.StringIO()`);
         await pyodide.runPythonAsync(content);
         const stdout = pyodide.runPython("sys.stdout.getvalue()");
-        terminal.innerHTML = stdout ? stdout.replace(/\n/g, '<br>') : `<span class="success">✓ ${translations[lang].playground.terminal.executedSuccess}</span>`;
+        terminal.innerHTML = stdout ? stdout.replace(/\n/g, '<br>') : `<span class="success">${translations[lang].playground.terminal.executedSuccess}</span>`;
       } catch (err) {
         terminal.innerHTML = `<span class="error">${err.message}</span>`;
       }
@@ -1844,8 +2016,8 @@ export function renderIDE(lang, translations) {
     });
 
     // Initial Render
-    // Initial Load: Don't auto-select file unless needed
-    // switchFile('pipeline.py');
+    // Initial Load
+    switchFile(currentSession.fileName);
     renderFileList(fileListContainer);
     renderTabs(tabsContainer);
     renderCatalog();

@@ -269,8 +269,8 @@
 }
 
 .sidebar-action-btn:hover {
-  background: var(--border-color);
-  color: var(--ide-accent);
+  background: rgba(255, 255, 255, 0.08);
+  animation: rainbowSimultaneous 4s linear infinite;
 }
 
 .ide-file-item {
@@ -299,15 +299,17 @@
   border-left: none !important;
 }
 
-.ide-file-item.active-selection::before {
+.ide-file-item.active-selection::before,
+.ide-file-item.active::before {
   content: "";
   position: absolute;
   left: 0px;
   top: 0;
   bottom: 0;
   width: 3px;
-  animation: rainbowSyncBg 10s linear infinite !important;
-  animation-delay: -100s !important;
+  background: var(--rainbow-soft);
+  background-size: 200% auto;
+  animation: rainbowSlide 5s linear infinite !important;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
   z-index: 10;
   border-radius: 0 4px 4px 0;
@@ -983,9 +985,12 @@
 .stats-footer {
   font-size: 9px;
   color: var(--text-secondary);
-  opacity: 0.6;
+  opacity: 0.7;
   text-align: right;
   font-style: italic;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .session-badge {
@@ -1286,11 +1291,14 @@
 
 .stats-footer {
   font-size: 10px;
-  color: #cccccc;
+  color: var(--text-secondary);
   text-align: right;
   font-style: italic;
   font-family: var(--font-mono);
-  opacity: 0.9;
+  opacity: 0.8;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 @media (max-width: 768px) {
