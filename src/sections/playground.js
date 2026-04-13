@@ -1770,6 +1770,28 @@ export function renderIDE(lang, translations) {
 
 
 
+    // Window Logic & Shortcuts
+    window.addEventListener('keydown', (e) => {
+      // F11 Strategy: Override browser fullscreen to focus on IDE if it's open
+      if (e.code === 'F11') {
+        if (ideWindow.style.display !== 'none') {
+          e.preventDefault();
+          if (!document.fullscreenElement) {
+            lastFullscreenWasIDE = true;
+            ideWindow.requestFullscreen().catch(err => {
+              console.warn("IDE F11 Fullscreen failed:", err);
+              lastFullscreenWasIDE = false;
+            });
+          } else {
+            isManualExit = true;
+            document.exitFullscreen().then(() => {
+              setTimeout(() => { isManualExit = false; }, 300);
+            });
+          }
+        }
+      }
+    });
+
     // Window Closing
     section.querySelector('#win-close').onclick = () => {
       ideWindow.style.opacity = '0';
