@@ -403,17 +403,19 @@ export function renderIDE(lang, translations) {
         justify-content: space-between;
         padding: 0 12px;
         font-size: 11px;
-        color: rgba(0, 0, 0, 0.9);
+        color: rgba(0, 0, 0, 0.9) !important;
         font-weight: 500;
         border-bottom-left-radius: 8px;
         border-bottom-right-radius: 8px;
         user-select: none;
-        transition: all 0.3s;
+        transition: color 0.3s, background 0.3s;
       }
+      .ide-status-bar * { color: inherit !important; }
+      
       [data-theme="dark"] .ide-status-bar {
         background: linear-gradient(-45deg, #0e1111, #110e0f, #11110e, #0e0f11);
         background-size: 400% 400%;
-        color: rgba(255, 255, 255, 0.95);
+        color: rgba(255, 255, 255, 0.95) !important;
       }
       .status-left, .status-right { display: flex; align-items: center; gap: 16px; }
       .status-item { display: flex; align-items: center; gap: 4px; }
