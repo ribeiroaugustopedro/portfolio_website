@@ -426,6 +426,35 @@ export function renderIDE(lang, translations) {
         animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
       }
       @keyframes status-pulse { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.8); } }
+
+      /* Table Resizing System */
+      .preview-table th {
+        position: relative;
+        padding: 10px;
+        text-align: left;
+        font-size: 11px;
+        border-bottom: 1px solid var(--ide-border);
+        white-space: nowrap;
+        user-select: none;
+      }
+      .col-resizer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 8px;
+        height: 100%;
+        cursor: col-resize;
+        z-index: 11;
+        background: transparent;
+        transition: background 0.2s;
+      }
+      .col-resizer:hover {
+        background: rgba(121, 192, 255, 0.3) !important;
+      }
+      .col-resizer.resizing {
+        background: rgba(121, 192, 255, 0.6) !important;
+        border-right: 2px solid var(--ide-accent);
+      }
     </style>
     <h2 class="rainbow-title-center reveal" style="color: var(--text-primary); font-family: var(--font-mono);">${translations[lang].playground.title}</h2>
     
@@ -906,9 +935,10 @@ export function renderIDE(lang, translations) {
                     <table class="preview-table">
                       <thead>
                         <tr>
-                          <th style="width: 25px; text-align: center; color: var(--ide-text); opacity: 0.4;">#</th>
+                          <th style="width: 20px; min-width: 20px; text-align: center; color: var(--ide-text); opacity: 0.4; padding: 10px 2px;">#</th>
                           ${item.columns ? item.columns.map(c => `
-                            <th>
+                            <th style="min-width: 80px;">
+                              <div class="col-resizer" data-resizer></div>
                               ${c.name}<br>
                               <small style="opacity: 0.6; font-weight: normal; font-size: 9px;">
                                 ${c.type === 'number' ? 'INT64' : c.type.toUpperCase()}
@@ -2021,8 +2051,11 @@ export function renderIDE(lang, translations) {
                 <table class="preview-table" style="width:100%; border-collapse:collapse;">
                   <thead style="position:sticky; top:0; background:var(--ide-header); z-index:10;">
                     <tr>
-                      <th style="width:25px; text-align:center; padding:10px; font-size:11px; border-bottom:1px solid var(--ide-border); color:var(--ide-text); opacity:0.4;">#</th>
-                      ${columns.map(c => `<th style="text-align:left; padding:10px; font-size:11px; border-bottom:1px solid var(--ide-border);">${c}</th>`).join('')}
+                      <th style="width: 20px; min-width: 20px; text-align: center; padding:10px 2px; font-size: 11px; border-bottom: 1px solid var(--ide-border); color: var(--ide-text); opacity: 0.4;">#</th>
+                      ${columns.map(c => `<th style="min-width: 80px; position:relative;">
+                        <div class="col-resizer" data-resizer></div>
+                        ${c}
+                      </th>`).join('')}
                     </tr>
                   </thead>
                   <tbody>
@@ -2451,6 +2484,65 @@ export function renderIDE(lang, translations) {
 
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
+  };
+
+  // Table Resizer Logic (Universal)
+  const initTableResizers = (container) => {
+    container.querySelectorAll('[data-resizer]').forEach(resizer => {
+      const th = resizer.parentElement;
+      let startX, startWidth;
+
+      resizer.onmousedown = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startX = e.pageX;
+        startWidth = th.offsetWidth;
+        resizer.classList.add('resizing');
+
+        const onMouseMove = (e) => {
+          const newWidth = Math.max(40, startWidth + (e.pageX - startX));
+          th.style.width = `${newWidth}px`;
+          th.style.minWidth = `${newWidth}px`;
+        };
+
+        const onMouseUp = () => {
+          resizer.classList.remove('resizing');
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      };
+
+      // Auto-fit on Double Click (Align ALL columns with text)
+      resizer.ondblclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const table = th.closest('table');
+        if (table) {
+          table.querySelectorAll('th').forEach(header => {
+            header.style.width = '';
+            header.style.minWidth = '';
+          });
+        }
+      };
+    });
+  };
+
+  // Add observer or call init manually in render functions
+  const originalRenderCatalogExplorer = renderCatalogExplorer;
+  renderCatalogExplorer = (...args) => {
+    originalRenderCatalogExplorer(...args);
+    const explorerView = section.querySelector('#catalog-explorer-view');
+    if (explorerView) initTableResizers(explorerView);
+  };
+
+  // We need to call it for terminal too
+  const originalLogToTerminal = logToTerminal;
+  logToTerminal = (...args) => {
+    originalLogToTerminal(...args);
+    initTableResizers(terminal);
   };
 
   return section;
