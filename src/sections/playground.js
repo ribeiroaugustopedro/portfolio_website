@@ -906,6 +906,7 @@ export function renderIDE(lang, translations) {
                     <table class="preview-table">
                       <thead>
                         <tr>
+                          <th style="width: 25px; text-align: center; color: var(--ide-text); opacity: 0.4;">#</th>
                           ${item.columns ? item.columns.map(c => `
                             <th>
                               ${c.name}<br>
@@ -920,9 +921,10 @@ export function renderIDE(lang, translations) {
                         ${(() => {
               const previews = catalogMetadata.previews || {};
               const rows = previews[item.name] || [];
-              if (rows.length === 0) return `<tr><td colspan="${item.columns.length}">No data samples available in MotherDuck</td></tr>`;
+              if (rows.length === 0) return `<tr><td colspan="${item.columns.length + 1}">No data samples available in MotherDuck</td></tr>`;
               return rows.map((row, r) => `
                             <tr>
+                              <td style="text-align: center; opacity: 0.4; font-size: 10px;">${r + 1}</td>
                               ${item.columns ? item.columns.map(c => `<td>${row[c.name] !== undefined ? row[c.name] : '...'}</td>`).join('') : ''}
                             </tr>
                           `).join('');
@@ -1973,13 +1975,11 @@ export function renderIDE(lang, translations) {
 
       // Handle SQL execution
       if (fileName.endsWith('.sql')) {
-        terminal.innerHTML = `<span class="info"><svg class="spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:8px;"><circle cx="12" cy="12" r="10"></circle></svg>Connecting to MotherDuck...</span>`;
+        // Subtle indicator without verbose text
+        terminal.innerHTML = `<span class="info"><svg class="spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:8px;"><circle cx="12" cy="12" r="10"></circle></svg>Executing query...</span>`;
 
-        setTimeout(() => {
-          terminal.innerHTML = `<span class="info" style="color:#7ee787">[catalog] Executing query on MotherDuck cluster...</span><br>`;
-
-          setTimeout(async () => {
-            try {
+        setTimeout(async () => {
+          try {
               // 1. Strip MotherDuck-style namespaces (e.g. warehouse.gold.users -> users)
               // This regex only matches letters-started namespaces to avoid breaking decimals like 1.0
               const cleanContent = content.replace(/([a-zA-Z_][a-zA-Z0-9_]*\.)+([a-zA-Z_][a-zA-Z0-9_]*)/gi, (match) => {
@@ -2014,16 +2014,21 @@ export function renderIDE(lang, translations) {
 
               const columns = Object.keys(rows[0]);
 
-              let html = `<div class="sql-result-wrapper" style="margin-top:10px;">`;
-              html += `<div class="sql-result-meta">Query executed successfully. ${rows.length} rows returned.</div>`;
+              let html = `<div class="sql-result-wrapper" style="margin-top:2px;">`;
+              html += `<div class="sql-result-meta" style="font-size:11px; opacity:0.7; margin-bottom:8px;">${rows.length} rows returned</div>`;
 
-              html += `<div style="overflow-x:auto; margin-top:8px; max-height:250px; border:1px solid var(--ide-border); border-radius:8px;">
+              html += `<div style="overflow-x:auto; max-height:280px; border:1px solid var(--ide-border); border-radius:8px;">
                 <table class="preview-table" style="width:100%; border-collapse:collapse;">
                   <thead style="position:sticky; top:0; background:var(--ide-header); z-index:10;">
-                    <tr>${columns.map(c => `<th style="text-align:left; padding:10px; font-size:11px; border-bottom:1px solid var(--ide-border);">${c}</th>`).join('')}</tr>
+                    <tr>
+                      <th style="width:25px; text-align:center; padding:10px; font-size:11px; border-bottom:1px solid var(--ide-border); color:var(--ide-text); opacity:0.4;">#</th>
+                      ${columns.map(c => `<th style="text-align:left; padding:10px; font-size:11px; border-bottom:1px solid var(--ide-border);">${c}</th>`).join('')}
+                    </tr>
                   </thead>
                   <tbody>
-                    ${rows.slice(0, 50).map(row => `<tr>${columns.map(c => {
+                    ${rows.slice(0, 50).map((row, r) => `<tr>
+                      <td style="padding:8px 10px; font-size:10px; text-align:center; opacity:0.4; font-family:var(--ide-font-mono);">${r + 1}</td>
+                      ${columns.map(c => {
                 let val = row[c];
                 let displayVal = val;
                 if (val === null || val === undefined) displayVal = '<span style="opacity:0.3">NULL</span>';
@@ -2048,7 +2053,7 @@ export function renderIDE(lang, translations) {
               logToTerminal(`SQL Error: ${err.message}`, 'error', true);
             }
           }, 800);
-        }, 500);
+        }, 300);
         return;
       }
 
