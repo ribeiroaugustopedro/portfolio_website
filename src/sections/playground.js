@@ -104,7 +104,7 @@ export function renderIDE(lang, translations) {
       .file-main { display: flex; align-items: center; width: 100%; white-space: nowrap; height: 100%; }
       .file-icon-wrap { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
       .file-main span { overflow: hidden; text-overflow: ellipsis; }
-      .ide-tab .tab-close:hover { opacity: 1; background: rgba(255,255,255,0.1); border-radius: 4px; }
+      .ide-tab .tab-close:hover { opacity: 1; background: rgba(255,255,255,0.1); border-radius: 3px; }
       .ide-tab { width: 160px; flex-shrink: 0; justify-content: space-between; overflow: hidden; }
       .ide-tab .tab-main { display: flex; align-items: center; gap: 6px; overflow: hidden; white-space: nowrap; flex: 1; }
       .ide-tab .tab-main span { overflow: hidden; text-overflow: ellipsis; }
@@ -130,15 +130,16 @@ export function renderIDE(lang, translations) {
       .ide-file-item.active-selection::before {
         content: "";
         position: absolute;
-        left: 0;
+        left: 0px;
         top: 0;
         bottom: 0;
         width: 3px;
         background: var(--rainbow-soft);
         background-size: 200% auto;
         animation: rainbowSlide 5s linear infinite;
-        box-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
         z-index: 10;
+        border-radius: 0 4px 4px 0;
       }
       
       .ide-file-item.drag-over { 
@@ -151,6 +152,7 @@ export function renderIDE(lang, translations) {
         background: rgba(255, 255, 255, 0.05);
         box-shadow: inset 0 0 20px rgba(153, 255, 255, 0.15);
         transition: background 0.2s, box-shadow 0.2s;
+        border-radius: 10px;
       }
       
       .catalog-node.active-selection { 
@@ -161,30 +163,31 @@ export function renderIDE(lang, translations) {
       .catalog-node.active-selection::before {
         content: "";
         position: absolute;
-        left: 0;
+        left: 0px;
         top: 0;
         bottom: 0;
         width: 3px;
         background: var(--rainbow-soft);
         background-size: 200% auto;
         animation: rainbowSlide 5s linear infinite;
-        box-shadow: 0 0 10px rgba(100, 255, 218, 0.3);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
         z-index: 10;
+        border-radius: 0 4px 4px 0;
       }
 
       /* Custom Modal Style */
       .ide-modal-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); z-index: 1000; display:flex; align-items:center; justify-content:center; backdrop-filter: blur(2px); }
-      .ide-modal { background: var(--ide-sidebar); border: 1px solid var(--ide-border); border-radius: 12px; width: 400px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6); overflow: hidden; }
+      .ide-modal { background: var(--ide-sidebar); border: 1px solid var(--ide-border); border-radius: 14px; width: 400px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6); overflow: hidden; }
       .ide-modal-header { padding: 18px 24px; background: var(--ide-header); font-weight: bold; font-size: 15px; color: var(--text-primary); border-bottom: 1px solid var(--ide-border); }
       .ide-modal-body { padding: 24px; font-size: 14px; color: var(--ide-text); line-height: 1.6; }
       .ide-modal-footer { padding: 16px 24px; display:flex; justify-content: flex-end; gap: 12px; background: rgba(0, 0, 0, 0.2); }
-      .modal-btn { padding: 8px 20px; border-radius: 6px; border: none; font-size: 13px; cursor: pointer; transition: all 0.2s; font-family: var(--font-mono); }
+      .modal-btn { padding: 8px 20px; border-radius: 8px; border: none; font-size: 13px; cursor: pointer; transition: all 0.2s; font-family: var(--font-mono); }
       .modal-btn.cancel { background: transparent; color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.1); }
       .modal-btn.cancel:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-primary); }
       .modal-btn.confirm { background: rgba(255, 255, 255, 0.05); color: var(--text-primary); font-weight: bold; border: 1px solid rgba(255, 255, 255, 0.2); }
       .modal-btn.confirm:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-1px); border-color: rgba(255, 255, 255, 0.4); }
 
-      .workspace-copy-btn { opacity: 0; padding: 4px; border-radius: 4px; cursor: pointer; transition: all 0.2s; color: var(--ide-text); display: flex; align-items: center; justify-content: center; margin-left: auto; }
+      .workspace-copy-btn { opacity: 0; padding: 10px; gap: 10px; cursor: pointer; transition: all 0.2s; color: var(--ide-text); display: flex; align-items: center; justify-content: center; margin-left: auto; }
       .ide-file-item:hover .workspace-copy-btn { opacity: 1; }
       .workspace-copy-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--ide-text-bright); }
 
@@ -325,6 +328,7 @@ export function renderIDE(lang, translations) {
     const lineNumbers = section.querySelector('#line-numbers');
     const runBtn = section.querySelector('#run-btn');
     const terminal = section.querySelector('#terminal-output');
+    const ideTerminal = section.querySelector('.ide-terminal');
     const clearBtn = section.querySelector('#clear-btn');
     const restartBtn = section.querySelector('#restart-btn');
     const fileListContainer = section.querySelector('#ide-file-list');
@@ -376,7 +380,7 @@ export function renderIDE(lang, translations) {
             return `
               <div class="ide-file-item naming-item active-selection" style="padding-left: ${15 + indent}px">
                 <div class="file-icon-wrap">${isFolder ? ICONS.folder : getFileIcon(fileName)}</div>
-                <input type="text" class="naming-input" id="naming-input" placeholder="Name..." autofocus />
+                <input type="text" class="naming-input" id="naming-input" placeholder="Name..." autofocus style="border-radius: 8px;" />
               </div>`;
           }
           return `
@@ -399,7 +403,7 @@ export function renderIDE(lang, translations) {
         itemsHtml += `
           <div class="ide-file-item naming-item" style="padding-left: ${15 + indent}px">
             <div class="file-icon-wrap">${type === 'folder' ? ICONS.folder : ICONS.default}</div>
-            <input type="text" class="naming-input" id="naming-input" placeholder="Name..." autofocus />
+            <input type="text" class="naming-input" id="naming-input" placeholder="Name..." autofocus style="border-radius: 8px;" />
           </div>`;
       }
       container.innerHTML = itemsHtml;
@@ -522,29 +526,29 @@ export function renderIDE(lang, translations) {
       const pathParts = item.parentPath.split('/').filter(p => p);
       const icon = CATALOG_ICONS[item.type];
 
+      const fullName = item.id.replace('catalog://', '').split('/').join('.');
       const detailsMap = {
-        catalog: {
-          'Browse only': 'false',
-          'Catalog ID': 'warehouse_db_881',
-          'Created at': 'Dec 10, 2024, 02:41 PM',
-          'Created by': 'pedro@warehouse.ai',
-          'Type': 'MOTHERDUCK_MANAGED',
-          'Updated at': catalogMetadata.updated_at || 'Apr 11, 2026, 09:44 AM'
+        database: {
+          'Object ID': 'db_warehouse_881',
+          'Full Name': fullName,
+          'Schemas': item.children ? item.children.length : '0',
+          'Managed by': 'MotherDuck',
+          'Updated at': 'Apr 12, 2026, 09:44 AM'
         },
         schema: {
-          'Schema ID': 'sch_gold_001',
-          'Catalog': 'warehouse',
-          'Created at': 'Dec 11, 2024, 10:15 AM',
+          'Object ID': 'sch_' + item.name + '_001',
+          'Full Name': fullName,
+          'Tables': item.children ? item.children.length : '0',
           'Managed by': 'MotherDuck',
-          'Updated at': 'Apr 11, 2026, 10:20 AM'
+          'Updated at': 'Apr 12, 2026, 10:20 AM'
         },
         table: {
-          'Table ID': 'tbl_' + Math.random().toString(36).substr(2, 6),
-          'Full Name': `warehouse.${pathParts[1] || 'gold'}.${item.name}`,
+          'Object ID': 'tbl_' + Math.random().toString(36).substr(2, 6),
+          'Full Name': fullName,
           'Columns': item.columns ? item.columns.length : 'N/A',
           'Rows': item.rows || 'N/A',
-          'Format': 'Delta / Parquet',
-          'Updated at': 'Apr 11, 2026, 11:30 AM'
+          'Managed by': 'MotherDuck',
+          'Updated at': 'Apr 12, 2026, 11:30 AM'
         }
       };
 
@@ -553,9 +557,9 @@ export function renderIDE(lang, translations) {
       explorerView.innerHTML = `
         <div class="catalog-explorer">
           <div class="explorer-header">
-            <div class="breadcrumb">Catalog Explorer &rsaquo; ${item.parentPath.split('/').join(' &rsaquo; ')}</div>
+            <div class="breadcrumb">Catalog Explorer &rsaquo; ${item.id.replace('catalog://', '').split('/').join(' &rsaquo; ')}</div>
             <div class="explorer-title" style="display: flex; align-items: center; gap: 8px;">
-              <div class="icon-wrap-table" style="display: flex; align-items: center;">${CATALOG_ICONS.table}</div>
+              <div class="icon-wrap-table" style="display: flex; align-items: center; color: ${item.type === 'database' ? '#79c0ff' : item.type === 'schema' ? '#b392f0' : '#7ee787'}">${CATALOG_ICONS[item.type]}</div>
               <h1>${item.name}</h1>
             </div>
             <div class="explorer-tabs">
@@ -592,21 +596,44 @@ export function renderIDE(lang, translations) {
                       </thead>
                       <tbody>
                         ${(() => {
-              const previews = catalogMetadata.previews || {};
-              const rows = previews[item.name] || [];
-              if (rows.length === 0) return `<tr><td colspan="${item.columns.length}">No data samples available in MotherDuck</td></tr>`;
-
-              return rows.map((row, r) => `
+                          const previews = catalogMetadata.previews || {};
+                          const rows = previews[item.name] || [];
+                          if (rows.length === 0) return `<tr><td colspan="${item.columns.length}">No data samples available in MotherDuck</td></tr>`;
+                          return rows.map((row, r) => `
                             <tr>
                               ${item.columns ? item.columns.map(c => `<td>${row[c.name] !== undefined ? row[c.name] : '...'}</td>`).join('') : ''}
                             </tr>
                           `).join('');
-            })()}
+                        })()}
                       </tbody>
                     </table>
                   </div>
                 </div>
-              ` : ''}
+              ` : `
+                <div class="catalog-flow-container">
+                   <svg class="flow-svg-layer" id="flow-svg"></svg>
+                   <div class="flow-level">
+                      <div class="flow-node" data-level="0" data-node-id="${item.id}">
+                         <div class="node-icon" style="color: ${item.type === 'database' ? '#79c0ff' : '#b392f0'}">${CATALOG_ICONS[item.type]}</div>
+                         <div class="node-info">
+                            <div class="node-name">${item.name}</div>
+                            <div class="node-type">${item.type}</div>
+                         </div>
+                      </div>
+                   </div>
+                   <div class="flow-level">
+                      ${(item.children || []).map(child => `
+                        <div class="flow-node" data-level="1" data-node-id="${item.id}/${child.name}">
+                           <div class="node-icon" style="color: ${child.type === 'schema' ? '#b392f0' : '#7ee787'}">${CATALOG_ICONS[child.type]}</div>
+                           <div class="node-info">
+                              <div class="node-name">${child.name}</div>
+                              <div class="node-type">${child.type}</div>
+                           </div>
+                        </div>
+                      `).join('')}
+                   </div>
+                </div>
+              `}
             ` : `
               <div class="detail-section">
                 <h2>Details</h2>
@@ -647,13 +674,57 @@ export function renderIDE(lang, translations) {
           renderCatalogExplorer();
         };
       });
+
+      // Flowchart Logic
+      const flowContainer = explorerView.querySelector('.catalog-flow-container');
+      const flowSvg = explorerView.querySelector('#flow-svg');
+      
+      const drawLines = () => {
+        if (!flowContainer || !flowSvg) return;
+        const parent = flowContainer.querySelector('.flow-node[data-level="0"]');
+        const children = flowContainer.querySelectorAll('.flow-node[data-level="1"]');
+        if (!parent || children.length === 0) return;
+
+        const cRect = flowContainer.getBoundingClientRect();
+        const pRect = parent.getBoundingClientRect();
+        const px = (pRect.left + pRect.width / 2) - cRect.left;
+        const py = (pRect.bottom) - cRect.top;
+
+        flowSvg.innerHTML = '';
+        children.forEach(child => {
+          const r = child.getBoundingClientRect();
+          const cx = (r.left + r.width / 2) - cRect.left;
+          const cy = (r.top) - cRect.top;
+          const midY = py + (cy - py) / 2;
+
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', `M ${px} ${py} L ${px} ${midY} L ${cx} ${midY} L ${cx} ${cy}`);
+          path.setAttribute('stroke', 'rgba(255,255,255,0.15)');
+          path.setAttribute('stroke-width', '2');
+          path.setAttribute('fill', 'none');
+          flowSvg.appendChild(path);
+        });
+      };
+
+      if (flowContainer) {
+        requestAnimationFrame(() => {
+          drawLines();
+          flowContainer.querySelectorAll('.flow-node').forEach(node => {
+            node.onclick = () => {
+              const id = node.dataset.nodeId;
+              if (id !== item.id) switchView(id);
+            };
+          });
+        });
+        window.addEventListener('resize', drawLines);
+      }
     }
 
     function switchView(tabId) {
       if (tabId.startsWith('catalog://')) {
         const pathParts = tabId.slice(10).split('/'); // warehouse/gold/users
         const name = pathParts[pathParts.length - 1];
-        const type = pathParts.length === 1 ? 'catalog' : pathParts.length === 2 ? 'schema' : 'table';
+        const type = pathParts.length === 1 ? 'database' : pathParts.length === 2 ? 'schema' : 'table';
 
         let nodeRef = null;
         const findNodeRecursive = (list, path = '') => {
@@ -672,7 +743,8 @@ export function renderIDE(lang, translations) {
           parentPath: pathParts.slice(0, -1).join('/'),
           id: tabId,
           columns: nodeRef ? nodeRef.columns : [],
-          rows: nodeRef ? nodeRef.rows : '0'
+          rows: nodeRef ? nodeRef.rows : '0',
+          children: nodeRef ? nodeRef.children : []
         };
         currentSession.fileName = null;
 
@@ -689,6 +761,7 @@ export function renderIDE(lang, translations) {
       }
       renderFileList(fileListContainer);
       renderTabs(tabsContainer);
+      renderCatalog();
     }
 
     function renderCatalog() {
@@ -816,18 +889,15 @@ export function renderIDE(lang, translations) {
 
         // Restore file view if we were in catalog mode
         currentSession.activeCatalogItem = null;
-        if (!currentSession.fileName && openTabs.length > 0) {
-          switchFile(openTabs[0]); // Default to first tab
-        } else if (currentSession.fileName) {
-          switchFile(currentSession.fileName);
-        }
         section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = '');
         section.querySelector('.ide-tabs').style.display = 'flex';
         section.querySelector('#catalog-explorer-view').style.display = 'none';
+        ideTerminal.style.display = 'flex';
       } else {
         activityBar.querySelector('#v-catalog').classList.add('active');
         explorerSidebar.style.display = 'none';
         catalogSidebar.style.display = 'flex';
+        ideTerminal.style.display = 'none';
 
         // Hide editor and tabs when going to catalog if no item selected yet or if one is
         section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = 'none');
@@ -939,11 +1009,7 @@ export function renderIDE(lang, translations) {
         if (node) {
           const wasSelected = nodeEl.classList.contains('active-selection');
 
-          if (node.type === 'table') {
-            switchView(node.id);
-          } else {
-            currentSession.activeCatalogItem = { id: node.id, type: node.type, name: node.name };
-          }
+          switchView(node.id);
 
           // Harmony with Workspace: Toggle expansion only if already selected
           if (wasSelected) {
@@ -1037,7 +1103,7 @@ export function renderIDE(lang, translations) {
       `;
       section.querySelector('#ide-window').appendChild(modal);
 
-      const close = () => { if(modal && modal.parentNode) modal.remove(); window.removeEventListener('keydown', handleKey); };
+      const close = () => { if (modal && modal.parentNode) modal.remove(); window.removeEventListener('keydown', handleKey); };
       const confirm = () => { onConfirm(); close(); };
       const handleKey = (e) => {
         if (e.key === 'Enter') { e.preventDefault(); confirm(); }
@@ -1219,6 +1285,7 @@ export function renderIDE(lang, translations) {
     function switchFile(name) {
       if (name.endsWith('/')) return;
       currentSession.fileName = name;
+      currentSession.selectedFile = name;
 
       // Add to open tabs if not already there
       if (!openTabs.includes(name)) {
@@ -1680,7 +1747,11 @@ export function renderIDE(lang, translations) {
     });
 
     // Initial Render
-    switchFile('pipeline.py');
+    // Initial Load: Don't auto-select file unless needed
+    // switchFile('pipeline.py');
+    renderFileList(fileListContainer);
+    renderTabs(tabsContainer);
+    renderCatalog();
     // Lock auto-scrolls for a longer period to ensure stability
     setTimeout(() => { isInitialLoad = false; }, 500);
   }, 0);
