@@ -547,11 +547,9 @@ export function renderIDE(lang, translations) {
             <span>main</span>
           </div>
           <div class="status-item" title="Python Runtime">
-            <div class="status-dot-pulse"></div>
             <span>Python: Pyodide 0.23.4</span>
           </div>
           <div class="status-item" title="SQL Engine">
-             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
              <span>SQL: DuckDB WASM</span>
           </div>
         </div>
@@ -1751,7 +1749,7 @@ export function renderIDE(lang, translations) {
       const langBadge = section.querySelector('#status-lang-badge span');
       if (langBadge) {
         const ext = name.split('.').pop().toUpperCase();
-        const langMap = { 'PY': 'Python', 'SQL': 'SQL (MotherDuck)', 'MD': 'Markdown', 'JSON': 'JSON' };
+        const langMap = { 'PY': 'Python', 'SQL': 'SQL', 'MD': 'Markdown', 'JSON': 'JSON' };
         langBadge.innerText = langMap[ext] || 'Text';
       }
 
