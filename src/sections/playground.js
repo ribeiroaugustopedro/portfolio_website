@@ -1975,8 +1975,8 @@ export function renderIDE(lang, translations) {
 
       // Handle SQL execution
       if (fileName.endsWith('.sql')) {
-        // Subtle indicator without verbose text
-        terminal.innerHTML = `<span class="info"><svg class="spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:8px;"><circle cx="12" cy="12" r="10"></circle></svg>Executing query...</span>`;
+        // Silent indicator (just a tiny spinner)
+        terminal.innerHTML = `<div class="info" style="display:flex; align-items:center; height:20px;"><svg class="spinner" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle></svg></div>`;
 
         setTimeout(async () => {
           try {
@@ -2014,8 +2014,8 @@ export function renderIDE(lang, translations) {
 
               const columns = Object.keys(rows[0]);
 
-              let html = `<div class="sql-result-wrapper" style="margin-top:2px;">`;
-              html += `<div class="sql-result-meta" style="font-size:11px; opacity:0.7; margin-bottom:8px;">${rows.length} rows returned</div>`;
+              let html = `<div class="sql-result-wrapper" style="margin-top:2px; text-align:left;">`;
+              html += `<div class="sql-result-meta" style="font-size:11px; opacity:0.6; margin-bottom:10px;">${rows.length} rows, ${columns.length} columns returned</div>`;
 
               html += `<div style="overflow-x:auto; max-height:280px; border:1px solid var(--ide-border); border-radius:8px;">
                 <table class="preview-table" style="width:100%; border-collapse:collapse;">
