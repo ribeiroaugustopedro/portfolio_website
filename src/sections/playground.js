@@ -1873,11 +1873,15 @@ export function renderIDE(lang, translations) {
       wasFabVisible: false
     };
 
-    const scrollToProjectsTop = () => {
+    const scrollToProjectsTop = (instant = false) => {
+      if (returnPositionY !== null) {
+        window.scrollTo({ top: returnPositionY, behavior: instant ? 'auto' : 'smooth' });
+        return;
+      }
       const projectsSec = document.getElementById('projects');
       if (projectsSec) {
         const targetY = projectsSec.offsetTop - 20;
-        window.scrollTo({ top: targetY, behavior: 'smooth' });
+        window.scrollTo({ top: targetY, behavior: instant ? 'auto' : 'smooth' });
       }
     };
 
@@ -1992,34 +1996,19 @@ export function renderIDE(lang, translations) {
           lastFullscreenWasIDE = false;
         });
       } else {
-        if (returnPositionY !== null) {
-          // Erro 3 Fix: Green button from project = Soft Exit
-          // Just go back to projects, don't hide IDE, don't mess with site below
-          isManualExit = true;
-          document.exitFullscreen().then(() => {
-            setTimeout(() => {
-              scrollToProjectsTop();
-              returnPositionY = null;
-              isManualExit = false;
-            }, 300);
-          }).catch(() => {
-            scrollToProjectsTop();
+        // Always return to Playground view, regardless of where we came from
+        isManualExit = true;
+        document.exitFullscreen().then(() => {
+          setTimeout(() => {
+            scrollToPlaygroundTop();
             returnPositionY = null;
             isManualExit = false;
-          });
-        } else {
-          isManualExit = true;
-          document.exitFullscreen()
-            .then(() => {
-              setTimeout(scrollToPlaygroundTop, 300);
-              setTimeout(scrollToPlaygroundTop, 600);
-              setTimeout(() => { isManualExit = false; }, 700);
-            })
-            .catch(() => {
-              scrollToPlaygroundTop();
-              isManualExit = false;
-            });
-        }
+          }, 150);
+        }).catch(() => {
+          scrollToPlaygroundTop();
+          returnPositionY = null;
+          isManualExit = false;
+        });
       }
     };
 
@@ -2063,14 +2052,10 @@ export function renderIDE(lang, translations) {
         if (!lastFullscreenWasIDE) return;
 
         if (!isManualExit) {
-          if (returnPositionY !== null) {
-            scrollToProjectsTop();
-            returnPositionY = null;
-          } else if (ideWindow.style.display !== 'none' || restoreFab.style.display === 'flex') {
-            // Stabilize scroll after FS transition
-            setTimeout(scrollToPlaygroundTop, 300);
-            setTimeout(scrollToPlaygroundTop, 600);
-          }
+          // If the exit was triggered by the user (e.g. ESC key)
+          // we always want to land at the playground section
+          setTimeout(scrollToPlaygroundTop, 150);
+          returnPositionY = null;
         }
 
         // Reset the tracker after handling
