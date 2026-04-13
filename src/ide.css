@@ -1961,3 +1961,34 @@
 [data-theme="light"] .preview-table tr:hover {
   background: rgba(0, 0, 0, 0.04);
 }
+
+/* Terminal Resizer */
+.ide-terminal-resizer {
+  height: 4px;
+  background: transparent;
+  cursor: row-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  position: relative;
+  transition: background 0.2s;
+  margin: -2px 0; /* Overlap slightly to make it easier to grab without adding gap */
+}
+
+.ide-terminal-resizer:hover {
+  background: rgba(255, 255, 255, 0.15);
+  opacity: 1;
+}
+
+.resizer-bar {
+  width: 30px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1px;
+}
+
+.ide-terminal-resizer:hover .resizer-bar {
+  background: var(--ide-text-bright);
+}
+

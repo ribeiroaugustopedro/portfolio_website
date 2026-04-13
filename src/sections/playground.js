@@ -1,5 +1,53 @@
 import { files } from '../data/ideFiles.js';
 import catalogMetadata from '../data/catalog_metadata.json';
+import * as duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.0/+esm';
+
+let db = null;
+let conn = null;
+
+async function initDuckDB() {
+  if (db) return { db, conn };
+  
+  const terminal = document.querySelector('.terminal-output');
+  if (terminal) terminal.innerHTML = `<span class="info"><svg class="spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-right:8px;"><circle cx="12" cy="12" r="10"></circle></svg>Loading Data Warehouse (Parquet Engine)...</span>`;
+
+  try {
+    const JSDELIVR_BUNDLES = duckdb.getJsDelivrBundles();
+    const bundle = await duckdb.selectBundle(JSDELIVR_BUNDLES);
+    const worker_url = URL.createObjectURL(
+      new Blob([`importScripts("${bundle.mainWorker}");`], { type: 'text/javascript' })
+    );
+    const worker = new Worker(worker_url);
+    const logger = new duckdb.ConsoleLogger();
+    const db_instance = new duckdb.AsyncDuckDB(logger, worker);
+    await db_instance.instantiate(bundle.mainModule, bundle.pthreadWorker);
+    URL.revokeObjectURL(worker_url);
+    
+    const connection = await db_instance.connect();
+    
+    // Register Parquet Files
+    const providersUrl = new URL('/data/providers.parquet', window.location.origin).href;
+    const usersUrl = new URL('/data/users.parquet', window.location.origin).href;
+    
+    await db_instance.registerFileURL('providers.parquet', providersUrl, duckdb.DuckDBDataProtocol.HTTP, false);
+    await db_instance.registerFileURL('users.parquet', usersUrl, duckdb.DuckDBDataProtocol.HTTP, false);
+    
+    // Create Tables from Parquet
+    await connection.query(`CREATE TABLE providers AS SELECT * FROM 'providers.parquet'`);
+    await connection.query(`CREATE TABLE users AS SELECT * FROM 'users.parquet'`);
+
+    if (terminal) {
+      terminal.innerHTML = `<span class="info" style="color:#7ee787">✓ Warehouse ready. Data loaded from Parquet.</span><br>`;
+    }
+
+    db = db_instance;
+    conn = connection;
+    return { db, conn };
+  } catch (err) {
+    if (terminal) terminal.innerHTML += `<span class="error">DuckDB Init Error: ${err.message}</span><br>`;
+    throw err;
+  }
+}
 
 export function renderIDE(lang, translations) {
   const section = document.createElement('section');
@@ -15,20 +63,8 @@ export function renderIDE(lang, translations) {
   let collapsedFolders = new Set();
   let isInitialLoad = true;
 
-  // Initialize SQL engine with catalog data
-  if (window.alasql) {
-    try {
-      // Clear any existing tables (relevant if function is re-called)
-      alasql('DROP TABLE IF EXISTS providers');
-      alasql('DROP TABLE IF EXISTS users');
-      
-      Object.keys(catalogMetadata.previews || {}).forEach(tableName => {
-        alasql(`CREATE TABLE ${tableName} (SELECT * FROM ?)`, [catalogMetadata.previews[tableName]]);
-      });
-    } catch (e) {
-      console.warn("AlaSQL Init error:", e);
-    }
-  }
+  // Initialize SQL engine
+  initDuckDB().catch(e => console.error("DuckDB Init failed:", e));
 
   const currentSession = {
     fileName: 'README.md',
@@ -314,15 +350,15 @@ export function renderIDE(lang, translations) {
               <div id="catalog-explorer-view" class="catalog-explorer" style="display: none;"></div>
             </div>
           </div>
+          <div class="ide-terminal-resizer" id="terminal-resizer" title="Resize Terminal">
+            <div class="resizer-bar"></div>
+          </div>
           <div class="ide-terminal">
             <div class="terminal-header">
               <span>${translations[lang].playground.terminal.title}</span>
               <div class="terminal-actions">
                 <button id="run-btn" class="run-btn" title="${translations[lang].playground.tooltips.run}" style="padding-top: 2px;">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                </button>
-                <button id="restart-btn" class="run-btn" title="${translations[lang].playground.tooltips.restart}">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                 </button>
                 <button id="clear-btn" class="run-btn" title="${translations[lang].playground.tooltips.clear}">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -351,7 +387,6 @@ export function renderIDE(lang, translations) {
     const terminal = section.querySelector('#terminal-output');
     const ideTerminal = section.querySelector('.ide-terminal');
     const clearBtn = section.querySelector('#clear-btn');
-    const restartBtn = section.querySelector('#restart-btn');
     const fileListContainer = section.querySelector('#ide-file-list');
     const catalogTreeContainer = section.querySelector('#catalog-tree');
     const tabsContainer = section.querySelector('#ide-tabs');
@@ -449,6 +484,7 @@ export function renderIDE(lang, translations) {
         const input = container.querySelector('#naming-input');
         if (currentSession.namingNew.initialName) input.value = currentSession.namingNew.initialName;
         setTimeout(() => {
+          if (!input || !currentSession.namingNew) return; // Safety check for fast blur/cancel
           input.focus();
           if (currentSession.namingNew.isRename) {
             const dotIndex = input.value.lastIndexOf('.');
@@ -1638,19 +1674,41 @@ export function renderIDE(lang, translations) {
         setTimeout(() => {
           terminal.innerHTML = `<span class="info" style="color:#7ee787">[catalog] Executing query on MotherDuck cluster...</span><br>`;
           
-          setTimeout(() => {
+          setTimeout(async () => {
             try {
-              // Real SQL execution via AlaSQL
-              const result = alasql(content);
+              // 1. Strip MotherDuck-style namespaces (e.g. warehouse.gold.users -> users)
+              // This regex only matches letters-started namespaces to avoid breaking decimals like 1.0
+              const cleanContent = content.replace(/([a-zA-Z_][a-zA-Z0-9_]*\.)+([a-zA-Z_][a-zA-Z0-9_]*)/gi, (match) => {
+                const parts = match.split('.');
+                const tableName = parts[parts.length - 1].toLowerCase();
+                const knownTables = ['users', 'providers', 'orders', 'products', 'metrics'];
+                // Only replace if it's one of our known Parquet tables
+                if (knownTables.includes(tableName)) return tableName;
+                return match;
+              });
+
+              // Real SQL execution via DuckDB-WASM on the real warehouse.db
+              const duck = await initDuckDB();
+              const result = await duck.conn.query(cleanContent);
               
-              if (!result || (Array.isArray(result) && result.length === 0)) {
+              // Handle results: DuckDB returns an Apache Arrow table, convert to array
+              const rows = result.toArray().map(row => {
+                const obj = {};
+                for (const key of Object.keys(row)) {
+                  let val = row[key];
+                  // Handle types that JSON/JS don't natively like
+                  if (typeof val === 'bigint') val = Number(val);
+                  obj[key] = val;
+                }
+                return obj;
+              });
+
+              if (rows.length === 0) {
                 terminal.innerHTML += `<span class="info" style="opacity:0.6">Query executed successfully. No rows returned.</span>`;
                 return;
               }
 
-              // Handle both array results (SELECT) and other types (INSERT/UPDATE/etc)
-              const rows = Array.isArray(result) ? result : [result];
-              const columns = rows.length > 0 && typeof rows[0] === 'object' ? Object.keys(rows[0]) : ['Result'];
+              const columns = Object.keys(rows[0]);
 
               let html = `<div class="sql-result-wrapper" style="margin-top:10px;">`;
               html += `<div class="sql-result-meta">Query executed successfully. ${rows.length} rows returned.</div>`;
@@ -1661,12 +1719,17 @@ export function renderIDE(lang, translations) {
                     <tr>${columns.map(c => `<th style="text-align:left; padding:10px; font-size:11px; border-bottom:1px solid var(--ide-border);">${c}</th>`).join('')}</tr>
                   </thead>
                   <tbody>
-                    ${rows.slice(0, 50).map(row => `
-                      <tr>${columns.map(c => {
-                        const val = typeof row === 'object' ? row[c] : row;
-                        return `<td style="padding:8px 10px; font-size:12px; opacity:0.8;">${val !== undefined ? val : 'NULL'}</td>`;
-                      }).join('')}</tr>
-                    `).join('')}
+                    ${rows.slice(0, 50).map(row => `<tr>${columns.map(c => {
+                        let val = row[c];
+                        let displayVal = val;
+                        if (val === null || val === undefined) displayVal = '<span style="opacity:0.3">NULL</span>';
+                        else if (typeof val === 'number') {
+                          displayVal = !Number.isInteger(val) ? 
+                            val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) : 
+                            val.toLocaleString('en-US');
+                        } else if (typeof val === 'object' && val.toString) displayVal = val.toString();
+                        return `<td style="padding:8px 10px; font-size:12px; opacity:0.8; font-family:var(--ide-font-mono);">${displayVal}</td>`;
+                      }).join('')}</tr>`).join('')}
                   </tbody>
                 </table>
               </div>`;
@@ -2032,5 +2095,42 @@ export function renderIDE(lang, translations) {
     setTimeout(() => { isInitialLoad = false; }, 500);
   }, 0);
 
-  return section;
-}
+    // Terminal Resizer Logic
+    const resizer = section.querySelector('#terminal-resizer');
+    const terminalEl = section.querySelector('.ide-terminal');
+    const editorMainEl = section.querySelector('.ide-editor-main');
+    let isResizing = false;
+
+    resizer.onmousedown = (e) => {
+      isResizing = true;
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+      
+      const onMouseMove = (e) => {
+        if (!isResizing) return;
+        const containerRect = section.querySelector('.ide-editor-container').getBoundingClientRect();
+        const relativeY = e.clientY - containerRect.top;
+        const totalHeight = containerRect.height;
+        let terminalHeight = totalHeight - relativeY - 3;
+        
+        if (terminalHeight > 60 && terminalHeight < totalHeight - 150) {
+          terminalEl.style.height = `${terminalHeight}px`;
+          terminalEl.style.flex = 'none';
+          editorMainEl.style.flex = '1';
+        }
+      };
+
+      const onMouseUp = () => {
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    };
+
+    return section;
+  }
