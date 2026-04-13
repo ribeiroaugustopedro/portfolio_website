@@ -1465,13 +1465,10 @@ export function renderIDE(lang, translations) {
         }
       }
 
-      // Ctrl + Shift + ` : New Terminal + Open IDE Fullscreen
+      // Ctrl + Shift + ` : New Terminal
       if (e.ctrlKey && e.shiftKey && e.code === 'Backquote') {
         e.preventDefault();
         terminalAdd.click(); // Create new terminal
-        if (!document.fullscreenElement) {
-          section.querySelector('#win-max').click();
-        }
       }
 
       // Ctrl + B: Toggle Sidebar
