@@ -367,9 +367,9 @@ The **Catalog** sidebar provides a deep technical view of the Warehouse:
       
       .ide-status-bar {
         height: 22px;
-        background: linear-gradient(-45deg, #1d1b32, #2a1b32, #1b3231, #1b321e, #1b1e32);
-        background-size: 400% 400%;
-        animation: rainbowSlide 8s ease infinite;
+        background: var(--rainbow-gradient);
+        background-size: 200% 200%;
+        animation: rainbowSlide 5s linear infinite;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -380,14 +380,11 @@ The **Catalog** sidebar provides a deep technical view of the Warehouse:
         border-bottom-left-radius: 8px;
         border-bottom-right-radius: 8px;
         user-select: none;
-        transition: all 0.3s ease;
+        transition: color 0.3s ease;
       }
       .ide-status-bar * { color: inherit !important; }
       
       [data-theme="light"] .ide-status-bar {
-        background: var(--rainbow-gradient);
-        background-size: 200% 200%;
-        animation: rainbowSlide 5s linear infinite;
         color: rgba(0, 0, 0, 0.9) !important;
       }
       .status-left, .status-right { display: flex; align-items: center; gap: 16px; }
