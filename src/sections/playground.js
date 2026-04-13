@@ -1650,23 +1650,23 @@ export function renderIDE(lang, translations) {
                // Advanced simulation: Show a "Calculated Result"
                html += `<div class="sql-result-calc" style="padding:15px; background:rgba(126,231,135,0.05); border:1px solid rgba(126,231,135,0.2); border-radius:8px; margin-top:8px;">
                  <div style="font-size:11px; opacity:0.6; margin-bottom:10px; text-transform:uppercase;">Aggregation Result (Sample)</div>
-                 <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                   <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);"><th style="text-align:left; padding:8px;">${content.match(/SELECT\s+(.+?)\s+FROM/i)?.[1] || 'result'}</th></tr></thead>
-                   <tbody><tr><td style="padding:8px; color:#7ee787;">${Math.floor(Math.random() * 1000000).toLocaleString()}</td></tr></tbody>
-                 </table>
+                  <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                    <thead><tr style="border-bottom:1px solid var(--ide-table-border-dim);"><th style="text-align:left; padding:8px;">${content.match(/SELECT\s+(.+?)\s+FROM/i)?.[1] || 'result'}</th></tr></thead>
+                    <tbody><tr><td style="padding:8px; color:#7ee787;">${Math.floor(Math.random() * 1000000).toLocaleString()}</td></tr></tbody>
+                  </table>
                </div>`;
             } else {
                // Regular SELECT table
                const columns = Object.keys(tableData[0]);
                html += `<div style="overflow-x:auto; margin-top:8px; max-height:250px; border:1px solid var(--ide-border); border-radius:8px;">
-                 <table class="preview-table" style="width:100%; border-collapse:collapse; background:rgba(0,0,0,0.2);">
+                  <table class="preview-table" style="width:100%; border-collapse:collapse;">
                    <thead style="position:sticky; top:0; background:var(--ide-header); z-index:10;">
                      <tr>${columns.map(c => `<th style="text-align:left; padding:10px; font-size:11px; border-bottom:1px solid var(--ide-border);">${c}</th>`).join('')}</tr>
                    </thead>
                    <tbody>
-                     ${tableData.slice(0, 10).map(row => `
-                       <tr>${columns.map(c => `<td style="padding:8px 10px; font-size:12px; border-bottom:1px solid rgba(255,255,255,0.05); opacity:0.8;">${row[c]}</td>`).join('')}</tr>
-                     `).join('')}
+                      ${tableData.slice(0, 10).map(row => `
+                        <tr>${columns.map(c => `<td style="padding:8px 10px; font-size:12px; opacity:0.8;">${row[c]}</td>`).join('')}</tr>
+                      `).join('')}
                    </tbody>
                  </table>
                </div>`;
