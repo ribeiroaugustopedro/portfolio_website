@@ -286,31 +286,119 @@ export function renderIDE(lang, translations) {
         animation: pulse-ring 1.5s ease-out infinite;
       }
 
-      .terminal-instance-select {
+      .terminal-instance-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .custom-select-trigger {
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid var(--ide-border);
         color: var(--ide-text);
         font-size: 11px;
-        padding: 2px 24px 2px 8px;
-        border-radius: 4px;
-        outline: none;
+        padding: 4px 28px 4px 10px;
+        border-radius: 8px;
         cursor: pointer;
         font-family: var(--ide-font-mono);
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23858585' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        position: relative;
+        transition: all 0.2s;
+        min-width: 100px;
+        display: flex;
+        align-items: center;
+        user-select: none;
+      }
+      .custom-select-trigger::after {
+        content: "";
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 10px;
+        height: 10px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23858585' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
         background-repeat: no-repeat;
-        background-position: right 8px center;
-        background-size: 10px;
+        background-size: contain;
       }
-      [data-theme="light"] .terminal-instance-select {
-        background-color: rgba(0, 0, 0, 0.03);
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2357606a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      [data-theme="light"] .custom-select-trigger::after {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2357606a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
       }
-      .terminal-instance-select:hover { background-color: rgba(255, 255, 255, 0.1); }
-      [data-theme="light"] .terminal-instance-select:hover { background-color: rgba(0, 0, 0, 0.06); }
-      .terminal-instance-select option {
+      .custom-select-trigger:hover { 
+        background-color: rgba(255, 255, 255, 0.1); 
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+      [data-theme="light"] .custom-select-trigger { background-color: rgba(0, 0, 0, 0.03); }
+      [data-theme="light"] .custom-select-trigger:hover { background-color: rgba(0, 0, 0, 0.06); }
+
+      .custom-select-options {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 0;
+        right: 0;
         background: var(--ide-sidebar);
+        border: 1px solid var(--ide-border);
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        display: none;
+        z-index: 1001;
+        overflow: hidden;
+        padding: 4px;
+      }
+      .custom-select-options.active { display: block; }
+      
+      .custom-select-option {
+        padding: 6px 10px;
+        font-size: 11px;
         color: var(--ide-text);
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s;
+        font-family: var(--ide-font-mono);
+      }
+      .custom-select-option:hover {
+        background: rgba(255, 255, 255, 0.08);
+        animation: rainbowSimultaneous 4s linear infinite;
+        color: var(--ide-text-bright);
+      }
+      .custom-select-option.selected {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--ide-text-bright);
+        font-weight: bold;
+      }
+
+      .custom-select-options {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        background: var(--ide-sidebar);
+        border: 1px solid var(--ide-border);
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        display: none;
+        z-index: 1001;
+        overflow: hidden;
+        padding: 4px;
+      }
+      .custom-select-options.active { display: block; }
+      
+      .custom-select-option {
+        padding: 6px 10px;
+        font-size: 11px;
+        color: var(--ide-text);
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s;
+        font-family: var(--ide-font-mono);
+      }
+      .custom-select-option:hover {
+        background: rgba(255, 255, 255, 0.08);
+        animation: rainbowSimultaneous 4s linear infinite;
+        color: var(--ide-text-bright);
+      }
+      .custom-select-option.selected {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--ide-text-bright);
+        font-weight: bold;
       }
       .terminal-add-btn {
         display: flex;
@@ -427,7 +515,10 @@ export function renderIDE(lang, translations) {
               <div style="display: flex; align-items: center; gap: 12px;">
                 <span>${translations[lang].playground.terminal.title}</span>
                 <div style="display: flex; align-items: center; gap: 4px;">
-                  <select id="terminal-select" class="terminal-instance-select"></select>
+                  <div class="terminal-instance-container">
+                    <div id="terminal-select-trigger" class="custom-select-trigger">1: Terminal</div>
+                    <div id="terminal-select-options" class="custom-select-options"></div>
+                  </div>
                   <div id="terminal-add" class="terminal-add-btn" title="New Terminal">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                   </div>
@@ -474,26 +565,45 @@ export function renderIDE(lang, translations) {
     const activityBar = section.querySelector('.ide-activity-bar');
     const explorerSidebar = section.querySelector('#sidebar-explorer');
     const catalogSidebar = section.querySelector('#sidebar-catalog');
-    const terminalSelect = section.querySelector('#terminal-select');
+    const terminalSelectTrigger = section.querySelector('#terminal-select-trigger');
+    const terminalSelectOptions = section.querySelector('#terminal-select-options');
     const terminalAdd = section.querySelector('#terminal-add');
 
 
     function updateTerminalUI() {
-      if (!terminalSelect) return;
-      terminalSelect.innerHTML = terminalInstances.map(t => 
-        `<option value="${t.id}" ${t.id === activeTerminalId ? 'selected' : ''}>${t.id}: ${t.name}</option>`
-      ).join('');
+      if (!terminalSelectTrigger || !terminalSelectOptions) return;
       
       const active = terminalInstances.find(t => t.id === activeTerminalId);
-      terminal.innerHTML = active.content || '';
-      terminal.scrollTop = terminal.scrollHeight;
+      terminalSelectTrigger.innerText = active ? `${active.id}: ${active.name}` : translations[lang].playground.terminal.title;
+
+      terminalSelectOptions.innerHTML = terminalInstances.map(t => 
+        `<div class="custom-select-option ${t.id === activeTerminalId ? 'selected' : ''}" data-id="${t.id}">${t.id}: ${t.name}</div>`
+      ).join('');
+
+      terminalSelectOptions.querySelectorAll('.custom-select-option').forEach(opt => {
+        opt.onclick = (e) => {
+          e.stopPropagation();
+          activeTerminalId = parseInt(opt.dataset.id);
+          terminalSelectOptions.classList.remove('active');
+          updateTerminalUI();
+        };
+      });
+      
+      if (active) {
+        terminal.innerHTML = active.content || '';
+        terminal.scrollTop = terminal.scrollHeight;
+      }
     }
     updateTerminalUIBound = updateTerminalUI;
 
-    terminalSelect.onchange = (e) => {
-      activeTerminalId = parseInt(e.target.value);
-      updateTerminalUI();
+    terminalSelectTrigger.onclick = (e) => {
+      e.stopPropagation();
+      terminalSelectOptions.classList.toggle('active');
     };
+
+    document.addEventListener('click', () => {
+      if (terminalSelectOptions) terminalSelectOptions.classList.remove('active');
+    });
 
     terminalAdd.onclick = () => {
       const newId = terminalInstances.length > 0 ? Math.max(...terminalInstances.map(t => t.id)) + 1 : 1;
