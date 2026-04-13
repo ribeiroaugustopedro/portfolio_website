@@ -260,7 +260,7 @@ The **Catalog** sidebar provides a deep technical view of the Warehouse:
 
       .terminal-instance-select {
         background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--ide-border);
         color: var(--ide-text);
         font-size: 11px;
         padding: 2px 24px 2px 8px;
@@ -269,12 +269,16 @@ The **Catalog** sidebar provides a deep technical view of the Warehouse:
         cursor: pointer;
         font-family: var(--ide-font-mono);
         appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 8px center;
         background-size: 10px;
       }
+      [data-theme="light"] .terminal-instance-select {
+        background: rgba(0, 0, 0, 0.03);
+      }
       .terminal-instance-select:hover { background-color: rgba(255, 255, 255, 0.1); }
+      [data-theme="light"] .terminal-instance-select:hover { background-color: rgba(0, 0, 0, 0.06); }
       .terminal-instance-select option {
         background: var(--ide-sidebar);
         color: var(--ide-text);
