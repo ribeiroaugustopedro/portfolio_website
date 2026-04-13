@@ -14,6 +14,22 @@ export function renderIDE(lang, translations) {
   let openTabs = ['README.md'];
   let collapsedFolders = new Set();
   let isInitialLoad = true;
+
+  // Initialize SQL engine with catalog data
+  if (window.alasql) {
+    try {
+      // Clear any existing tables (relevant if function is re-called)
+      alasql('DROP TABLE IF EXISTS providers');
+      alasql('DROP TABLE IF EXISTS users');
+      
+      Object.keys(catalogMetadata.previews || {}).forEach(tableName => {
+        alasql(`CREATE TABLE ${tableName} (SELECT * FROM ?)`, [catalogMetadata.previews[tableName]]);
+      });
+    } catch (e) {
+      console.warn("AlaSQL Init error:", e);
+    }
+  }
+
   const currentSession = {
     fileName: 'README.md',
     sidebar: 'explorer', // 'explorer' or 'catalog'
@@ -1623,56 +1639,47 @@ export function renderIDE(lang, translations) {
           terminal.innerHTML = `<span class="info" style="color:#7ee787">[catalog] Executing query on MotherDuck cluster...</span><br>`;
           
           setTimeout(() => {
-            // Simple SQL parsing
-            const tableMatch = content.match(/FROM\s+([a-zA-Z0-9_]+\.)*([a-zA-Z0-9_]+)/i);
-            const tableName = tableMatch ? tableMatch[2] : null;
-            const isAggregation = /COUNT\(|SUM\(|AVG\(|GROUP\s+BY/i.test(content);
-            const isWindow = /OVER\s*\(/i.test(content);
+            try {
+              // Real SQL execution via AlaSQL
+              const result = alasql(content);
+              
+              if (!result || (Array.isArray(result) && result.length === 0)) {
+                terminal.innerHTML += `<span class="info" style="opacity:0.6">Query executed successfully. No rows returned.</span>`;
+                return;
+              }
 
-            if (!tableName) {
-              terminal.innerHTML += `<span class="error">SQL Error: No table source found in query.</span>`;
-              return;
+              // Handle both array results (SELECT) and other types (INSERT/UPDATE/etc)
+              const rows = Array.isArray(result) ? result : [result];
+              const columns = rows.length > 0 && typeof rows[0] === 'object' ? Object.keys(rows[0]) : ['Result'];
+
+              let html = `<div class="sql-result-wrapper" style="margin-top:10px;">`;
+              html += `<div class="sql-result-meta">Query executed successfully. ${rows.length} rows returned.</div>`;
+              
+              html += `<div style="overflow-x:auto; margin-top:8px; max-height:250px; border:1px solid var(--ide-border); border-radius:8px;">
+                <table class="preview-table" style="width:100%; border-collapse:collapse;">
+                  <thead style="position:sticky; top:0; background:var(--ide-header); z-index:10;">
+                    <tr>${columns.map(c => `<th style="text-align:left; padding:10px; font-size:11px; border-bottom:1px solid var(--ide-border);">${c}</th>`).join('')}</tr>
+                  </thead>
+                  <tbody>
+                    ${rows.slice(0, 50).map(row => `
+                      <tr>${columns.map(c => {
+                        const val = typeof row === 'object' ? row[c] : row;
+                        return `<td style="padding:8px 10px; font-size:12px; opacity:0.8;">${val !== undefined ? val : 'NULL'}</td>`;
+                      }).join('')}</tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>`;
+              
+              if (rows.length > 50) {
+                html += `<div style="font-size:10px; opacity:0.5; margin-top:5px; text-align:center;">Showing first 50 rows only.</div>`;
+              }
+              
+              html += `</div>`;
+              terminal.innerHTML += html;
+            } catch (err) {
+              terminal.innerHTML += `<span class="error">SQL Error: ${err.message}</span>`;
             }
-
-            const previews = catalogMetadata.previews || {};
-            const tableData = previews[tableName];
-
-            if (!tableData) {
-              terminal.innerHTML += `<span class="error">SQL Error: Table '<b>${tableName}</b>' not found in catalog.</span>`;
-              return;
-            }
-
-            // High-fidelity Result Table
-            let html = `<div class="sql-result-wrapper" style="margin-top:10px;">`;
-            html += `<div class="sql-result-meta">Query executed successfully. ${tableData.length} rows returned.</div>`;
-            
-            if (isAggregation || isWindow) {
-               // Advanced simulation: Show a "Calculated Result"
-               html += `<div class="sql-result-calc" style="padding:15px; background:rgba(126,231,135,0.05); border:1px solid rgba(126,231,135,0.2); border-radius:8px; margin-top:8px;">
-                 <div style="font-size:11px; opacity:0.6; margin-bottom:10px; text-transform:uppercase;">Aggregation Result (Sample)</div>
-                  <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                    <thead><tr style="border-bottom:1px solid var(--ide-table-border-dim);"><th style="text-align:left; padding:8px;">${content.match(/SELECT\s+(.+?)\s+FROM/i)?.[1] || 'result'}</th></tr></thead>
-                    <tbody><tr><td style="padding:8px; color:#7ee787;">${Math.floor(Math.random() * 1000000).toLocaleString()}</td></tr></tbody>
-                  </table>
-               </div>`;
-            } else {
-               // Regular SELECT table
-               const columns = Object.keys(tableData[0]);
-               html += `<div style="overflow-x:auto; margin-top:8px; max-height:250px; border:1px solid var(--ide-border); border-radius:8px;">
-                  <table class="preview-table" style="width:100%; border-collapse:collapse;">
-                   <thead style="position:sticky; top:0; background:var(--ide-header); z-index:10;">
-                     <tr>${columns.map(c => `<th style="text-align:left; padding:10px; font-size:11px; border-bottom:1px solid var(--ide-border);">${c}</th>`).join('')}</tr>
-                   </thead>
-                   <tbody>
-                      ${tableData.slice(0, 10).map(row => `
-                        <tr>${columns.map(c => `<td style="padding:8px 10px; font-size:12px; opacity:0.8;">${row[c]}</td>`).join('')}</tr>
-                      `).join('')}
-                   </tbody>
-                 </table>
-               </div>`;
-            }
-            html += `</div>`;
-            terminal.innerHTML += html;
             terminal.scrollTop = terminal.scrollHeight;
           }, 800);
         }, 500);
