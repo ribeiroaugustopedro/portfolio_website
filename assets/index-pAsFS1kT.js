@@ -367,9 +367,9 @@ The **Catalog** sidebar provides a deep technical view of the Warehouse:
       
       .ide-status-bar {
         height: 22px;
-        background: linear-gradient(-45deg, #0e1111, #110e0f, #11110e, #0e0f11);
+        background: linear-gradient(-45deg, #1d1b32, #2a1b32, #1b3231, #1b321e, #1b1e32);
         background-size: 400% 400%;
-        animation: rainbowSlide 10s linear infinite;
+        animation: rainbowSlide 8s ease infinite;
         display: flex;
         align-items: center;
         justify-content: space-between;
