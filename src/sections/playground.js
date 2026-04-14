@@ -1913,8 +1913,8 @@ print(f"Maximum Peak: {metrics['peak']}")`
     </div>
   `;
 
-  // Interaction Logic
-  setTimeout(async () => {
+  // Interaction Logic (Moved out of async setTimeout for layout stability)
+  const initializeIDE = async () => {
     const textarea = section.querySelector('#ide-textarea');
     const preCode = section.querySelector('#ide-code');
     const lineNumbers = section.querySelector('#line-numbers');
@@ -4913,7 +4913,8 @@ print(f"Maximum Peak: {metrics['peak']}")`
 
     // Lock auto-scrolls for a longer period to ensure stability
     setTimeout(() => { isInitialLoad = false; }, 500);
-  }, 0);
+  };
+  initializeIDE();
 
   // Terminal Resizer Logic
   const resizer = section.querySelector('#terminal-resizer');

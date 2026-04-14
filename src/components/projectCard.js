@@ -21,6 +21,7 @@ export function renderProjectCard(project, lang, translations) {
   desc.style.marginBottom = '20px';
   desc.style.lineHeight = '1.6';
   desc.style.textAlign = 'justify';
+  desc.style.minHeight = '4.8em'; // Safety height to prevent layout jumps
   const tags = document.createElement('div');
   tags.style.display = 'flex';
   tags.style.flexWrap = 'wrap';

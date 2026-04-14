@@ -3,18 +3,19 @@ export const translations = {
         hero: {
             titlePre: 'Transformando Dados Brutos em',
             titleHighlight: 'Inteligência de Negócios',
-            description: 'Olá, sou <strong>Pedro Augusto Ribeiro</strong>, um Profissional de Dados Multidisciplinar especializado na construção de pipelines ETL escaláveis e ecossistemas de BI de alto impacto.',
-            ctaWork: 'Ver Meus Trabalhos',
-            ctaPlayground: 'Testar Playground',
+            description: 'Olá, sou <strong>Pedro Augusto Ribeiro</strong>, especialista em Dados dedicado à construção de pipelines ETL escaláveis e ecossistemas de BI de alto impacto.',
+            ctaWork: 'Ver Projetos',
+            ctaPlayground: 'Acessar Playground',
             resumeButton: 'Baixar Currículo',
             contactTitle: 'Entre em Contato'
         },
         navbar: {
-            work: 'Trabalhos',
+            home: 'Início',
+            work: 'Trabalho',
             projects: 'Projetos',
             about: 'Sobre',
             playground: 'Playground',
-            themeTooltip: 'Alternar Modo Claro/Escuro',
+            themeTooltip: 'Alternar Tema',
             langTooltip: 'Alterar Idioma'
         },
         highlights: {
@@ -33,26 +34,26 @@ export const translations = {
             skillsTitle: 'Habilidades Técnicas',
             certificationsTitle: 'Certificações',
             languagesTitle: 'Idiomas',
-            summary: 'Engenheiro de Analytics Sênior com sólida expertise no desenvolvimento de plataformas de dados, governança de BI e soluções analíticas de ponta a ponta. Especializado no design de arquiteturas de dados escaláveis usando Databricks, SQL e Python, utilizando o framework medallion (bronze/silver/gold) e Delta Lake para construir ecossistemas robustos de business intelligence. Atua como ponte entre negócios e engenharia, traduzindo processos de negócio complexos em modelos de dados escaláveis e sistemas de suporte à decisão. Experiente em liderar iniciativas de padronização de BI, estabelecer governança de KPIs e apoiar a tomada de decisão em nível executivo.',
+            summary: 'Engenheiro de Analytics Sênior com sólida expertise em arquitetura de dados, governança de BI e soluções analíticas de ponta a ponta. Especialista em Databricks, SQL e Python, utilizo o framework Medallion e Delta Lake para construir ecossistemas robustos de Business Intelligence. Atuo como ponte estratégica entre os objetivos de negócio e a engenharia, traduzindo processos complexos em modelos escaláveis e sistemas de suporte à decisão. Experiente em liderar iniciativas de padronização, estabelecer governança de KPIs e apoiar a tomada de decisão em nível executivo.',
             experiences: [
                 {
                     role: 'Engenheiro de Analytics Sênior',
                     company: 'Leve Saúde',
                     period: 'Jul 2023 – Presente',
                     description: [
-                        'Promovido rapidamente de estagiário a cargo sênior, tornando-se referência técnica e estratégica chave em dados e analytics.',
-                        'Liderou a reestruturação de mais de 50 dashboards Power BI, eliminando dependências de Excel/CSV e reduzindo o esforço de manutenção em mais de 50%.',
-                        'Padronizou as definições de KPIs em múltiplos departamentos, melhorando a consistência e confiabilidade nos relatórios executivos.',
-                        'Projetou e implementou soluções de BI de ponta a ponta usando SQL e Python, garantindo rastreabilidade e consistência dos dados.',
-                        'Construiu e manteve data marts baseados em SQL suportando áreas de negócio fundamentais, incluindo Vendas, Financeiro, Clínicas, CX, Cadastro e Sinistro.',
-                        'Co-desenvolveu um data warehouse baseado em Databricks, traduzindo lógicas legadas Oracle em modelos de dados escaláveis e sustentáveis.',
-                        'Definiu regras de negócio e documentação nas camadas silver e gold, contribuindo para a padronização de ELT e validação de pipelines.',
-                        'Automatizou fluxos de trabalho complexos usando Python, reduzindo significativamente o esforço manual e o risco operacional.',
-                        'Melhorou a ingestão e acessibilidade de dados usando AWS (S3, Glue, Athena), aumentando a disponibilidade e reduzindo a latência de consultas.',
-                        'Apoiou a integração de analytics baseados em IA nos fluxos de trabalho, permitindo geração inteligente de queries e automação interna.',
-                        'Atuou como ponte entre as equipes de negócio e engenharia, apoiando Diretores, VPs e stakeholders de nível C-level.',
-                        'Liderou processos críticos de reporte, incluindo comissões de vendas e revisões executivas de KPIs.',
-                        'Mentorou analistas e promoveu as melhores práticas em governança de dados, convenções de nomenclatura e documentação.'
+                        'Promovido de estagiário a sênior em curto prazo, tornando-se referência técnica e estratégica fundamental para as áreas de dados e analytics.',
+                        'Liderou a reestruturação de mais de 50 dashboards no Power BI, eliminando dependências manuais (Excel/CSV) e reduzindo o esforço de manutenção em mais de 50%.',
+                        'Padronizou a definição de KPIs entre diversos departamentos, aumentando a consistência e a confiabilidade dos relatórios executivos.',
+                        'Projetou e implementou soluções de BI de ponta a ponta utilizando SQL e Python, garantindo total rastreabilidade e integridade dos dados.',
+                        'Construiu Data Marts em SQL para áreas críticas como Vendas, Financeiro, Clínicas, CX, Cadastro e Sinistro.',
+                        'Co-desenvolveu o Data Warehouse em Databricks, convertendo lógicas legadas de Oracle em modelos de dados escaláveis e de fácil manutenção.',
+                        'Definiu regras de negócio e documentação técnica nas camadas Silver e Gold, contribuindo para a padronização de processos ELT e validação de pipelines.',
+                        'Automatizou fluxos de trabalho complexos com Python, reduzindo drasticamente o esforço manual e o risco operacional.',
+                        'Otimizou processos de ingestão e acesso a dados via AWS, aumentando a disponibilidade e reduzindo a latência das consultas.',
+                        'Integrou recursos analíticos baseados em IA aos fluxos de trabalho, permitindo a geração inteligente de consultas e automação interna.',
+                        'Atuou como ponte estratégica entre as áreas de negócio e engenharia, fornecendo suporte direto a Diretores, VPs e stakeholders C-level.',
+                        'Liderou processos críticos de reporte, como comissões de vendas e revisões executivas de KPIs.',
+                        'Mentorou analistas e promoveu as melhores práticas de governança, padronização de nomenclaturas e documentação.'
                     ]
                 },
                 {
@@ -60,8 +61,8 @@ export const translations = {
                     company: 'Neurovida',
                     period: 'Fev 2023 – Jul 2023',
                     description: [
-                        'Traduziu regras de negócio complexas do setor de saúde em modelos de dados estruturados utilizando Excel.',
-                        'Projetou frameworks de validação garantindo a consistência entre serviços, profissionais e planos de saúde.',
+                        'Traduziu regras de negócio complexas do setor de saúde para modelos de dados estruturados utilizando Excel.',
+                        'Projetou frameworks de validação que garantiram a consistência de dados entre serviços, profissionais e planos de saúde.',
                         'Apoiou a estruturação e padronização de conjuntos de dados clínicos.'
                     ]
                 },
@@ -70,10 +71,10 @@ export const translations = {
                     company: 'SETRANS-RJ',
                     period: 'Fev 2022 – Jan 2023',
                     description: [
-                        'Desenvolveu dashboards e relatórios analíticos abrangendo os sistemas de metrô, trem, ônibus e barcas.',
-                        'Liderou o redesenho do Boletim de Mobilidade Metropolitana, padronizando conjuntos de dados multi-fontes (Excel/CSV).',
-                        'Entregou insights analíticos, incluindo análises de impacto da COVID-19 na mobilidade.',
-                        'Melhorou os fluxos de trabalho de reporte por meio de processos estruturados de transformação de dados.'
+                        'Desenvolveu dashboards e relatórios analíticos para os sistemas de metrô, trem, ônibus e barcas.',
+                        'Liderou o redesenho do Boletim de Mobilidade Urbana, padronizando dados de múltiplas fontes (Excel/CSV).',
+                        'Entregou insights analíticos estratégicos, incluindo o impacto da COVID-19 na mobilidade urbana.',
+                        'Otimizou o workflow de reporte através de processos estruturados de transformação de dados.'
                     ]
                 },
                 {
@@ -137,7 +138,7 @@ export const translations = {
                 collapseAll: 'Recolher Tudo',
                 run: 'Executar (Ctrl+Enter)',
                 restart: 'Reiniciar Kernel',
-                clear: 'Limpar Output'
+                clear: 'Limpar Saída'
             },
             sidebars: {
                 workspace: 'WORKSPACE',
@@ -153,25 +154,25 @@ export const translations = {
             },
             readmeContent: `# Bem-vindo ao Analytics Playground
 
-Este é meu ambiente integrado de Engenharia e Análise de Dados. Aqui você pode explorar a arquitetura de um Data Warehouse real e executar processos analíticos ponta a ponta.
+Este é o meu ambiente integrado de Engenharia e Análise de Dados. Aqui, você pode explorar a arquitetura de um Data Warehouse real e executar processos analíticos de ponta a ponta.
 
 ### Arquitetura do Catálogo
 Explore o painel CATALOG à esquerda para visualizar nossa estrutura:
 - Camada Gold: Tabelas higienizadas (\`providers\`, \`users\`) prontas para consumo.
-- Metadados: Clique nas colunas para ver estatísticas de cardinalidade e distribuição.
+- Metadados: Clique nas colunas para visualizar estatísticas de cardinalidade e distribuição de dados.
 
-### Execução de Query SQL
-O IDE está conectado a uma engine DuckDB local (WebAssembly) que emula um ambiente MotherDuck:
+### Execução de Consultas SQL
+O IDE está conectado a um motor DuckDB local (WebAssembly) que emula um ambiente MotherDuck:
 - Selecione um arquivo \`.sql\` e clique em RUN.
-- Teste agregados, JOINS complexos e Window Functions.
+- Teste agregações, JOINS complexos e Window Functions.
 
 ### Processamento com Python
 Utilize scripts \`.py\` para manipular dados:
-- Execução via Pyodide, permitindo rodar Python moderno diretamente no seu browser.
-- Ideal para prototipagem de regras de negócio e automação de pipelines.
+- Execução via Pyodide, permitindo rodar Python moderno diretamente no seu navegador.
+- Ideal para prototipar regras de negócio e automação de pipelines.
 
 ---
-**Dica:** Use \`Ctrl + Enter\` para rodar o código rapidamente!
+**Dica:** Use \`Ctrl + Enter\` para executar o código rapidamente!
 `
         },
         footer: {
@@ -189,6 +190,7 @@ Utilize scripts \`.py\` para manipular dados:
             contactTitle: 'Get In Touch'
         },
         navbar: {
+            home: 'Home',
             work: 'Work',
             projects: 'Projects',
             about: 'About',

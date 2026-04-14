@@ -7,7 +7,7 @@
     },
     "description": {
       "en": "Interactive radius and cluster analysis tool using Streamlit and Folium, supporting strategic hospital expansion and regulatory reporting.",
-      "pt": "Ferramenta interativa de análise de raio e cluster usando Streamlit e Folium, apoiando a expansão estratégica hospitalar e relatórios regulatórios."
+      "pt": "Ferramenta interativa de análise de raio e cluster desenvolvida com Streamlit e Folium, voltada para a expansão hospitalar estratégica e atendimento a requisitos regulatórios."
     },
     "tags": [
       "Python",
@@ -25,7 +25,7 @@
     },
     "description": {
       "en": "A professional-grade, browser-based coding environment with inline renaming, OS-like file management, and integrated Python execution kernel.",
-      "pt": "Um ambiente de codificação baseado em navegador de nível profissional, com renomeação inline, gerenciamento de arquivos tipo OS e kernel de execução Python integrado."
+      "pt": "Ambiente profissional de codificação baseado no navegador, com suporte a renomeação dinâmica, gerenciamento de arquivos intuitivo e execução de scripts via kernel Python."
     },
     "tags": [
       "JavaScript",
@@ -45,7 +45,7 @@
     },
     "description": {
       "en": "High-performance hybrid analytics architecture using DuckDB for local processing and MotherDuck for cloud scale, migrating legacy workflows into ultra-fast SQL structures.",
-      "pt": "Arquitetura analítica híbrida de alta performance usando DuckDB para processamento local e MotherDuck para escala em nuvem, migrando fluxos legado para estruturas SQL ultra-rápidas."
+      "pt": "Arquitetura analítica híbrida de alto desempenho utilizando DuckDB e MotherDuck, focada na migração de fluxos legados para estruturas SQL de altíssima velocidade."
     },
     "tags": [
       "DuckDB",
@@ -65,7 +65,7 @@
     },
     "description": {
       "en": "Redesigned the Metropolitan Mobility Bulletin for SETRANS-RJ, providing deep insights into public transport patterns and COVID-19 socioeconomic impacts.",
-      "pt": "Redesenhei o Boletim de Mobilidade Metropolitana para a SETRANS-RJ, fornecendo insights profundos sobre padrões de transporte público e impactos socioeconômicos da COVID-19."
+      "pt": "Reformulação do Boletim de Mobilidade Urbana da SETRANS-RJ, gerando insights profundos sobre padrões de transporte público e os impactos socioeconômicos da COVID-19."
     },
     "tags": [
       "Excel",

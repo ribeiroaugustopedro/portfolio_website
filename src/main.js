@@ -70,8 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (oldFooter && newFooter) app.replaceChild(newFooter, oldFooter);
       else app.appendChild(newFooter);
 
-      // Instantly restore scroll position as a safety measure
-      window.scrollTo(0, scrollPos);
+      // Instantly restore scroll position as a safety measure (wrapped in RAF for height stabilization)
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: scrollPos, behavior: 'instant' });
+      });
 
       // Re-initialize animations
       currentObserver = new IntersectionObserver((entries) => {

@@ -3,24 +3,28 @@ export function renderHero(lang, translations) {
   section.className = 'section container reveal';
   section.id = 'hero';
   section.style.textAlign = 'center';
-  section.style.height = '100vh';
+  section.style.minHeight = '100vh';
   section.style.display = 'flex';
   section.style.flexDirection = 'column';
-  section.style.justifyContent = 'center';
+  section.style.justifyContent = 'flex-start'; // Changed from center to prevent top cut-off
   section.style.alignItems = 'center';
+  section.style.paddingTop = '100px'; // Mandatory space for fixed navbar
+  section.style.paddingBottom = '40px';
 
   const content = document.createElement('div');
   content.className = 'stagger-reveal';
+  content.style.marginTop = 'auto'; // Centering trick
+  content.style.marginBottom = 'auto'; // Centering trick
+  content.style.width = '100%';
 
   const h1 = document.createElement('h1');
-  const softColors = ['#ff9999', '#ffcc99', '#ffff99', '#99ff99', '#99ffff', '#9999ff', '#cc99ff'];
-
   const line1 = translations[lang].hero.titlePre;
   const line2 = translations[lang].hero.titleHighlight;
 
   h1.innerHTML = `${line1}<br>${line2}`;
   h1.style.fontSize = 'clamp(2rem, 6vw, 3.5rem)';
   h1.style.lineHeight = '1.3';
+  h1.style.minHeight = '3em'; // Normalizes for potential layout differences
   h1.style.marginBottom = '24px';
   h1.style.fontWeight = '800';
   h1.style.color = 'var(--text-primary)';
@@ -31,12 +35,12 @@ export function renderHero(lang, translations) {
   p.style.color = 'var(--text-secondary)';
   p.style.maxWidth = '700px';
   p.style.margin = '0 auto 40px auto';
+  p.style.minHeight = '4.5rem'; // Normalizes description height
 
   // Contact Content embedded in Hero
   const contactContainer = document.createElement('div');
   contactContainer.id = 'contact';
-  contactContainer.style.marginTop = 'auto'; // Push to bottom
-  contactContainer.style.paddingBottom = '40px';
+  contactContainer.style.marginTop = '40px'; // Space below main content
   contactContainer.style.width = '100%';
 
   const contactTitle = document.createElement('p');
@@ -94,10 +98,6 @@ export function renderHero(lang, translations) {
   contactContainer.appendChild(contactTitle);
   contactContainer.appendChild(btnContainer);
 
-  // Layout logic
-  section.style.justifyContent = 'center';
-  section.style.padding = '0'; // Let spacers handle it
-
   content.appendChild(h1);
   content.appendChild(p);
 
@@ -107,14 +107,15 @@ export function renderHero(lang, translations) {
   ctaCluster.style.display = 'flex';
   ctaCluster.style.flexDirection = 'column';
   ctaCluster.style.alignItems = 'center';
-  ctaCluster.style.gap = '100px'; // Even more gap as requested
+  ctaCluster.style.gap = '60px'; // Reduced from 100px to be more compact
   ctaCluster.style.marginTop = '40px';
 
-  // Primary Buttons Row (Restored to boxed btn-rainbow style)
+  // Primary Buttons Row
   const primaryRow = document.createElement('div');
   primaryRow.style.display = 'flex';
   primaryRow.style.gap = '20px';
   primaryRow.style.justifyContent = 'center';
+  primaryRow.style.flexWrap = 'wrap';
 
   const cta = document.createElement('a');
   cta.href = '#projects';
@@ -153,17 +154,7 @@ export function renderHero(lang, translations) {
   ctaCluster.appendChild(resumeBtn);
   content.appendChild(ctaCluster);
 
-  // Spacers for balanced diagramming
-  const spacerTop = document.createElement('div');
-  spacerTop.style.flex = '1.5'; // More weight on top to push content lower
-  section.appendChild(spacerTop);
-
   section.appendChild(content);
-
-  const spacerBottom = document.createElement('div');
-  spacerBottom.style.flex = '0.5'; // Significantly less weight to pull contact UP
-  section.appendChild(spacerBottom);
-
   section.appendChild(contactContainer);
 
   return section;

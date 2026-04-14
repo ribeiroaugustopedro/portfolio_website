@@ -14,7 +14,7 @@ export function renderResume(lang, translations) {
   content.className = 'resume-container reveal';
 
   const summaryBox = document.createElement('div');
-  summaryBox.style.marginBottom = '48px';
+  summaryBox.style.marginBottom = '48px'; // Back to original
   summaryBox.className = 'project-card reveal';
 
   const summaryTitle = document.createElement('h3');
@@ -29,143 +29,162 @@ export function renderResume(lang, translations) {
   summaryText.style.color = 'var(--text-secondary)';
   summaryText.style.lineHeight = '1.6';
   summaryText.style.textAlign = 'justify';
+  summaryText.style.height = 'auto';
+  summaryText.style.minHeight = '120px'; // Back to original height normalization
   summaryText.style.marginBottom = '24px';
 
   const downloadLink = document.createElement('a');
-  downloadLink.className = 'project-link-indicator';
+  downloadLink.className = 'project-link-indicator'; // Restored original class for hover effects
   const resumeFile = lang === 'pt' ? 'cv_pedro_augusto_ribeiro_pt-br.pdf' : 'cv_pedro_augusto_ribeiro_en-us.pdf';
   downloadLink.href = `./${resumeFile}`;
   downloadLink.target = '_blank';
   downloadLink.innerHTML = `${t.downloadResume} &rarr;`;
-  downloadLink.style.marginTop = 'auto';
-  downloadLink.style.color = 'var(--text-primary)';
-  downloadLink.style.fontSize = '0.9rem';
-  downloadLink.style.fontWeight = 'bold';
-  downloadLink.style.display = 'inline-block';
-  downloadLink.style.width = 'fit-content';
-  downloadLink.style.paddingBottom = '4px';
-  downloadLink.style.transition = 'all 0.3s ease';
-  downloadLink.style.textDecoration = 'none';
+  
+  // Reverting downloadLink styles to original state
+  Object.assign(downloadLink.style, {
+    marginTop: 'auto', color: 'var(--text-primary)', fontSize: '0.9rem',
+    fontWeight: 'bold', display: 'inline-block', width: 'fit-content',
+    paddingBottom: '4px', transition: 'all 0.3s ease', textDecoration: 'none'
+  });
 
   summaryBox.appendChild(summaryTitle);
   summaryBox.appendChild(summaryText);
   summaryBox.appendChild(downloadLink);
-  summaryBox.onmouseenter = () => { /* Handled by CSS */ };
-  summaryBox.onmouseleave = () => { /* Handled by CSS */ };
   content.appendChild(summaryBox);
 
   const grid = document.createElement('div');
   grid.className = 'resume-grid';
+  grid.style.alignItems = 'stretch';
 
+  // --- Left Column (Experience) ---
   const leftCol = document.createElement('div');
   leftCol.className = 'resume-col';
+  leftCol.style.display = 'flex';
+  leftCol.style.flexDirection = 'column';
 
-  const expSection = document.createElement('div');
-  expSection.innerHTML = `<h3 style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">${t.experienceTitle}</h3>`;
-  expSection.style.textAlign = 'left';
+  const expHeader = document.createElement('h3');
+  expHeader.innerHTML = t.experienceTitle;
+  expHeader.style.cssText = 'margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;';
+  leftCol.appendChild(expHeader);
 
-  t.experiences.forEach(job => {
+  const expList = document.createElement('div');
+  expList.style.display = 'flex';
+  expList.style.flexDirection = 'column';
+  expList.style.justifyContent = 'flex-start';
+  expList.style.gap = '40px'; // Compact standardized gap between jobs
+  expList.style.flexGrow = '1';
+
+  t.experiences.forEach((job) => {
     const item = document.createElement('div');
     item.className = 'resume-item';
-    item.style.textAlign = 'left';
-    const descriptionHTML = Array.isArray(job.description)
-      ? `<ul style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 10px; padding-left: 18px; text-align: justify;">${job.description.map(point => `<li style="margin-bottom: 6px; line-height: 1.5;">${point}</li>`).join('')}</ul>`
-      : `<p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 8px; text-align: justify;">${job.description}</p>`;
-    item.innerHTML = `<h4>${job.role}</h4><span class="company">${job.company} | ${job.period}</span>${descriptionHTML}`;
-    expSection.appendChild(item);
-  });
-  leftCol.appendChild(expSection);
+    item.style.marginBottom = '0';
+    
+    const role = document.createElement('h4');
+    role.textContent = job.role;
+    role.style.marginBottom = '4px'; // Tightened
+    role.style.color = 'var(--text-primary)';
 
+    const company = document.createElement('span');
+    company.className = 'company';
+    company.textContent = `${job.company} | ${job.period}`;
+    company.style.display = 'block';
+    company.style.marginBottom = '12px'; // Tightened
+
+    const descHTML = Array.isArray(job.description)
+      ? `<ul style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 10px; padding-left: 18px; text-align: justify;">${job.description.map(p => `<li style="margin-bottom: 6px; line-height: 1.5;">${p}</li>`).join('')}</ul>`
+      : `<p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 8px; text-align: justify;">${job.description}</p>`;
+    
+    item.innerHTML = role.outerHTML + company.outerHTML + descHTML;
+    expList.appendChild(item);
+  });
+  leftCol.appendChild(expList);
+
+  // --- Right Column (Distributed) ---
   const rightCol = document.createElement('div');
   rightCol.className = 'resume-col';
   rightCol.style.display = 'flex';
   rightCol.style.flexDirection = 'column';
-  rightCol.style.justifyContent = 'space-between';
 
+  const rightHeader = document.createElement('h3');
+  // Matching the Experience Title for total symmetry
+  rightHeader.innerHTML = t.skillsTitle;
+  rightHeader.style.cssText = 'margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;';
+  rightCol.appendChild(rightHeader);
+
+  const rightItems = document.createElement('div');
+  rightItems.style.display = 'flex';
+  rightItems.style.flexDirection = 'column';
+  rightItems.style.justifyContent = 'space-between';
+  rightItems.style.flexGrow = '1';
+
+  // 1. Skills
   const skillsWrap = document.createElement('div');
-  skillsWrap.style.textAlign = 'left';
-  skillsWrap.innerHTML = `<h3 style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">${t.skillsTitle}</h3>`;
-
-  t.skillCategories.forEach(skillSet => {
+  t.skillCategories.forEach(cat => {
     const group = document.createElement('div');
     group.className = 'skill-group';
-    group.innerHTML = `<h4 style="font-size: 1rem; color: var(--text-primary); margin-bottom: 8px;">${skillSet.name}</h4>`;
-
-    const tagsContainer = document.createElement('div');
-    tagsContainer.className = 'tags';
-    tagsContainer.style.justifyContent = 'flex-start';
-    tagsContainer.style.display = 'flex';
-    tagsContainer.style.flexWrap = 'wrap';
-    tagsContainer.style.gap = '8px';
-    tagsContainer.style.marginBottom = '16px';
-
-    skillSet.items.forEach(skill => {
+    group.style.marginBottom = '20px';
+    group.innerHTML = `<h4 style="font-size: 1rem; color: var(--text-primary); margin-bottom: 8px;">${cat.name}</h4>`;
+    const tagBox = document.createElement('div');
+    tagBox.className = 'tags';
+    tagBox.style.cssText = 'display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start;';
+    cat.items.forEach(skill => {
       const span = document.createElement('span');
       span.textContent = skill;
-      const style = getTagStyle(skill);
+      const s = getTagStyle(skill);
       Object.assign(span.style, {
-        fontSize: style.fontSize,
-        padding: style.padding,
-        borderRadius: style.borderRadius,
-        border: style.border,
-        color: style.color,
-        background: style.background,
-        fontFamily: style.fontFamily,
-        fontWeight: style.fontWeight
+        fontSize: s.fontSize, padding: s.padding, borderRadius: s.borderRadius,
+        border: s.border, color: s.color, background: s.background,
+        fontFamily: s.fontFamily, fontWeight: s.fontWeight
       });
-      tagsContainer.appendChild(span);
+      tagBox.appendChild(span);
     });
-
-    group.appendChild(tagsContainer);
+    group.appendChild(tagBox);
     skillsWrap.appendChild(group);
   });
-  rightCol.appendChild(skillsWrap);
 
+  // 2. Certifications
   const certSection = document.createElement('div');
-  certSection.style.textAlign = 'left';
-  certSection.innerHTML = `<h3 style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">${t.certificationsTitle}</h3>`;
-  const certList = document.createElement('ul');
-  certList.style.listStyle = 'none';
-  certList.style.padding = '0';
-
-  t.certifications.forEach(cert => {
+  certSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary);">${t.certificationsTitle}</h4>`;
+  const cList = document.createElement('ul');
+  cList.style.cssText = 'list-style: none; padding: 0;';
+  t.certifications.forEach(c => {
     const li = document.createElement('li');
-    li.style.cssText = 'margin-bottom:12px;font-size:0.9rem;color:var(--text-secondary);display:flex;justify-content:flex-start;align-items:start;';
-    li.innerHTML = `<span style="display: flex; align-items: center; margin-right: 10px; margin-top: 4px; color: var(--text-primary);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span style="line-height: 1.6; text-align: justify;">${cert}</span>`;
-    certList.appendChild(li);
+    li.style.cssText = 'margin-bottom: 12px; font-size: 0.9rem; color: var(--text-secondary); display: flex; align-items: start;';
+    li.innerHTML = `<span style="color: var(--text-primary); margin-right: 10px; margin-top: 4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span style="line-height: 1.6; text-align: justify;">${c}</span>`;
+    cList.appendChild(li);
   });
-  certSection.appendChild(certList);
-  rightCol.appendChild(certSection);
+  certSection.appendChild(cList);
 
+  // 3. Education
   const eduSection = document.createElement('div');
-  eduSection.style.textAlign = 'left';
-  eduSection.innerHTML = `<h3 style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">${t.educationTitle}</h3>`;
-
-  t.education.forEach(edu => {
-    const item = document.createElement('div');
-    item.className = 'resume-item';
-    item.style.textAlign = 'left';
-    item.innerHTML = `<h4>${edu.degree}</h4><span class="company">${edu.school} | ${edu.period}</span>`;
-    eduSection.appendChild(item);
+  eduSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary);">${t.educationTitle}</h4>`;
+  t.education.forEach(e => {
+    const div = document.createElement('div');
+    div.style.marginBottom = '12px';
+    div.innerHTML = `<h4>${e.degree}</h4><span class="company">${e.school} | ${e.period}</span>`;
+    eduSection.appendChild(div);
   });
-  rightCol.appendChild(eduSection);
 
+  // 4. Languages
   const langSection = document.createElement('div');
-  langSection.style.textAlign = 'left';
-  langSection.innerHTML = `<h3 style="margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">${t.languagesTitle}</h3>`;
-  const langList = document.createElement('ul');
-  langList.style.listStyle = 'none';
-  langList.style.padding = '0';
-
-  t.languages.forEach(lang => {
-    const parts = lang.split('|');
+  langSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary);">${t.languagesTitle}</h4>`;
+  const lList = document.createElement('ul');
+  lList.style.cssText = 'list-style: none; padding: 0;';
+  t.languages.forEach((l, idx) => {
+    const pts = l.split('|');
     const li = document.createElement('li');
-    li.style.cssText = 'margin-bottom:12px;font-size:0.9rem;display:flex;justify-content:space-between;border-bottom:1px dashed var(--border-color);padding-bottom:4px;';
-    li.innerHTML = `<span style="color: var(--text-primary); font-weight: 500;">${parts[0].trim()}</span><span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">${parts[1] ? parts[1].trim() : ''}</span>`;
-    langList.appendChild(li);
+    const isL = idx === t.languages.length - 1;
+    li.style.cssText = `margin-bottom:${isL ? '0' : '12px'}; font-size: 0.9rem; display: flex; justify-content: space-between; border-bottom: ${isL ? 'none' : '1px dashed var(--border-color)'}; padding-bottom: 4px;`;
+    li.innerHTML = `<span style="color: var(--text-primary); font-weight: 500;">${pts[0].trim()}</span><span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">${pts[1] ? pts[1].trim() : ''}</span>`;
+    lList.appendChild(li);
   });
-  langSection.appendChild(langList);
-  rightCol.appendChild(langSection);
+  langSection.appendChild(lList);
+
+  rightItems.appendChild(skillsWrap);
+  rightItems.appendChild(certSection);
+  rightItems.appendChild(eduSection);
+  rightItems.appendChild(langSection);
+  rightCol.appendChild(rightItems);
 
   grid.appendChild(leftCol);
   grid.appendChild(rightCol);

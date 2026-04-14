@@ -530,11 +530,13 @@ a:hover {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 80px;
+  align-items: stretch;
 }
 
 .resume-col {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .resume-item {
