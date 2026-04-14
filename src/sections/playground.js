@@ -6,7 +6,7 @@ let db = null;
 let conn = null;
 
 // Multi-Terminal State (Global)
-let terminalInstances = [{ id: 1, name: 'Terminal', content: '' }];
+let terminalInstances = [{ id: 1, name: 'Terminal', content: '', queryResults: null }];
 let activeTerminalId = 1;
 let updateTerminalUIBound = null;
 let activeSessionRef = null;
@@ -91,10 +91,22 @@ export function renderIDE(lang, translations) {
 
   // State Management
   let currentFiles = { ...files };
-  if (currentFiles['README.md'] && translations[lang]?.playground?.readmeContent) {
-    currentFiles['README.md'].content = translations[lang].playground.readmeContent;
-  }
-  let openTabs = ['README.md'];
+  
+  // Default test file
+  currentFiles['teste.sql'] = {
+    name: 'teste.sql',
+    type: 'file',
+    content: `SELECT
+    loc_region,
+    COUNT(DISTINCT prov_id) AS qtd_providers,
+    COUNT(DISTINCT prov_id) * 1.0
+        / (SELECT COUNT(DISTINCT prov_id) FROM warehouse.gold.providers) AS pct_total
+FROM warehouse.gold.providers
+GROUP BY loc_region
+ORDER BY 2 DESC;`
+  };
+
+  let openTabs = ['teste.sql'];
   let collapsedFolders = new Set();
   let isInitialLoad = true;
   let currentSearchQuery = '';
@@ -107,14 +119,14 @@ export function renderIDE(lang, translations) {
   initDuckDB().catch(e => console.error("DuckDB Init failed:", e));
 
   const currentSession = {
-    fileName: 'README.md',
+    fileName: 'teste.sql',
     sidebar: 'explorer', // 'explorer' or 'catalog'
     activeCatalogItem: null, // { name, type, parentPath }
     activeCatalogTab: 'overview', // 'overview' or 'details'
     activeCatalogSort: { column: null, order: null }, // { column: string, order: 'ASC' | 'DESC' | null }
     namingNew: null, // { resultType: 'file'|'folder', parent: string, initialName?: string, isRename?: boolean }
-    selectedFiles: ['README.md'],
-    lastSelectedFile: 'README.md',
+    selectedFiles: ['teste.sql'],
+    lastSelectedFile: 'teste.sql',
     terminalOpen: false
   };
 
@@ -816,23 +828,51 @@ export function renderIDE(lang, translations) {
         flex-direction: column;
         align-items: stretch;
         width: 100%;
-        margin-bottom: 24px;
-        border-bottom: 1px solid var(--ide-border);
+        margin-bottom: 0;
       }
 
       .sql-summary-bar {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 8px;
-        padding: 8px 15px;
-        background: var(--ide-header);
+        padding: 0 15px;
+        background: var(--ide-sidebar);
         border-bottom: 1px solid var(--ide-border);
         font-size: 11px;
         color: var(--ide-text);
-        opacity: 0.8;
-        position: sticky;
-        top: 0;
-        z-index: 20;
+        height: 30px;
+        box-sizing: border-box;
+        opacity: 1;
+        position: relative;
+        margin: 0;
+        padding-right: 4px; /* Space for buttons */
+      }
+      .sql-fullscreen-btn {
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        border: none;
+        background: transparent;
+        color: var(--ide-text);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .sql-fullscreen-btn:hover { 
+        background: rgba(255, 255, 255, 0.08);
+        animation: rainbowSimultaneous 4s linear infinite;
+        color: var(--ide-text-bright) !important; 
+      }
+      [data-theme="light"] .sql-fullscreen-btn:hover {
+        background: rgba(0, 0, 0, 0.05) !important;
+      }
+      [data-theme="light"] .sql-summary-bar {
+        background: #f6f8fa !important;
+        color: #24292f !important;
+        opacity: 1;
       }
       .sql-summary-bar svg { opacity: 0.6; }
 
@@ -863,11 +903,11 @@ export function renderIDE(lang, translations) {
       }
       
       .sql-gutter-header {
-        height: 28px;
+        height: 30px;
         background: var(--ide-header);
         border-bottom: 1px solid var(--ide-border);
         position: sticky;
-        top: 28px; /* sync with summary bar stickiness */
+        top: 0; /* stick to terminal top after summary scrolls away */
         z-index: 12;
       }
 
@@ -888,7 +928,7 @@ export function renderIDE(lang, translations) {
       .preview-table thead th {
         background: var(--ide-header);
         position: sticky;
-        top: 28px; /* Below summary bar */
+        top: 0; /* stick to terminal top after summary scrolls away */
         z-index: 5;
         font-weight: 600;
         font-size: 11px;
@@ -897,7 +937,7 @@ export function renderIDE(lang, translations) {
         border-right: 1px solid var(--ide-border);
         color: var(--ide-text);
         text-align: left;
-        height: 28px;
+        height: 30px;
         box-sizing: border-box;
       }
 
@@ -937,8 +977,8 @@ export function renderIDE(lang, translations) {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
         border-radius: 4px;
         color: var(--ide-text);
         cursor: pointer;
@@ -948,6 +988,10 @@ export function renderIDE(lang, translations) {
         background: rgba(255, 255, 255, 0.08); 
         animation: rainbowSimultaneous 4s linear infinite;
         color: var(--ide-text-bright); 
+      }
+      [data-theme="light"] .terminal-add-btn:hover {
+        background: rgba(0, 0, 0, 0.05) !important;
+        animation: rainbowSimultaneous 4s linear infinite;
       }
       .terminal-add-btn:active {
         transform: scale(0.92);
@@ -1339,6 +1383,59 @@ export function renderIDE(lang, translations) {
         border-color: rgba(0, 0, 0, 0.05);
         border-top-color: #1a7f37;
       }
+      /* Terminal Styles Restoration */
+      .ide-terminal {
+        background: #000000 !important;
+        display: flex;
+        flex-direction: column;
+      }
+      .terminal-header {
+        height: 30px !important;
+        background: var(--ide-sidebar) !important;
+        border-bottom: 1px solid var(--ide-border) !important;
+        padding: 0 16px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+      }
+      .terminal-header span {
+        font-size: 10px !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.8px !important;
+        color: var(--ide-text) !important;
+        opacity: 0.6 !important;
+        font-family: var(--ide-font-mono) !important;
+      }
+      .terminal-add-btn {
+        width: 22px !important;
+        height: 22px !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        cursor: pointer;
+        color: var(--ide-text);
+        transition: all 0.2s;
+      }
+      .terminal-add-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--ide-text-bright);
+      }
+
+      .custom-select-trigger {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid var(--ide-border) !important;
+        font-size: 10px !important;
+        padding: 0 24px 0 8px !important;
+        height: 22px !important;
+        line-height: 22px !important;
+        border-radius: 4px !important;
+      }
+      [data-theme="light"] .custom-select-trigger {
+        background: rgba(0, 0, 0, 0.02) !important;
+        border-color: rgba(0, 0, 0, 0.1) !important;
+      }
     </style>
 
     <h2 class="rainbow-title-center reveal" style="color: var(--text-primary); font-family: var(--font-mono);">${translations[lang].playground.title}</h2>
@@ -1470,7 +1567,7 @@ export function renderIDE(lang, translations) {
               <div id="catalog-explorer-view" class="catalog-explorer" style="display: none;"></div>
             </div>
           </div>
-          <div class="ide-terminal-resizer" id="terminal-resizer" title="Resize Terminal">
+          <div class="ide-terminal-resizer" id="terminal-resizer">
             <div class="resizer-bar"></div>
           </div>
           <div class="ide-terminal">
@@ -1987,6 +2084,7 @@ export function renderIDE(lang, translations) {
         opt.onclick = (e) => {
           e.stopPropagation();
           activeTerminalId = parseInt(opt.dataset.id);
+          if (activeSessionRef) activeSessionRef.activeTerminalId = activeTerminalId;
           terminalSelectOptions.classList.remove('active');
 
           // Re-render immediate update
@@ -2019,6 +2117,7 @@ export function renderIDE(lang, translations) {
       const newId = terminalInstances.length > 0 ? Math.max(...terminalInstances.map(t => t.id)) + 1 : 1;
       terminalInstances.push({ id: newId, name: 'Terminal', content: '' });
       activeTerminalId = newId;
+      if (activeSessionRef) activeSessionRef.activeTerminalId = activeTerminalId;
       updateTerminalUI();
     };
 
@@ -2026,6 +2125,7 @@ export function renderIDE(lang, translations) {
       if (terminalInstances.length > 1) {
         terminalInstances = terminalInstances.filter(t => t.id !== activeTerminalId);
         activeTerminalId = terminalInstances[terminalInstances.length - 1].id;
+        if (activeSessionRef) activeSessionRef.activeTerminalId = activeTerminalId;
         updateTerminalUI();
       } else {
         // Only one terminal, clear it and close the panel
@@ -2075,9 +2175,9 @@ export function renderIDE(lang, translations) {
       if (!container) return;
       let itemsHtml = Object.keys(currentFiles)
         .sort((a, b) => {
-          // Force README to the absolute top of the root
-          if (a === 'README.md') return -1;
-          if (b === 'README.md') return 1;
+          // Force teste.sql to the absolute top of the root
+          if (a === 'teste.sql') return -1;
+          if (b === 'teste.sql') return 1;
 
           const aParts = a.split('/');
           const bParts = b.split('/');
@@ -2960,16 +3060,26 @@ export function renderIDE(lang, translations) {
 
       // Restore initial state
       currentFiles = { ...files };
-      if (currentFiles['README.md'] && translations[lang]?.playground?.readmeContent) {
-        currentFiles['README.md'].content = translations[lang].playground.readmeContent;
-      }
+      // Re-inject teste.sql
+      currentFiles['teste.sql'] = {
+        name: 'teste.sql',
+        type: 'file',
+        content: `SELECT
+    loc_region,
+    COUNT(DISTINCT prov_id) AS qtd_providers,
+    COUNT(DISTINCT prov_id) * 1.0
+        / (SELECT COUNT(DISTINCT prov_id) FROM warehouse.gold.providers) AS pct_total
+FROM warehouse.gold.providers
+GROUP BY loc_region
+ORDER BY 2 DESC;`
+      };
 
-      // Keep open tabs if they still exist, otherwise reset to README
+      // Keep open tabs if they still exist, otherwise reset to teste.sql
       openTabs = openTabs.filter(t => currentFiles[t]);
-      if (openTabs.length === 0) openTabs = ['README.md'];
+      if (openTabs.length === 0) openTabs = ['teste.sql'];
 
       if (!currentFiles[currentSession.fileName]) {
-        switchFile('README.md');
+        switchFile('teste.sql');
       }
 
       const log = document.createElement('div');
@@ -3695,7 +3805,107 @@ export function renderIDE(lang, translations) {
       }
     };
 
+    const renderSQLOutput = (rows, columns, elapsed = null, sortCol = null, sortDir = null) => {
+      let sortedRows = [...rows];
+      if (sortCol) {
+        sortedRows.sort((a, b) => {
+          let vA = a[sortCol];
+          let vB = b[sortCol];
+          if (vA === vB) return 0;
+          if (vA === null) return 1;
+          if (vB === null) return -1;
+          const order = sortDir === 'DESC' ? -1 : 1;
+          return vA > vB ? order : -order;
+        });
+      }
+
+      // Compact layout: Glue to top and sides
+      let html = `<div class="sql-result-wrapper" style="margin: 0; border-bottom: none;">`;
+      
+      if (elapsed !== null) {
+        html += `<div class="sql-summary-bar">
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size: 11px; font-family: var(--ide-font-mono);">${rows.length} rows and ${columns.length} columns returned in ${elapsed.toFixed(1)}s</span>
+                  </div>
+                  <div style="display:flex; align-items:center;">
+                    <button class="sql-fullscreen-btn" title="Fullscreen">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                      </svg>
+                    </button>
+                  </div>
+                 </div>`;
+      }
+      
+      html += `<div class="sql-grid-layout" style="border-bottom: 1px solid var(--ide-border); margin-top: 0;">
+                <div class="sql-scroll-pane">
+                  <table class="preview-table">
+                    <thead>
+                      <tr>
+                        <th class="index-th" style="width: 45px; min-width: 45px; text-align: center; position: sticky; left: 0; z-index: 10; background: var(--ide-sidebar);">
+                          <div class="col-resizer" data-resizer="true"></div>
+                          <span class="th-name" style="opacity: 0.4;">#</span>
+                        </th>
+                        ${columns.map(c => {
+                          const isSorted = sortCol === c;
+                          const sortIcon = isSorted ? 
+                            (sortDir === 'ASC' ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 15l-6-6-6 6"/></svg>' : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>') :
+                            '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.25"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>';
+                          
+                          const rawVal = rows[0] ? rows[0][c] : null;
+                          const typeKey = typeof rawVal === 'number' ? 'number' : typeof rawVal === 'boolean' ? 'boolean' : 'text';
+                          const typeIcon = CATALOG_TYPE_ICONS[typeKey];
+
+                          return `
+                            <th style="width: 150px; min-width: 80px; text-align: center; cursor: pointer; padding: 8px 10px;" data-sort-col="${c}" data-sort-dir="${isSorted ? sortDir : ''}">
+                              <div class="col-resizer" data-resizer="true"></div>
+                              <div class="th-content">
+                                <div class="th-main" style="align-items: center;">
+                                  <div style="display:flex; align-items:center; justify-content:center; gap:6.5px;">
+                                    <span class="th-name" style="${isSorted ? 'color: var(--ide-text-bright); font-weight: 700;' : ''}">${c}</span>
+                                    <div class="sort-icon" style="margin-top: 2px;">${sortIcon}</div>
+                                  </div>
+                                  <div class="type-pill-container" style="margin-top: 4px; transform: scale(0.8);">${typeIcon}</div>
+                                </div>
+                              </div>
+                            </th>`;
+                        }).join('')}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${sortedRows.slice(0, 100).map((row, rIdx) => `
+                        <tr>
+                          <td style="width: 45px; min-width: 45px; text-align: center; position: sticky; left: 0; z-index: 5; background: var(--ide-sidebar); font-size: 10px; color: var(--ide-text); opacity: 0.5; font-family: var(--ide-font-mono); border-right: 1px solid var(--ide-border);">
+                            ${rIdx + 1}
+                          </td>
+                          ${columns.map(c => {
+                            let val = row[c];
+                            let displayVal = val;
+                            const isNum = typeof val === 'number';
+                            if (isNum) {
+                              displayVal = !Number.isInteger(val) ? 
+                                val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) : 
+                                val.toLocaleString('en-US');
+                            } else if (val === null || val === undefined) {
+                              displayVal = '<span style="opacity:0.25">NULL</span>';
+                            }
+                            return `<td style="text-align: center; font-family: var(--ide-font-mono); font-size: 11px;">${displayVal}</td>`;
+                          }).join('')}
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>`;
+      
+      if (rows.length > 100) html += `<div style="font-size:10px; opacity:0.4; padding: 12px; text-align:center;">Showing first 100 rows only.</div>`;
+      html += `</div>`;
+      return html;
+    };
+
     textarea.oninput = syncEditor;
+
+    let sqlTimeout = null;
 
     const executeCurrentFile = async () => {
       try {
@@ -3728,10 +3938,11 @@ export function renderIDE(lang, translations) {
 
         // Handle SQL execution
         if (fileName.endsWith('.sql')) {
+          if (sqlTimeout) clearTimeout(sqlTimeout);
           const startTime = performance.now();
-          logToTerminal(`<div class="info" style="display:flex; align-items:center; height:20px;"><svg class="spinner" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle></svg> Running Query...</div>`, 'info', false);
+          logToTerminal(`<div class="info sql-running-msg" style="display:flex; align-items:center; height:20px;"><svg class="spinner" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle></svg> Running Query...</div>`, 'info', false);
 
-          setTimeout(async () => {
+          sqlTimeout = setTimeout(async () => {
             try {
               const cleanContent = content.replace(/([a-zA-Z_][a-zA-Z0-9_]*\.)+([a-zA-Z_][a-zA-Z0-9_]*)/gi, (match) => {
                 const parts = match.split('.');
@@ -3758,30 +3969,15 @@ export function renderIDE(lang, translations) {
                 logToTerminal(`Query executed successfully. No rows returned.`, 'info', true);
                 return;
               }
-              const columns = Object.keys(rows[0]);
+
               const elapsed = (performance.now() - startTime) / 1000;
+              const active = terminalInstances.find(t => t.id === activeTerminalId);
+              if (active) {
+                active.queryResults = { rows, columns: Object.keys(rows[0]), elapsed };
+              }
 
-              let html = `<div class="sql-result-wrapper">`;
-              html += `<div class="sql-summary-bar"><span>${rows.length} rows and ${columns.length} columns returned in ${elapsed.toFixed(1)}s</span></div>`;
-              html += `<div class="sql-grid-layout"><div class="sql-scroll-pane"><table class="preview-table"><thead><tr><th class="index-th" style="width: 45px; min-width: 45px; text-align: center; user-select: none; padding: 0; position: sticky; left: 0; top: 0; z-index: 100; background-color: var(--ide-header); border-right: 2px solid var(--ide-border); box-shadow: 2px 0 5px rgba(0,0,0,0.3);"><div class="col-resizer" data-resizer="true"></div><span class="th-name" style="opacity: 0.8;">#</span></th>${columns.map(c => {
-                const rawVal = rows[0][c];
-                const typeKey = typeof rawVal === 'number' ? 'number' : typeof rawVal === 'boolean' ? 'boolean' : 'text';
-                const typeIcon = CATALOG_TYPE_ICONS[typeKey];
-                const typeLabel = typeKey === 'number' ? 'INT64' : typeKey === 'boolean' ? 'BOOL' : 'TEXT';
-                return `<th style="width: 150px; min-width: 150px;"><div class="col-resizer" data-resizer="true"></div><div class="th-content"><div class="th-main"><span class="th-name">${c}</span><div class="type-pill-container" style="margin-top: 4px; opacity: 1;">${typeIcon}</div></div></div></th>`;
-              }).join('')}</tr></thead><tbody>${rows.slice(0, 100).map((row, r) => `<tr><td style="width: 45px; min-width: 45px; text-align: center; background-color: var(--ide-bg); opacity: 1; font-size: 10px; user-select: none; padding: 0; position: sticky; left: 0; z-index: 90; border-right: 2px solid var(--ide-border); box-shadow: 2px 0 5px rgba(0,0,0,0.3);">${r + 1}</td>${columns.map(c => {
-                let val = row[c];
-                let displayVal = val;
-                if (val === null || val === undefined) displayVal = '<span style="opacity:0.3">NULL</span>';
-                else if (typeof val === 'number') {
-                  displayVal = !Number.isInteger(val) ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) : val.toLocaleString('en-US');
-                }
-                return `<td style="text-align: ${typeof val === 'number' ? 'right' : 'left'}">${displayVal}</td>`;
-              }).join('')}</tr>`).join('')}</tbody></table></div></div>`;
-
-              if (rows.length > 100) html += `<div style="font-size:10px; opacity:0.5; padding: 10px; text-align:center;">Showing first 100 rows only.</div>`;
-              html += `</div>`;
-              logToTerminal(html, null, true);
+              const html = renderSQLOutput(rows, Object.keys(rows[0]), elapsed);
+              logToTerminal(html, null, false);
             } catch (err) {
               logToTerminal(`SQL Error: ${err.message}`, 'error', true);
             }
@@ -3907,6 +4103,7 @@ export function renderIDE(lang, translations) {
       renderFileList(fileListContainer);
       renderCatalog();
       renderTabs(tabsContainer);
+      if (typeof updateTerminalUI === 'function') updateTerminalUI();
     }
 
     function closeTab(name) {
@@ -4238,6 +4435,9 @@ export function renderIDE(lang, translations) {
     // Sync references for global listeners
     activeSessionRef = currentSession;
     activeSyncRef = syncIDEState;
+    activeSessionRef.renderSQLOutput = renderSQLOutput; // Expose for terminal sorting
+    activeSessionRef.terminalInstances = terminalInstances; // Share instance data
+    activeSessionRef.activeTerminalId = activeTerminalId;
     initTableResizersBound = initTableResizers;
 
     // Lock auto-scrolls for a longer period to ensure stability
@@ -4287,6 +4487,50 @@ export function renderIDE(lang, translations) {
 // Global Deselection Monitor (Persistent across re-renders)
 window.addEventListener('mousedown', (e) => {
   if (!activeSessionRef || !activeSyncRef) return;
+
+  // 0. Handle SQL Sorting in Terminal
+  const sortHeader = e.target.closest('[data-sort-col]');
+  if (sortHeader && sortHeader.closest('.sql-result-wrapper')) {
+    const column = sortHeader.dataset.sortCol;
+    const currentDir = sortHeader.dataset.sortDir;
+    const newDir = currentDir === 'ASC' ? 'DESC' : 'ASC';
+    
+    if (activeSessionRef.terminalInstances && activeSessionRef.renderSQLOutput) {
+      const activeTerm = activeSessionRef.terminalInstances.find(t => t.id === activeSessionRef.activeTerminalId);
+      if (activeTerm && activeTerm.queryResults) {
+        const newTableHtml = activeSessionRef.renderSQLOutput(
+          activeTerm.queryResults.rows, 
+          activeTerm.queryResults.columns, 
+          activeTerm.queryResults.elapsed,
+          column, 
+          newDir
+        );
+        
+        // Find existing wrapper and replace in content
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = activeTerm.content;
+        const wrapper = tempDiv.querySelector('.sql-result-wrapper');
+        if (wrapper) {
+          wrapper.outerHTML = newTableHtml;
+          activeTerm.content = tempDiv.innerHTML;
+          activeSyncRef(); // This will trigger re-render of terminal DOM
+          return;
+        }
+      }
+    }
+  }
+
+  // 0.1 Handle Auto-fit Button for SQL
+  const autoFitBtn = e.target.closest('.auto-fit-btn');
+  if (autoFitBtn && autoFitBtn.closest('.sql-result-wrapper')) {
+     const table = autoFitBtn.closest('.sql-result-wrapper').querySelector('.preview-table');
+     if (table) {
+       const resizer = table.querySelector('[data-resizer]');
+       if (resizer) {
+         resizer.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+       }
+     }
+  }
 
   const isInsideIDE = e.composedPath().some(el => el.id === 'playground');
   const isSelectable = e.target.closest('.ide-file-item, .naming-item, .ide-tab, .sidebar-action-btn, .toolbar-btn, [data-sort-col], .preview-table, .detail-grid, .catalog-node');
