@@ -9,6 +9,8 @@ let conn = null;
 let terminalInstances = [{ id: 1, name: 'Terminal', content: '' }];
 let activeTerminalId = 1;
 let updateTerminalUIBound = null;
+let activeSessionRef = null;
+let activeSyncRef = null;
 
 const logToTerminal = (content, type = 'info', append = false) => {
   const active = terminalInstances.find(t => t.id === activeTerminalId);
@@ -149,7 +151,7 @@ export function renderIDE(lang, translations) {
         resizer.classList.add('resizing');
 
         const onMouseMove = (e) => {
-          const newWidth = Math.max(40, startWidth + (e.pageX - startX));
+          const newWidth = Math.max(25, startWidth + (e.pageX - startX));
           th.style.width = `${newWidth}px`;
           th.style.minWidth = `${newWidth}px`;
         };
@@ -174,30 +176,48 @@ export function renderIDE(lang, translations) {
           const isIndexResizer = headers.indexOf(th) === 0;
 
           if (isIndexResizer) {
-            // GLOBAL AUTO-FIT: Reset all and measure
-            table.style.tableLayout = 'auto';
-            table.style.width = 'auto';
-            headers.forEach((header, idx) => {
-              if (idx === 0) return;
-              header.style.width = '';
-              header.style.minWidth = '';
+            // GLOBAL AUTO-FIT: Adjust ALL columns based on the absolute maximum content across all rows
+            // 1. Completely clear all width constraints
+            headers.forEach(h => {
+              h.style.width = '';
+              h.style.minWidth = '';
             });
 
-            let newTotalWidth = headers[0].offsetWidth;
-            headers.forEach((header, idx) => {
-              if (idx === 0) return;
-              const measuredWidth = header.offsetWidth;
-              header.style.width = `${measuredWidth}px`;
-              header.style.minWidth = '40px';
-              newTotalWidth += measuredWidth;
+            // 2. Prep for measurement: Force a state where everything expands to its natural limit
+            table.style.tableLayout = 'auto';
+            table.style.width = 'max-content';
+            const originalWS = table.style.whiteSpace;
+            table.style.whiteSpace = 'nowrap';
+
+            // 3. Force Layout/Reflow to ensure browser calculates the true 'auto' widths
+            table.offsetWidth;
+
+            // 4. Record the browser's calculated 'auto' widths
+            const newWidths = headers.map((h, idx) => {
+              const rect = h.getBoundingClientRect();
+              // Global fix: Index column (#) should be tight. All others use content measurement.
+              if (idx === 0) return 45;
+
+              const measured = Math.ceil(rect.width) + 14;
+              return Math.max(60, measured);
             });
+
+            // 5. Hardwire these values back to fixed layout
+            headers.forEach((h, idx) => {
+              h.style.width = `${newWidths[idx]}px`;
+              h.style.minWidth = `${newWidths[idx]}px`;
+            });
+
+            // 6. Restore fixed layout system
+            table.style.whiteSpace = originalWS;
             table.style.tableLayout = 'fixed';
-            table.style.width = `${newTotalWidth}px`;
+            const total = newWidths.reduce((a, b) => a + b, 0);
+            table.style.width = `${total}px`;
           } else {
             // LOCAL AUTO-FIT: Strictly lock others, only reset target
             const currentWidths = headers.map(h => h.offsetWidth);
 
-            // 1. Lock all OTHER headers
+            // 1. Lock all OTHER headers to their current pixel widths
             headers.forEach((header, idx) => {
               if (header !== th) {
                 header.style.width = `${currentWidths[idx]}px`;
@@ -208,16 +228,25 @@ export function renderIDE(lang, translations) {
               }
             });
 
-            // 2. Unlock table briefly to measure content
+            // 2. Prep for measurement
             table.style.tableLayout = 'auto';
-            table.style.width = 'auto';
+            table.style.width = 'max-content';
+            const originalWS = table.style.whiteSpace;
+            table.style.whiteSpace = 'nowrap';
 
-            // 3. Measure target only
-            const measuredTargetWidth = th.offsetWidth;
-            th.style.width = `${measuredTargetWidth}px`;
-            th.style.minWidth = '40px';
+            // Force Reflow
+            table.offsetWidth;
 
-            // 4. Re-lock table and update total width
+            // 3. Capture the browser's measured width for target
+            const measuredTargetWidth = Math.ceil(th.getBoundingClientRect().width);
+
+            // 4. Apply back
+            const finalWidth = Math.max(60, measuredTargetWidth + 14);
+            th.style.width = `${finalWidth}px`;
+            th.style.minWidth = `${finalWidth}px`;
+
+            // 5. Restore
+            table.style.whiteSpace = originalWS;
             table.style.tableLayout = 'fixed';
             let finalTotal = headers.reduce((acc, h) => acc + h.offsetWidth, 0);
             table.style.width = `${finalTotal}px`;
@@ -313,7 +342,9 @@ export function renderIDE(lang, translations) {
     <style>
       .folder-chevron, .catalog-arrow { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; color: var(--ide-text); transition: transform 0.2s; margin-right: 4px; }
       .folder-chevron.expanded, .catalog-arrow.expanded { transform: rotate(90deg); }
-      .folder-indent { width: 18px; }
+      .folder-indent { width: 14px; margin-right: 4px; flex-shrink: 0; }
+      .file-icon-wrap { margin-right: 8px; display: flex; align-items: center; opacity: 0.9; }
+      .file-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .file-main { display: flex; align-items: center; width: 100%; white-space: nowrap; height: 100%; }
       .file-icon-wrap { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
       .file-main span { overflow: hidden; text-overflow: ellipsis; }
@@ -343,35 +374,8 @@ export function renderIDE(lang, translations) {
         display: flex; align-items: center; height: 32px; padding: 0 12px; cursor: pointer; color: var(--ide-text); 
         gap: 6px; border-left: none; transition: all 0.2s;
       }
-      .ide-file-item:hover { background: rgba(255, 255, 255, 0.05); }
-      .ide-file-item.active {
-        background: linear-gradient(90deg, rgba(121, 192, 255, 0.07), rgba(179, 146, 240, 0.05), transparent) !important;
-        color: var(--ide-text-bright);
-      }
-      .ide-file-item.active-selection { 
-        background: linear-gradient(90deg, rgba(121, 192, 255, 0.16), rgba(179, 146, 240, 0.12), rgba(255, 123, 114, 0.1), transparent) !important;
-        position: relative;
-      }
-      .ide-file-item.active-selection.last-selected {
-        background: linear-gradient(90deg, rgba(121, 192, 255, 0.22), rgba(179, 146, 240, 0.18), rgba(255, 123, 114, 0.15), transparent) !important;
-      }
-      
-      .ide-file-item.active-selection::before,
-      .ide-file-item.active::before {
-        content: "";
-        position: absolute;
-        left: 0px;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: var(--rainbow-soft);
-        background-size: 200% auto;
-        animation: rainbowSlide 5s linear infinite;
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
-        z-index: 10;
-        border-radius: 0 4px 4px 0;
-      }
-      
+      .ide-file-item:hover, .catalog-node:hover { background: rgba(255, 255, 255, 0.05); }
+      [data-theme="light"] .ide-file-item:hover, [data-theme="light"] .catalog-node:hover { background: rgba(0, 0, 0, 0.04); }
       .ide-file-item.drag-over { 
         background: rgba(153, 255, 255, 0.05) !important;
         box-shadow: inset 0 0 10px rgba(153, 255, 255, 0.2);
@@ -384,29 +388,7 @@ export function renderIDE(lang, translations) {
         transition: background 0.2s, box-shadow 0.2s;
         border-radius: 10px;
       }
-      
-      .catalog-node.active-selection { 
-        background: linear-gradient(90deg, rgba(121, 192, 255, 0.15), rgba(179, 146, 240, 0.12), rgba(255, 123, 114, 0.1), transparent) !important;
-        position: relative;
-      }
-      .catalog-node.active-selection.last-selected {
-        background: linear-gradient(90deg, rgba(121, 192, 255, 0.22), rgba(179, 146, 240, 0.18), rgba(255, 123, 114, 0.15), transparent) !important;
-      }
 
-      .catalog-node.active-selection::before {
-        content: "";
-        position: absolute;
-        left: 0px;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background: var(--rainbow-soft);
-        background-size: 200% auto;
-        animation: rainbowSlide 5s linear infinite;
-        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
-        z-index: 10;
-        border-radius: 0 4px 4px 0;
-      }
 
       /* Premium Modal Styles */
       .ide-modal-overlay { 
@@ -536,6 +518,9 @@ export function renderIDE(lang, translations) {
       .workspace-copy-btn { opacity: 0; padding: 10px; gap: 10px; cursor: pointer; transition: all 0.2s; color: var(--ide-text); display: flex; align-items: center; justify-content: center; margin-left: auto; }
       .ide-file-item:hover .workspace-copy-btn { opacity: 1; }
       .workspace-copy-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--ide-text-bright); }
+      [data-theme="light"] .workspace-copy-btn:hover,
+      [data-theme="light"] .copy-table-btn:hover,
+      [data-theme="light"] .copy-col-btn:hover { background: rgba(0, 0, 0, 0.08) !important; }
 
       @keyframes pulse-ring {
         0% { transform: scale(0.8); opacity: 0.5; }
@@ -574,6 +559,8 @@ export function renderIDE(lang, translations) {
         border-radius: 50%;
         box-shadow: 0 0 8px #7ee787;
         animation: status-pulse 2s infinite;
+        flex-shrink: 0;
+        margin-top: -1px; /* Optical adjustment */
       }
 
       [data-theme="light"] .session-badge {
@@ -675,48 +662,6 @@ export function renderIDE(lang, translations) {
         min-height: 100%;
       }
       /* Unified Scrollbar System for Playground */
-      .editor-scroll-container::-webkit-scrollbar,
-      .catalog-explorer::-webkit-scrollbar,
-      .terminal-output::-webkit-scrollbar,
-      .sql-scroll-pane::-webkit-scrollbar,
-      .catalog-viewport::-webkit-scrollbar,
-      #preview-table-container::-webkit-scrollbar,
-      #top-scrollbar::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-      }
-      .editor-scroll-container::-webkit-scrollbar-track,
-      .catalog-explorer::-webkit-scrollbar-track,
-      .terminal-output::-webkit-scrollbar-track,
-      .sql-scroll-pane::-webkit-scrollbar-track,
-      .catalog-viewport::-webkit-scrollbar-track,
-      #preview-table-container::-webkit-scrollbar-track,
-      #top-scrollbar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.03);
-      }
-      .editor-scroll-container::-webkit-scrollbar-thumb,
-      .catalog-explorer::-webkit-scrollbar-thumb,
-      .terminal-output::-webkit-scrollbar-thumb,
-      .sql-scroll-pane::-webkit-scrollbar-thumb,
-      .catalog-viewport::-webkit-scrollbar-thumb,
-      #preview-table-container::-webkit-scrollbar-thumb,
-      #top-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.12);
-        border-radius: 5px;
-        border: 2px solid transparent;
-        background-clip: content-box;
-      }
-      .editor-scroll-container::-webkit-scrollbar-thumb:hover,
-      .catalog-explorer::-webkit-scrollbar-thumb:hover,
-      .terminal-output::-webkit-scrollbar-thumb:hover,
-      .sql-scroll-pane::-webkit-scrollbar-thumb:hover,
-      .catalog-viewport::-webkit-scrollbar-thumb:hover,
-      #preview-table-container::-webkit-scrollbar-thumb:hover,
-      #top-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.25);
-        background-clip: content-box;
-      }
-      
       .ide-textarea {
         margin: 0;
         padding: 10px;
@@ -785,8 +730,12 @@ export function renderIDE(lang, translations) {
         position: relative;
         cursor: grab;
       }
+      [data-theme="light"] .catalog-viewport {
+        background: #e9ecef linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
+        background-size: 20px 20px;
+      }
       .catalog-viewport:active { cursor: grabbing; }
-      
+
       .catalog-flow-content {
         position: absolute;
         transform-origin: 0 0;
@@ -798,6 +747,50 @@ export function renderIDE(lang, translations) {
         justify-content: flex-start;
         padding: 40px 100px 100px 100px;
         box-sizing: border-box;
+      }
+
+      .detail-section {
+        padding: 24px 40px;
+        color: var(--ide-text);
+        font-family: var(--ide-font-mono);
+      }
+      .detail-grid {
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 16px 32px;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 32px;
+        border-radius: 12px;
+        border: 1px solid var(--ide-border);
+      }
+      [data-theme="light"] .detail-grid {
+        background: rgba(0, 0, 0, 0.015);
+      }
+      .detail-label {
+        font-weight: 600;
+        opacity: 0.6;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+      }
+      .detail-value {
+        font-size: 13px;
+        color: var(--ide-text-bright);
+        display: flex;
+        align-items: center;
+      }
+      .detail-section h2 {
+        margin-top: 0;
+        margin-bottom: 24px;
+        font-size: 14px;
+        color: var(--ide-text-bright);
+        opacity: 0.8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .explorer-content {
+        flex: 1;
+        min-height: 0;
       }
 
       .catalog-flow-container { 
@@ -823,7 +816,8 @@ export function renderIDE(lang, translations) {
         flex-direction: column;
         align-items: stretch;
         width: 100%;
-        margin: 0;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--ide-border);
       }
 
       .sql-summary-bar {
@@ -909,8 +903,14 @@ export function renderIDE(lang, translations) {
 
       .th-content {
         display: flex;
-        align-items: center;
-        gap: 6px;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+      }
+      .th-main {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
       }
 
       .th-type-icon {
@@ -951,6 +951,37 @@ export function renderIDE(lang, translations) {
       }
       .terminal-add-btn:active {
         transform: scale(0.92);
+      }
+      
+      .ide-file-item.active,
+      .catalog-node.active {
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: var(--ide-text-bright);
+        position: relative !important;
+      }
+      [data-theme="light"] .ide-file-item.active,
+      [data-theme="light"] .catalog-node.active {
+        background: rgba(0, 0, 0, 0.05) !important;
+      }
+      
+      .ide-file-item.active-selection,
+      .catalog-node.active-selection {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: var(--ide-text-bright);
+        position: relative !important;
+      }
+      [data-theme="light"] .ide-file-item.active-selection,
+      [data-theme="light"] .catalog-node.active-selection {
+        background: rgba(0, 0, 0, 0.08) !important;
+      }
+      
+      .ide-file-item.active-selection.last-selected,
+      .catalog-node.active-selection.last-selected {
+        background: rgba(255, 255, 255, 0.15) !important;
+      }
+      [data-theme="light"] .ide-file-item.active-selection.last-selected,
+      [data-theme="light"] .catalog-node.active-selection.last-selected {
+        background: rgba(0, 0, 0, 0.12) !important;
       }
       
       .ide-status-bar {
@@ -1013,12 +1044,91 @@ export function renderIDE(lang, translations) {
         align-items: center;
       }
 
+      .ide-tabs-container {
+        position: relative;
+        flex: 1;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+
+      /* Edge Fades */
+      .ide-tabs-container::before,
+      .ide-tabs-container::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 32px;
+        z-index: 5;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        opacity: 0;
+      }
+
+      .ide-tabs-container::before {
+        left: 0;
+        background: linear-gradient(90deg, var(--ide-tab-inactive) 0%, transparent 100%);
+      }
+
+      .ide-tabs-container::after {
+        right: 0;
+        background: linear-gradient(-90deg, var(--ide-tab-inactive) 0%, transparent 100%);
+      }
+
+      .ide-tabs-container.can-scroll-left::before { opacity: 1; }
+      .ide-tabs-container.can-scroll-right::after { opacity: 1; }
+
+      /* Floating Indicator Buttons */
+      .tab-overflow-indicator {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%) scale(0.7);
+        width: 22px;
+        height: 22px;
+        background: var(--ide-bg-dark);
+        border: 1px solid var(--ide-border);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        cursor: pointer;
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        pointer-events: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        color: var(--ide-text-bright);
+      }
+
+      .tab-overflow-indicator:hover {
+        background: var(--ide-header);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: translateY(-50%) scale(1.1);
+      }
+
+      .can-scroll-left .tab-overflow-indicator.left {
+        opacity: 1;
+        pointer-events: auto;
+        left: 4px;
+        transform: translateY(-50%) scale(1);
+      }
+
+      .can-scroll-right .tab-overflow-indicator.right {
+        opacity: 1;
+        pointer-events: auto;
+        right: 4px;
+        transform: translateY(-50%) scale(1);
+      }
+
       .ide-tabs {
         flex: 1;
         height: 100%;
         display: flex;
         overflow-x: auto;
         scrollbar-width: none;
+        scroll-behavior: smooth;
       }
 
       .ide-tabs::-webkit-scrollbar { display: none; }
@@ -1116,6 +1226,22 @@ export function renderIDE(lang, translations) {
       .ide-editor-container.terminal-hidden .ide-terminal { display: none; }
       .ide-editor-container.terminal-hidden .ide-terminal-resizer { display: none; }
       .ide-editor-container.terminal-hidden .ide-editor-main { flex: 1 1 100%; height: 100%; }
+
+      .top-scrollbar {
+        overflow-x: auto;
+        overflow-y: scroll;
+        height: 10px;
+        background: transparent;
+        width: calc(100% - 45px);
+        margin-left: 45px;
+        border: none;
+      }
+      .bottom-scrollbar {
+        margin-top: -10px;
+      }
+      #preview-table-container::-webkit-scrollbar:horizontal {
+        display: none;
+      }
     </style>
     <h2 class="rainbow-title-center reveal" style="color: var(--text-primary); font-family: var(--font-mono);">${translations[lang].playground.title}</h2>
     
@@ -1205,30 +1331,41 @@ export function renderIDE(lang, translations) {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
                 </button>
               </div>
-              <div class="ide-tabs" id="ide-tabs"></div>
+              <div class="ide-tabs-container" id="ide-tabs-container">
+                <div class="tab-overflow-indicator left" id="tabs-scroll-left">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                </div>
+                <div class="ide-tabs" id="ide-tabs"></div>
+                <div class="tab-overflow-indicator right" id="tabs-scroll-right">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>
+                </div>
+              </div>
             </div>
             <div class="ide-editor-wrapper">
-              <div class="line-numbers-sidebar" id="line-numbers" style="flex-shrink: 0; z-index: 10;"></div>
-              <div class="editor-scroll-container" id="editor-scroller" style="flex: 1; position: relative; overflow: hidden;">
-                <div class="code-content-wrapper">
-                  <textarea id="ide-textarea" class="ide-textarea" spellcheck="false"></textarea>
-                  <pre id="ide-pre" class="ide-pre"><code id="ide-code"></code></pre>                </div>
-              </div>
-              <!-- Search Widget (Fixed Position) -->
-              <div id="ide-search-widget" class="ide-search-widget">
-                <div class="search-input-wrapper">
-                  <input type="text" placeholder="Find" id="search-input" spellcheck="false" autocomplete="off">
-                  <span id="search-count">0/0</span>
+              <div id="editor-view" style="display: flex; flex: 1; width: 100%; height: 100%;">
+                <div class="line-numbers-sidebar" id="line-numbers" style="flex-shrink: 0; z-index: 10;"></div>
+                <div class="editor-scroll-container" id="editor-scroller" style="flex: 1; position: relative; overflow: hidden;">
+                  <div class="code-content-wrapper">
+                    <textarea id="ide-textarea" class="ide-textarea" spellcheck="false"></textarea>
+                    <pre id="ide-pre" class="ide-pre"><code id="ide-code"></code></pre>
+                  </div>
                 </div>
-                <div class="search-actions">
-                  <div class="search-action-btn" id="search-prev" title="Previous Match (Shift+F3)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                <!-- Search Widget (Fixed Position) -->
+                <div id="ide-search-widget" class="ide-search-widget">
+                  <div class="search-input-wrapper">
+                    <input type="text" placeholder="Find" id="search-input" spellcheck="false" autocomplete="off">
+                    <span id="search-count">0/0</span>
                   </div>
-                  <div class="search-action-btn" id="search-next" title="Next Match (F3)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                  </div>
-                  <div class="search-action-btn" id="search-close" title="Close (Escape)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                  <div class="search-actions">
+                    <div class="search-action-btn" id="search-prev" title="Previous Match (Shift+F3)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    </div>
+                    <div class="search-action-btn" id="search-next" title="Next Match (F3)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                    <div class="search-action-btn" id="search-close" title="Close (Escape)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1715,6 +1852,24 @@ export function renderIDE(lang, translations) {
     const activityBar = section.querySelector('.ide-activity-bar');
     const explorerSidebar = section.querySelector('#sidebar-explorer');
     const catalogSidebar = section.querySelector('#sidebar-catalog');
+
+    // Simple Background Deselection
+    explorerSidebar.onclick = (e) => {
+      if (e.target === explorerSidebar || e.target.id === 'sidebar-explorer' || e.target.id === 'ide-file-list') {
+        currentSession.selectedFiles = [];
+        currentSession.lastSelectedFile = null;
+        syncIDEState();
+      }
+    };
+
+    catalogSidebar.onclick = (e) => {
+      if (e.target === catalogSidebar || e.target.id === 'sidebar-catalog' || e.target.id === 'catalog-tree') {
+        currentSession.selectedFiles = [];
+        currentSession.lastSelectedFile = null;
+        syncIDEState();
+      }
+    };
+
     const terminalSelectTrigger = section.querySelector('#terminal-select-trigger');
     const terminalSelectOptions = section.querySelector('#terminal-select-options');
     const terminalAdd = section.querySelector('#terminal-add');
@@ -1757,14 +1912,10 @@ export function renderIDE(lang, translations) {
     }
     updateTerminalUIBound = updateTerminalUI;
 
-    terminalSelectTrigger.onclick = (e) => {
-      e.stopPropagation();
-      terminalSelectOptions.classList.toggle('active');
-    };
-
-    document.addEventListener('click', () => {
+    window.addEventListener('mousedown', (e) => {
       if (terminalSelectOptions) terminalSelectOptions.classList.remove('active');
-    });
+    }, true);
+
 
     terminalAdd.onclick = () => {
       const newId = terminalInstances.length > 0 ? Math.max(...terminalInstances.map(t => t.id)) + 1 : 1;
@@ -1774,8 +1925,18 @@ export function renderIDE(lang, translations) {
     };
 
     deleteTerminalBtn.onclick = () => {
-      currentSession.terminalOpen = false;
-      syncTerminalVisibility();
+      if (terminalInstances.length > 1) {
+        terminalInstances = terminalInstances.filter(t => t.id !== activeTerminalId);
+        activeTerminalId = terminalInstances[terminalInstances.length - 1].id;
+        updateTerminalUI();
+      } else {
+        // Only one terminal, clear it and close the panel
+        const last = terminalInstances[0];
+        if (last) last.content = '';
+        currentSession.terminalOpen = false;
+        syncTerminalVisibility();
+        updateTerminalUI();
+      }
     };
 
     const pauseBtn = section.querySelector('#pause-btn');
@@ -1806,6 +1967,10 @@ export function renderIDE(lang, translations) {
       }
       const ext = name.split('.').pop().toLowerCase();
       return ICONS[ext] || ICONS.default;
+    }
+
+    function switchFileAndSync(name) {
+      switchFile(name, true); // From sidebar
     }
 
     function renderFileList(container) {
@@ -1845,8 +2010,10 @@ export function renderIDE(lang, translations) {
           }
           if (!isVisible) return '';
           const displayName = fileName.endsWith('/') ? fileName.split('/').slice(-2, -1)[0] : fileName.split('/').pop();
-          const indent = (fileName.split('/').length - (fileName.endsWith('/') ? 2 : 1)) * 10;
           const isFolder = fileName.endsWith('/');
+          const pathParts = fileName.split('/').filter(p => p.length > 0);
+          const depth = isFolder ? pathParts.length - 1 : pathParts.length - 1;
+          const indent = depth * 18;
           const isExpanded = !collapsedFolders.has(fileName);
           const isBeingRenamed = currentSession.namingNew && currentSession.namingNew.isRename && currentSession.namingNew.oldName === fileName;
           if (isBeingRenamed) {
@@ -1858,11 +2025,11 @@ export function renderIDE(lang, translations) {
           }
           return `
             <div class="ide-file-item ${currentSession.selectedFiles.includes(fileName) ? 'active-selection' : ''} ${fileName === currentSession.lastSelectedFile ? 'last-selected' : ''} ${fileName === currentSession.fileName ? 'active' : ''}" 
-                 data-file="${fileName}" draggable="true" style="padding-left: ${10 + indent}px">
+                 data-file="${fileName}" draggable="true" style="padding-left: ${8 + indent}px">
               <div class="file-main">
                 ${isFolder ? `<div class="folder-chevron ${isExpanded ? 'expanded' : ''}" data-folder-toggle="${fileName}">${ICONS.chevron}</div>` : '<div class="folder-indent"></div>'}
                 <div class="file-icon-wrap">${getFileIcon(fileName)}</div>
-                <span>${displayName}</span>
+                <span class="file-label">${displayName}</span>
                 <div class="workspace-copy-btn" title="Copy Path" data-copy="${fileName}">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                 </div>
@@ -1974,8 +2141,20 @@ export function renderIDE(lang, translations) {
       container.innerHTML = openTabs.map(tabId => {
         const isCatalog = tabId.startsWith('catalog://');
         const displayName = isCatalog ? tabId.split('/').pop() : tabId;
-        const icon = isCatalog ? CATALOG_ICONS[tabId.split('/')[2]] || CATALOG_ICONS.table : getFileIcon(tabId);
-        const isActive = !isCatalog && currentSession.fileName === tabId;
+
+        let icon;
+        if (isCatalog) {
+          const parts = tabId.slice(10).split('/');
+          const type = parts.length === 1 ? 'database' : parts.length === 2 ? 'schema' : 'table';
+          const color = type === 'database' ? '#79c0ff' : type === 'schema' ? '#b392f0' : '#7ee787';
+          icon = `<span style="color: ${color}; display: flex; align-items: center; justify-content: center;">${CATALOG_ICONS[type]}</span>`;
+        } else {
+          icon = getFileIcon(tabId);
+        }
+
+        const isActive = isCatalog ?
+          (currentSession.activeCatalogItem && currentSession.activeCatalogItem.id === tabId) :
+          (currentSession.fileName === tabId && !currentSession.activeCatalogItem);
 
         return `
         <div class="ide-tab ${isActive ? 'active' : ''}" data-tab-id="${tabId}">
@@ -1984,7 +2163,27 @@ export function renderIDE(lang, translations) {
         </div>`;
       }).join('');
 
-      setTimeout(scrollActiveTabIntoView, 50);
+      const updateTabIndicators = () => {
+        const wrapper = section.querySelector('#ide-tabs-container');
+        if (!wrapper || !container) return;
+        const canScrollLeft = container.scrollLeft > 5;
+        const canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth - 5);
+        wrapper.classList.toggle('can-scroll-left', canScrollLeft);
+        wrapper.classList.toggle('can-scroll-right', canScrollRight);
+      };
+
+      container.onscroll = updateTabIndicators;
+
+      const btnLeft = section.querySelector('#tabs-scroll-left');
+      const btnRight = section.querySelector('#tabs-scroll-right');
+      if (btnLeft) btnLeft.onclick = () => container.scrollTo({ left: 0, behavior: 'smooth' });
+      if (btnRight) btnRight.onclick = () => container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
+
+      updateTabIndicators();
+      setTimeout(() => {
+        scrollActiveTabIntoView();
+        updateTabIndicators();
+      }, 50);
     }
 
     function scrollActiveTabIntoView() {
@@ -2035,38 +2234,49 @@ export function renderIDE(lang, translations) {
       const details = detailsMap[item.type] || {};
 
       explorerView.innerHTML = `
-        <div class="catalog-explorer">
-          <div class="explorer-header">
-            <div class="breadcrumb">Catalog Explorer &rsaquo; ${item.id.replace('catalog://', '').split('/').join(' &rsaquo; ')}</div>
-            <div class="explorer-title" style="display: flex; align-items: center; gap: 8px;">
-              <div class="icon-wrap-table" style="display: flex; align-items: center; color: ${item.type === 'database' ? '#79c0ff' : item.type === 'schema' ? '#b392f0' : '#7ee787'}">${CATALOG_ICONS[item.type]}</div>
-              <h1>${item.name}</h1>
+        <div style="padding: 0; height: 100%; display: flex; flex-direction: column; box-sizing: border-box;">
+            <div style="padding: 10px 20px 0 20px;">
+              <div style="font-size: 11px; opacity: 0.5; font-family: var(--ide-font-mono); text-transform: uppercase; letter-spacing: 0.5px;">Catalog Explorer &rsaquo; ${item.id.replace('catalog://', '').split('/').join(' &rsaquo; ')}</div>
+              <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0 10px 0;">
+                <div style="display: flex; align-items: center; color: ${item.type === 'database' ? '#79c0ff' : item.type === 'schema' ? '#b392f0' : '#7ee787'}">${CATALOG_ICONS[item.type]}</div>
+                <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: var(--ide-text-bright);">${item.name}</h1>
+              </div>
             </div>
-            <div class="explorer-tabs">
-              <div class="explorer-tab ${activeTab === 'overview' ? 'active' : ''}" data-tab="overview">Overview</div>
-              <div class="explorer-tab ${activeTab === 'details' ? 'active' : ''}" data-tab="details">Details</div>
+
+            <div style="display: flex; gap: 24px; border-bottom: 1px solid var(--ide-border); border-top: 1px solid var(--ide-border); background: var(--ide-tab-inactive); margin-bottom: 0; padding: 0 20px;">
+              <div class="explorer-tab ${activeTab === 'overview' ? 'active' : ''}" data-tab="overview" style="padding: 6px 0; font-size: 13px; color: ${activeTab === 'overview' ? 'var(--ide-text-bright)' : 'var(--ide-text)'}; cursor: pointer; position: relative; font-weight: ${activeTab === 'overview' ? '600' : '400'};">
+                Overview
+                ${activeTab === 'overview' ? '<div style="position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--ide-accent); box-shadow: 0 0 8px var(--ide-accent);"></div>' : ''}
+              </div>
+              <div class="explorer-tab ${activeTab === 'details' ? 'active' : ''}" data-tab="details" style="padding: 6px 0; font-size: 13px; color: ${activeTab === 'details' ? 'var(--ide-text-bright)' : 'var(--ide-text)'}; cursor: pointer; position: relative; font-weight: ${activeTab === 'details' ? '600' : '400'};">
+                Details
+                ${activeTab === 'details' ? '<div style="position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--ide-accent); box-shadow: 0 0 8px var(--ide-accent);"></div>' : ''}
+              </div>
             </div>
-          </div>
-          <div class="explorer-content" id="explorer-content-root">
+
+            <div id="explorer-content-root" style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column;">
             ${activeTab === 'overview' ? `
               ${item.type === 'table' ? `
-                <div class="preview-section">
-                  <div class="preview-header">
-                    <div class="sql-badge" style="display:flex; align-items:center; gap:8px;">
-                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-                       <span>SELECT * FROM <b>warehouse.${pathParts[1] || 'gold'}.${item.name}</b> LIMIT 100</span>
+                <div class="preview-section" style="flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--ide-bg); padding: 0;">
+                  <div class="preview-header" style="padding: 14px 20px;">
+                    <div class="sql-badge" style="display:flex; align-items:center; gap:12px; padding: 6px 16px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; background: rgba(255, 255, 255, 0.03); width: 100%; box-sizing: border-box; margin-bottom: 0;">
+                       <div style="color: #b392f0; display: flex; align-items: center; opacity: 0.8;">
+                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                       </div>
+                       <span style="font-family: var(--ide-font-mono); font-size: 13px; color: var(--ide-text); display: flex; align-items: center; gap: 4px;">
+                         <span style="opacity: 0.7;">SELECT * FROM</span>
+                         <span style="color: #7ee787; font-weight: 700;">warehouse.${pathParts[1] || 'gold'}.${item.name}</span>
+                         <span style="opacity: 0.7;">LIMIT 100</span>
+                       </span>
                     </div>
                   </div>
-                  <div class="top-scrollbar" id="top-scrollbar">
-                    <div class="top-scrollbar-content" id="top-scrollbar-content"></div>
-                  </div>
-                  <div class="preview-table-container" id="preview-table-container">
+                  <div class="preview-table-container" id="preview-table-container" style="overflow-x: scroll; overflow-y: auto; max-height: 600px;">
                         ${(() => {
-              const tableWidth = 20 + ((item.columns || []).length * 150);
-              return `<table class="preview-table" style="width: ${tableWidth}px; min-width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed;">`;
+              const tableWidth = 45 + ((item.columns || []).length * 150);
+              return `<table class="preview-table" style="width: ${tableWidth}px; min-width: 100%; border-collapse: collapse; table-layout: fixed;">`;
             })()}
                       <thead>
-                          <th style="width: 20px; min-width: 20px; max-width: 20px; text-align: center; color: var(--ide-text); opacity: 0.4; padding: 10px 2px; position: relative; background: var(--ide-header); border-right: 1px solid var(--ide-border);">
+                          <th style="width: 45px; min-width: 45px; max-width: 45px; text-align: center; color: var(--ide-text); opacity: 0.6; padding: 6px 2px; border: 1px solid var(--ide-border); position: sticky; top: 0; z-index: 100; background-color: var(--ide-header);">
                             <div class="col-resizer" data-resizer></div>
                             #
                           </th>
@@ -2078,15 +2288,17 @@ export function renderIDE(lang, translations) {
                   '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.3"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>';
 
               return `
-                            <th style="width: 150px; min-width: 40px; position: relative; text-align: center; border-right: 1px solid var(--ide-border); cursor: pointer;" data-sort-col="${c.name}">
+                            <th style="width: 150px; min-width: 40px; position: sticky; top: 0; z-index: 90; text-align: center; border: 1px solid var(--ide-border); background-color: var(--ide-header); padding: 6px 10px; cursor: pointer;" data-sort-col="${c.name}">
                               <div class="col-resizer" data-resizer></div>
-                              <div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom: 2px;">
+                              <div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom: 0px;">
                                 <span style="${isSorted ? 'color: var(--ide-text-bright); font-weight: bold;' : ''}">${c.name}</span>
                                 <div class="sort-icon">${sortIcon}</div>
                               </div>
-                              <small style="opacity: 0.6; font-weight: normal; font-size: 9px; display: block; text-align: center;">
-                                ${c.type === 'number' ? 'INT64' : (c.type || 'TEXT').toUpperCase()}
-                              </small>
+                              <div style="display:flex; justify-content:center; align-items:center;">
+                                <div style="transform: scale(0.85); transform-origin: center; display: inline-block;">
+                                  ${CATALOG_TYPE_ICONS[c.type === 'number' ? 'number' : (c.type === 'decimal' ? 'decimal' : (c.type === 'boolean' || c.type === 'bool' ? 'boolean' : 'text'))] || CATALOG_TYPE_ICONS.text}
+                                </div>
+                              </div>
                             </th>`;
             }).join('') : ''}
                         </tr>
@@ -2124,7 +2336,7 @@ export function renderIDE(lang, translations) {
               }
               return rows.map((row, r) => `
                             <tr>
-                              <td style="width: 20px; min-width: 20px; max-width: 20px; text-align: center; opacity: 0.4; font-size: 10px; padding: 8px 2px; background: var(--ide-header); border-right: 1px solid var(--ide-border); position: sticky; left: 0; z-index: 1;">${r + 1}</td>
+                              <td style="width: 45px; min-width: 45px; max-width: 45px; text-align: center; opacity: 0.6; color: var(--ide-text); font-size: 10px; padding: 8px 2px; background-color: var(--ide-bg); border-right: 1px solid var(--ide-border);">${r + 1}</td>
                               ${item.columns ? item.columns.map(c => {
                 let val = row[c.name];
                 if (val === null || val === undefined) val = '<span style="opacity:0.2">NULL</span>';
@@ -2135,6 +2347,9 @@ export function renderIDE(lang, translations) {
             })()}
                       </tbody>
                     </table>
+                  </div>
+                  <div class="top-scrollbar bottom-scrollbar" id="bottom-scrollbar">
+                    <div id="bottom-scrollbar-content" class="top-scrollbar-content"></div>
                   </div>
                 </div>
               ` : `
@@ -2178,9 +2393,8 @@ export function renderIDE(lang, translations) {
                 </div>
               `}
             ` : `
-              <div class="detail-section">
-                <h2>Details</h2>
-                <div class="detail-grid">
+              <div style="flex: 1; display: flex; justify-items: center; align-items: flex-start; padding: 32px; background: transparent;">
+                <div class="detail-grid" style="margin: 0 auto; width: 100%; max-width: 900px;">
                   ${Object.entries(details).map(([k, v]) => `
                     <div class="detail-label">${k}</div>
                     <div class="detail-value">${v}</div>
@@ -2192,23 +2406,29 @@ export function renderIDE(lang, translations) {
         </div>
       `;
 
-      // Synchronize horizontal scrolls
-      const topScroll = explorerView.querySelector('#top-scrollbar');
-      const bottomScroll = explorerView.querySelector('#preview-table-container');
+      // Sync horizontal scrolls
+      const bottomSyncScroll = explorerView.querySelector('#bottom-scrollbar');
+      const tableContainer = explorerView.querySelector('#preview-table-container');
       const table = explorerView.querySelector('.preview-table');
-      const topContent = explorerView.querySelector('#top-scrollbar-content');
+      const bottomContent = explorerView.querySelector('#bottom-scrollbar-content');
 
-      if (topScroll && bottomScroll && table) {
+      if (table && tableContainer) {
         setTimeout(() => {
-          topContent.style.width = table.offsetWidth + 'px';
+          const contentWidth = table.offsetWidth + 'px';
+          if (bottomSyncScroll && bottomContent) {
+            bottomSyncScroll.style.width = `100%`;
+            bottomContent.style.width = contentWidth;
+          }
         }, 100);
 
-        topScroll.onscroll = () => {
-          bottomScroll.scrollLeft = topScroll.scrollLeft;
+        const syncHorizontal = (e) => {
+          const left = e.target.scrollLeft;
+          if (bottomSyncScroll && e.target === tableContainer) bottomSyncScroll.scrollLeft = left;
+          if (tableContainer && e.target === bottomSyncScroll) tableContainer.scrollLeft = left;
         };
-        bottomScroll.onscroll = () => {
-          topScroll.scrollLeft = bottomScroll.scrollLeft;
-        };
+
+        if (bottomSyncScroll) bottomSyncScroll.onscroll = syncHorizontal;
+        if (tableContainer) tableContainer.onscroll = syncHorizontal;
       }
 
       explorerView.querySelectorAll('.explorer-tab').forEach(t => {
@@ -2368,7 +2588,7 @@ export function renderIDE(lang, translations) {
       }
     }
 
-    function switchView(tabId) {
+    function switchView(tabId, isFromSidebar = false) {
       if (tabId.startsWith('catalog://')) {
         const pathParts = tabId.slice(10).split('/'); // warehouse/gold/users
         const name = pathParts[pathParts.length - 1];
@@ -2396,49 +2616,58 @@ export function renderIDE(lang, translations) {
         };
         currentSession.fileName = null;
 
-        section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = 'none');
-        section.querySelector('.ide-tabs').style.display = 'none'; // Hide tabs
-        section.querySelector('#catalog-explorer-view').style.display = 'flex';
+        // Selection Logic Harmony
+        currentSession.selectedFiles = [tabId];
+        if (isFromSidebar) {
+          currentSession.lastSelectedFile = tabId;
+        } else {
+          if (currentSession.lastSelectedFile !== tabId) currentSession.lastSelectedFile = null;
+        }
+
+        if (!openTabs.includes(tabId)) openTabs.push(tabId);
+
         renderCatalogExplorer();
+        syncIDEState();
       } else {
         currentSession.activeCatalogItem = null;
-        switchFile(tabId);
-        section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = '');
-        section.querySelector('.ide-tabs').style.display = 'flex'; // Show tabs
-        section.querySelector('#catalog-explorer-view').style.display = 'none';
+        switchFile(tabId, isFromSidebar);
       }
-      renderFileList(fileListContainer);
-      renderTabs(tabsContainer);
-      renderCatalog();
     }
 
     function renderCatalog() {
       if (!catalogTreeContainer) return;
 
-      function renderNode(node, depth = 0, path = 'catalog://') {
+      function renderNode(node, depth = 0, nodeIdPath = 'catalog://', dotPath = '') {
         const icon = CATALOG_ICONS[node.type];
         const color = node.type === 'database' ? '#79c0ff' : node.type === 'schema' ? '#b392f0' : '#7ee787';
-        const nodeId = `${path}${node.name}`;
-        const isActive = currentSession.activeCatalogItem && currentSession.activeCatalogItem.id === nodeId;
+        const nodeId = `${nodeIdPath}${node.name}`;
+        const currentDotPath = dotPath ? `${dotPath}.${node.name}` : node.name;
+
+        const isSelected = currentSession.selectedFiles.includes(nodeId);
+        const isLastSelected = currentSession.lastSelectedFile === nodeId;
+        const isActiveView = (currentSession.activeCatalogItem && currentSession.activeCatalogItem.id === nodeId) || (currentSession.fileName === nodeId);
+        const isOpenInTab = openTabs.includes(nodeId);
 
         let html = `
-          <div class="catalog-node ${node.open ? 'open' : ''} ${isActive ? 'active-selection last-selected' : ''}" style="padding-left: ${depth * 15 + 10}px" data-node-name="${node.name}">
-            <span class="catalog-arrow ${node.open ? 'expanded' : ''}" data-catalog-toggle="true" style="font-size: 8px; opacity: 0.5;">${(node.children || node.columns) ? ICONS.chevron : ' '}</span>
-            <span class="catalog-icon" style="color: ${color}" title="${node.type.charAt(0).toUpperCase() + node.type.slice(1)}">${icon}</span>
-            <span class="catalog-name">${node.name}</span>
+          <div class="ide-file-item catalog-node ${node.open ? 'open' : ''} ${isSelected ? 'active-selection' : ''} ${isLastSelected ? 'last-selected' : ''} ${isActiveView ? 'active' : ''}" 
+               style="padding-left: ${depth * 15 + 10}px; border-left: none !important;" 
+               data-node-id="${nodeId}"
+               data-node-name="${node.name}">
+            <span class="folder-chevron ${node.open ? 'expanded' : ''}" data-catalog-toggle="true" style="display: flex; align-items: center; justify-content: center; width: 14px;">${(node.children || node.columns) ? ICONS.chevron : ' '}</span>
+            <span class="file-icon" style="color: ${color}; display: flex; align-items: center; justify-content: center; width: 16px;">${icon}</span>
+            <span class="file-name" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${node.name}</span>
+
             <div class="catalog-node-meta">
               ${node.type === 'table' ? `<span class="catalog-rows-count">${node.rows}</span>` : ''}
-              ${node.type === 'table' ? `
-                <div class="copy-table-btn" title="Copy Table Path" data-copy="gold.${node.name}">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                </div>
-              ` : ''}
+              <div class="copy-table-btn" title="Copy ${node.type} Path" data-copy="${currentDotPath}">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              </div>
             </div>
           </div>
         `;
 
         if (node.open && node.children) {
-          html += node.children.map(child => renderNode(child, depth + 1, `${nodeId}/`)).join('');
+          html += node.children.map(child => renderNode(child, depth + 1, `${nodeId}/`, currentDotPath)).join('');
         }
 
         if (node.open && node.type === 'table' && node.columns) {
@@ -2452,10 +2681,10 @@ export function renderIDE(lang, translations) {
                         <div class="type-pill-container">${CATALOG_TYPE_ICONS[col.type]}</div>
                         <span class="name" title="${col.name}">${col.name}</span>
                       </div>
-                      <div class="col-actions">
-                        <span class="stat-non-null">${col.nonNull}</span>
-                        <div class="copy-col-btn" title="Copy Path" data-copy="gold.${node.name}.${col.name}">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                      <div class="catalog-node-meta">
+                        <span class="catalog-rows-count">${col.nonNull}</span>
+                        <div class="copy-col-btn" title="Copy Column Path" data-copy="${currentDotPath}.${col.name}">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         </div>
                       </div>
                     </div>
@@ -2539,30 +2768,14 @@ export function renderIDE(lang, translations) {
         activityBar.querySelector('#v-explorer').classList.add('active');
         explorerSidebar.style.display = 'flex';
         catalogSidebar.style.display = 'none';
-
-        // Restore file view if we were in catalog mode
-        currentSession.activeCatalogItem = null;
-        section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = '');
-        section.querySelector('.ide-tabs').style.display = 'flex';
-        section.querySelector('#catalog-explorer-view').style.display = 'none';
-        syncTerminalVisibility();
+        renderFileList(fileListContainer);
       } else {
         activityBar.querySelector('#v-catalog').classList.add('active');
         explorerSidebar.style.display = 'none';
         catalogSidebar.style.display = 'flex';
-        ideTerminal.style.display = 'none';
-
-        // Hide editor and tabs when going to catalog if no item selected yet or if one is
-        section.querySelector('.ide-editor-wrapper').querySelectorAll('textarea, pre, .line-numbers-sidebar').forEach(el => el.style.display = 'none');
-        section.querySelector('.ide-tabs').style.display = 'none';
-        if (currentSession.activeCatalogItem) {
-          section.querySelector('#catalog-explorer-view').style.display = 'flex';
-          renderCatalogExplorer();
-        } else {
-          section.querySelector('#catalog-explorer-view').style.display = 'none';
-        }
         renderCatalog();
       }
+      syncTerminalVisibility();
     }
 
     // Set side bar click events
@@ -2572,14 +2785,32 @@ export function renderIDE(lang, translations) {
       const btn = section.querySelector('#btn-refresh');
       btn.style.animation = 'spin 1s linear';
 
+      // Restore initial state
+      currentFiles = { ...files };
+      if (currentFiles['README.md'] && translations[lang]?.playground?.readmeContent) {
+        currentFiles['README.md'].content = translations[lang].playground.readmeContent;
+      }
+
+      // Keep open tabs if they still exist, otherwise reset to README
+      openTabs = openTabs.filter(t => currentFiles[t]);
+      if (openTabs.length === 0) openTabs = ['README.md'];
+
+      if (!currentFiles[currentSession.fileName]) {
+        switchFile('README.md');
+      }
+
       const log = document.createElement('div');
       log.className = 'info';
       log.style.color = '#79c0ff';
-      log.innerHTML = `<span style="color: #7ee787">[workspace]</span> Syncing file system...<br><span style="color: #7ee787">[workspace]</span> Re-indexed ${Object.keys(currentFiles).length} files. UI updated.`;
+      log.innerHTML = `<span style="color: #7ee787">[workspace]</span> Restoring file system...<br><span style="color: #7ee787">[workspace]</span> Re-indexed ${Object.keys(currentFiles).length} files. UI updated.`;
       terminal.appendChild(log);
       terminal.scrollTop = terminal.scrollHeight;
 
-      setTimeout(() => { btn.style.animation = ''; renderFileList(fileListContainer); }, 1000);
+      setTimeout(() => {
+        btn.style.animation = '';
+        renderFileList(fileListContainer);
+        renderTabs(tabsContainer);
+      }, 1000);
     };
 
     section.querySelector('#btn-refresh-catalog').onclick = () => {
@@ -2610,8 +2841,8 @@ export function renderIDE(lang, translations) {
     // Drag and Drop (Moved and Consolidated below)
 
     catalogTreeContainer.onclick = (e) => {
-      const arrow = e.target.closest('.catalog-arrow');
-      const nodeEl = e.target.closest('.catalog-node');
+      const arrow = e.target.closest('.folder-chevron');
+      const nodeEl = e.target.closest('.ide-file-item');
       const column = e.target.closest('.column-item');
       const copyBtn = e.target.closest('.copy-table-btn, .copy-col-btn');
       const isShowMore = e.target.closest('.show-more-btn');
@@ -2630,6 +2861,7 @@ export function renderIDE(lang, translations) {
       if (arrow) {
         e.stopPropagation();
         const nodeName = nodeEl.dataset.nodeName;
+
         const findAndToggle = (list) => {
           for (const item of list) {
             if (item.name === nodeName) {
@@ -2644,42 +2876,51 @@ export function renderIDE(lang, translations) {
         renderCatalog();
         return;
       }
-
       if (nodeEl) {
-        const nodeName = nodeEl.dataset.nodeName;
-        const findNode = (list, path = 'catalog://') => {
-          for (const node of list) {
-            const nodeId = `${path}${node.name}`;
-            if (node.name === nodeName) return { ...node, id: nodeId };
-            if (node.children) {
-              const res = findNode(node.children, `${nodeId}/`);
+        if (e.button !== 0) return; // Only L-Mouse
+        e.stopPropagation();
+        const fileId = nodeEl.dataset.nodeId;
+
+        // Find node object
+        const findNodeById = (list, targetId, path = 'catalog://') => {
+          for (const n of list) {
+            const nodeId = `${path}${n.name}`;
+            if (nodeId === targetId) return n;
+            if (n.children) {
+              const res = findNodeById(n.children, targetId, `${nodeId}/`);
               if (res) return res;
             }
           }
           return null;
         };
-        const node = findNode(catalogData);
-        if (node) {
-          const wasSelected = nodeEl.classList.contains('active-selection');
 
-          switchView(node.id);
+        const targetNode = findNodeById(catalogData, fileId);
+        if (!targetNode) return;
 
-          // Harmony with Workspace: Toggle expansion only if already selected
-          if (wasSelected) {
-            const updateObject = (list) => {
-              for (let i = 0; i < list.length; i++) {
-                if (list[i].name === node.name) {
-                  list[i].open = !list[i].open;
-                  return true;
-                }
-                if (list[i].children && updateObject(list[i].children)) return true;
-              }
-              return false;
-            };
-            updateObject(catalogData);
+        const wasSelected = currentSession.selectedFiles.includes(fileId);
+
+        if (e.ctrlKey || e.metaKey) {
+          if (wasSelected) currentSession.selectedFiles = currentSession.selectedFiles.filter(f => f !== fileId);
+          else currentSession.selectedFiles.push(fileId);
+          currentSession.lastSelectedFile = fileId;
+        } else if (e.shiftKey && currentSession.lastSelectedFile) {
+          const allItems = Array.from(catalogTreeContainer.querySelectorAll('.ide-file-item')).map(el => el.dataset.nodeId);
+          const startIdx = allItems.indexOf(currentSession.lastSelectedFile);
+          const endIdx = allItems.indexOf(fileId);
+          if (startIdx !== -1 && endIdx !== -1) {
+            currentSession.selectedFiles = allItems.slice(Math.min(startIdx, endIdx), Math.max(startIdx, endIdx) + 1);
           }
-          renderCatalog();
+        } else {
+          // SIMPLE CLICK: Aggressive Reset
+          currentSession.selectedFiles = [fileId];
+          currentSession.lastSelectedFile = fileId;
+          switchView(fileId, true);
+
+          if (wasSelected && (targetNode.children || targetNode.type === 'table')) {
+            targetNode.open = !targetNode.open;
+          }
         }
+        syncIDEState();
         return;
       }
 
@@ -2753,12 +2994,12 @@ export function renderIDE(lang, translations) {
 
     function batchDeleteFiles(paths) {
       if (!paths || paths.length === 0) return;
-      
-      const toDelete = paths.filter(p => p !== 'README.md');
+
+      const toDelete = paths; // ALL files can be deleted now
       if (toDelete.length === 0) return;
 
       const title = toDelete.length > 1 ? `Delete ${toDelete.length} Items` : `Delete Item`;
-      const msg = toDelete.length > 1 
+      const msg = toDelete.length > 1
         ? `Are you sure you want to delete these <b>${toDelete.length} items</b>? This action cannot be undone.`
         : `Are you sure you want to delete <b>${toDelete[0]}</b>${toDelete[0].endsWith('/') ? ' and all its contents' : ''}?`;
 
@@ -2770,7 +3011,7 @@ export function renderIDE(lang, translations) {
         });
 
         const uniqueVictims = [...new Set(allPathsToDelete)];
-        
+
         uniqueVictims.forEach(p => {
           delete currentFiles[p];
           openTabs = openTabs.filter(t => t !== p);
@@ -2912,18 +3153,24 @@ export function renderIDE(lang, translations) {
       // F2: Rename (only when not typing in editor/inputs)
       if (e.key === 'F2' && !isInputSource && !isEditorSource) {
         e.preventDefault();
-        renameFile(currentSession.lastSelectedFile || currentSession.fileName);
+        if (currentSession.lastSelectedFile) {
+          renameFile(currentSession.lastSelectedFile);
+        }
       }
 
       // Delete
       if (e.key === 'Delete' && !isInputSource && !isEditorSource) {
         e.preventDefault();
-        batchDeleteFiles(currentSession.selectedFiles.length > 0 ? [...currentSession.selectedFiles] : [currentSession.fileName]);
+        if (currentSession.lastSelectedFile && currentSession.selectedFiles.length > 0) {
+          batchDeleteFiles([...currentSession.selectedFiles]);
+        }
       }
 
       // Ctrl + C: Copy File (only if not in editor/inputs)
       if (e.ctrlKey && e.key === 'c' && !isInputSource && !isEditorSource) {
-        clipboardFiles = currentSession.selectedFiles.length > 0 ? [...currentSession.selectedFiles] : [currentSession.fileName];
+        if (currentSession.lastSelectedFile && currentSession.selectedFiles.length > 0) {
+          clipboardFiles = [...currentSession.selectedFiles];
+        }
       }
 
       // Clipboard Pasting
@@ -2983,13 +3230,18 @@ export function renderIDE(lang, translations) {
       const item = e.target.closest('.ide-file-item');
       if (item) {
         const file = item.dataset.file;
-        // If the dragged file is NOT part of the current selection, 
-        // we select only it (standard behavior)
+        // Dragging should automatically reinforce the selection (make it active/last-selected)
         if (!currentSession.selectedFiles.includes(file)) {
           currentSession.selectedFiles = [file];
-          currentSession.lastSelectedFile = file;
-          renderFileList(fileListContainer);
         }
+        currentSession.lastSelectedFile = file;
+
+        // Manually update classes to avoid full re-render which might cancel the drag session in some browsers
+        fileListContainer.querySelectorAll('.ide-file-item').forEach(el => {
+          const f = el.dataset.file;
+          el.classList.toggle('active-selection', currentSession.selectedFiles.includes(f));
+          el.classList.toggle('last-selected', f === currentSession.lastSelectedFile);
+        });
 
         draggedFiles = [...currentSession.selectedFiles];
         e.dataTransfer.setData('text/plain', JSON.stringify(draggedFiles));
@@ -3094,39 +3346,27 @@ export function renderIDE(lang, translations) {
       }
     });
 
-    function switchFile(name) {
-      if (name.endsWith('/')) return;
-      currentSession.fileName = name;
-      if (!currentSession.selectedFiles.includes(name)) {
-        currentSession.selectedFiles = [name];
-        currentSession.lastSelectedFile = name;
-      }
-
-      // Add to open tabs if not already there
-      if (!openTabs.includes(name)) {
-        openTabs.push(name);
-      }
-
-      const file = currentFiles[name];
-      if (!file) {
-        textarea.value = '';
-        renderTabs(tabsContainer);
+    function switchFile(name, isFromSidebar = false) {
+      if (name.startsWith('catalog://')) {
+        switchView(name);
         return;
       }
+      if (name.endsWith('/')) return;
+      currentSession.activeCatalogItem = null;
 
-      const langBadge = section.querySelector('#status-lang-badge span');
-      if (langBadge) {
-        const ext = name.split('.').pop().toUpperCase();
-        const langMap = { 'PY': 'Python', 'SQL': 'SQL', 'MD': 'Markdown', 'JSON': 'JSON' };
-        langBadge.innerText = langMap[ext] || 'Text';
+      currentSession.fileName = name;
+
+      if (!openTabs.includes(name)) openTabs.push(name);
+
+      // Tabs vs Sidebar behavior
+      if (isFromSidebar) {
+        currentSession.selectedFiles = [name];
+        currentSession.lastSelectedFile = name;
+      } else {
+        currentSession.selectedFiles = [name];
       }
 
-      textarea.value = file.content;
-      // Toolbar buttons are always visible in header now
-
-      renderFileList(fileListContainer);
-      renderTabs(tabsContainer);
-      syncEditor();
+      syncIDEState();
     }
 
     // Event Bindings
@@ -3156,7 +3396,7 @@ export function renderIDE(lang, translations) {
       if (currentSession.selectedFiles.length > 0) {
         currentSession.selectedFiles = [];
         currentSession.lastSelectedFile = null;
-        renderFileList(fileListContainer);
+        syncIDEState();
       }
     }
 
@@ -3265,231 +3505,274 @@ export function renderIDE(lang, translations) {
 
       const item = e.target.closest('.ide-file-item');
       if (item && !item.classList.contains('naming-item')) {
+        e.stopPropagation(); // Prevent background click from deselecting
         const file = item.dataset.file;
         const wasSelected = currentSession.selectedFiles.includes(file);
 
-        // Multi-selection logic
         if (e.ctrlKey || e.metaKey) {
-          if (currentSession.selectedFiles.includes(file)) {
-            currentSession.selectedFiles = currentSession.selectedFiles.filter(f => f !== file);
-          } else {
-            currentSession.selectedFiles.push(file);
-          }
+          if (wasSelected) currentSession.selectedFiles = currentSession.selectedFiles.filter(f => f !== file);
+          else currentSession.selectedFiles.push(file);
           currentSession.lastSelectedFile = file;
         } else if (e.shiftKey && currentSession.lastSelectedFile) {
           const allVisibleFiles = Array.from(fileListContainer.querySelectorAll('.ide-file-item')).map(el => el.dataset.file);
           const startIdx = allVisibleFiles.indexOf(currentSession.lastSelectedFile);
           const endIdx = allVisibleFiles.indexOf(file);
           if (startIdx !== -1 && endIdx !== -1) {
-            const range = allVisibleFiles.slice(Math.min(startIdx, endIdx), Math.max(startIdx, endIdx) + 1);
-            currentSession.selectedFiles = [...new Set([...currentSession.selectedFiles, ...range])];
+            currentSession.selectedFiles = allVisibleFiles.slice(Math.min(startIdx, endIdx), Math.max(startIdx, endIdx) + 1);
           }
         } else {
+          // SIMPLE CLICK: Force Reset
           currentSession.selectedFiles = [file];
           currentSession.lastSelectedFile = file;
+
           if (!file.endsWith('/')) {
-            switchFile(file);
+            switchFile(file, true);
           } else {
-            // Only toggle if previously selected
             if (wasSelected) {
               if (collapsedFolders.has(file)) collapsedFolders.delete(file);
               else collapsedFolders.add(file);
             }
           }
         }
-        renderFileList(fileListContainer);
+        syncIDEState();
       } else {
         // Handled by global click listener
       }
     };
 
-    textarea.onkeydown = (e) => {
+    textarea.oninput = syncEditor;
+
+    const executeCurrentFile = async () => {
+      try {
+        if (!currentSession) return;
+        currentSession.terminalOpen = true;
+        syncTerminalVisibility();
+
+        const fileName = currentSession.fileName || '';
+        const content = textarea.value.trim();
+
+        if (!content) {
+          logToTerminal(`Empty file. Nothing to run.`, 'error', true);
+          return;
+        }
+
+        // Translation safety
+        const t = (translations[lang]?.playground?.terminal) || {
+          running: 'Running...',
+          executedSuccess: 'Executed successfully.',
+          title: 'Terminal'
+        };
+
+        // Check if file is runnable
+        const extension = fileName.split('.').pop().toLowerCase();
+        const runnableExtensions = ['py', 'sql'];
+        if (!runnableExtensions.includes(extension)) {
+          logToTerminal(`File type .${extension.toUpperCase()} is not runnable.`, 'error', true);
+          return;
+        }
+
+        // Handle SQL execution
+        if (fileName.endsWith('.sql')) {
+          const startTime = performance.now();
+          logToTerminal(`<div class="info" style="display:flex; align-items:center; height:20px;"><svg class="spinner" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle></svg> Running Query...</div>`, 'info', false);
+
+          setTimeout(async () => {
+            try {
+              const cleanContent = content.replace(/([a-zA-Z_][a-zA-Z0-9_]*\.)+([a-zA-Z_][a-zA-Z0-9_]*)/gi, (match) => {
+                const parts = match.split('.');
+                const tableName = parts[parts.length - 1].toLowerCase();
+                const knownTables = ['users', 'providers', 'orders', 'products', 'metrics'];
+                if (knownTables.includes(tableName)) return tableName;
+                return match;
+              });
+
+              const duck = await initDuckDB();
+              const result = await duck.conn.query(cleanContent);
+
+              const rows = result.toArray().map(row => {
+                const obj = {};
+                for (const key of Object.keys(row)) {
+                  let val = row[key];
+                  if (typeof val === 'bigint') val = Number(val);
+                  obj[key] = val;
+                }
+                return obj;
+              });
+
+              if (rows.length === 0) {
+                logToTerminal(`Query executed successfully. No rows returned.`, 'info', true);
+                return;
+              }
+              const columns = Object.keys(rows[0]);
+              const elapsed = (performance.now() - startTime) / 1000;
+
+              let html = `<div class="sql-result-wrapper">`;
+              html += `<div class="sql-summary-bar"><span>${rows.length} rows and ${columns.length} columns returned in ${elapsed.toFixed(1)}s</span></div>`;
+              html += `<div class="sql-grid-layout"><div class="sql-scroll-pane"><table class="preview-table"><thead><tr><th class="index-th" style="width: 45px; min-width: 45px; text-align: center; user-select: none; padding: 0; position: sticky; left: 0; top: 0; z-index: 100; background-color: var(--ide-header); border-right: 2px solid var(--ide-border); box-shadow: 2px 0 5px rgba(0,0,0,0.3);"><div class="col-resizer" data-resizer="true"></div><span class="th-name" style="opacity: 0.8;">#</span></th>${columns.map(c => {
+                const rawVal = rows[0][c];
+                const typeKey = typeof rawVal === 'number' ? 'number' : typeof rawVal === 'boolean' ? 'boolean' : 'text';
+                const typeIcon = CATALOG_TYPE_ICONS[typeKey];
+                const typeLabel = typeKey === 'number' ? 'INT64' : typeKey === 'boolean' ? 'BOOL' : 'TEXT';
+                return `<th style="width: 150px; min-width: 150px;"><div class="col-resizer" data-resizer="true"></div><div class="th-content"><div class="th-main"><span class="th-name">${c}</span><div class="type-pill-container" style="margin-top: 4px; opacity: 1;">${typeIcon}</div></div></div></th>`;
+              }).join('')}</tr></thead><tbody>${rows.slice(0, 100).map((row, r) => `<tr><td style="width: 45px; min-width: 45px; text-align: center; background-color: var(--ide-bg); opacity: 1; font-size: 10px; user-select: none; padding: 0; position: sticky; left: 0; z-index: 90; border-right: 2px solid var(--ide-border); box-shadow: 2px 0 5px rgba(0,0,0,0.3);">${r + 1}</td>${columns.map(c => {
+                let val = row[c];
+                let displayVal = val;
+                if (val === null || val === undefined) displayVal = '<span style="opacity:0.3">NULL</span>';
+                else if (typeof val === 'number') {
+                  displayVal = !Number.isInteger(val) ? val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) : val.toLocaleString('en-US');
+                }
+                return `<td style="text-align: ${typeof val === 'number' ? 'right' : 'left'}">${displayVal}</td>`;
+              }).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+
+              if (rows.length > 100) html += `<div style="font-size:10px; opacity:0.5; padding: 10px; text-align:center;">Showing first 100 rows only.</div>`;
+              html += `</div>`;
+              logToTerminal(html, null, true);
+            } catch (err) {
+              logToTerminal(`SQL Error: ${err.message}`, 'error', true);
+            }
+          }, 800);
+          return;
+        }
+
+        // Handle Python execution
+        if (!pyodide) {
+          if (runBtn) {
+            runBtn.disabled = true;
+            runBtn.innerHTML = '<svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle></svg>';
+          }
+          pyodide = await window.loadPyodide();
+          if (runBtn) {
+            runBtn.disabled = false;
+            runBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+          }
+        }
+
+        logToTerminal(t.running || 'Running...', 'info');
+        try {
+          pyodide.runPython(`import sys\nimport io\nsys.stdout = io.StringIO()`);
+          await pyodide.runPythonAsync(content);
+          const stdout = pyodide.runPython("sys.stdout.getvalue()");
+          logToTerminal(stdout ? stdout.replace(/\n/g, '<br>') : (t.executedSuccess || 'Executed successfully.'), stdout ? 'info' : 'success');
+        } catch (err) {
+          logToTerminal(`${err.message}`, 'error');
+        }
+      } catch (err) {
+        console.error("Execution Error:", err);
+        logToTerminal(`Internal Error: ${err.message}`, 'error', true);
+      }
+    };
+
+    textarea.addEventListener('keydown', (e) => {
       if (e.key === 'Tab') {
         e.preventDefault();
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
-
-        // Insert 4 spaces
         textarea.value = textarea.value.substring(0, start) + "    " + textarea.value.substring(end);
         textarea.selectionStart = textarea.selectionEnd = start + 4;
         syncEditor();
       }
-    };
-
-    textarea.oninput = syncEditor;
-
-
-    runBtn.onclick = async () => {
-      currentSession.terminalOpen = true;
-      syncTerminalVisibility();
-
-      const fileName = currentSession.fileName || '';
-      const content = textarea.value.trim();
-
-      if (!content) {
-        terminal.innerHTML = `<span class="error">Empty file. Nothing to run.</span>`;
-        return;
-      }
-
-      // Check if file is runnable
-      const extension = fileName.split('.').pop().toLowerCase();
-      const runnableExtensions = ['py', 'sql'];
-      if (!runnableExtensions.includes(extension)) {
-        logToTerminal(`File type .${extension.toUpperCase()} is not runnable. Execution is only supported for Python (.py) and SQL (.sql) scripts.`, 'error', true);
-        return;
-      }
-
-      // Handle SQL execution
-      if (fileName.endsWith('.sql')) {
-        const startTime = performance.now();
-        // Silent indicator (just a tiny spinner)
-        terminal.innerHTML = `<div class="info" style="display:flex; align-items:center; height:20px;"><svg class="spinner" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle></svg></div>`;
-
-        setTimeout(async () => {
-          try {
-            // 1. Strip MotherDuck-style namespaces (e.g. warehouse.gold.users -> users)
-            // This regex only matches letters-started namespaces to avoid breaking decimals like 1.0
-            const cleanContent = content.replace(/([a-zA-Z_][a-zA-Z0-9_]*\.)+([a-zA-Z_][a-zA-Z0-9_]*)/gi, (match) => {
-              const parts = match.split('.');
-              const tableName = parts[parts.length - 1].toLowerCase();
-              const knownTables = ['users', 'providers', 'orders', 'products', 'metrics'];
-              // Only replace if it's one of our known Parquet tables
-              if (knownTables.includes(tableName)) return tableName;
-              return match;
-            });
-
-            // Real SQL execution via DuckDB-WASM on the real warehouse.db
-            const duck = await initDuckDB();
-            const result = await duck.conn.query(cleanContent);
-
-            // Handle results: DuckDB returns an Apache Arrow table, convert to array
-            const rows = result.toArray().map(row => {
-              const obj = {};
-              for (const key of Object.keys(row)) {
-                let val = row[key];
-                // Handle types that JSON/JS don't natively like
-                if (typeof val === 'bigint') val = Number(val);
-                obj[key] = val;
-              }
-              return obj;
-            });
-
-            if (rows.length === 0) {
-              logToTerminal(`Query executed successfully. No rows returned.`, 'info', true);
-              return;
-            }
-            const columns = Object.keys(rows[0]);
-            const elapsed = (performance.now() - startTime) / 1000;
-
-            let html = `<div class="sql-result-wrapper">`;
-
-            // 1. Summary Bar
-            html += `
-              <div class="sql-summary-bar">
-                <span>${rows.length} rows and ${columns.length} columns returned in ${elapsed.toFixed(1)}s</span>
-              </div>`;
-
-            // 2. Grid Layout with Gutter
-            html += `
-              <div class="sql-grid-layout">
-                <div class="sql-gutter">
-                  <div class="sql-gutter-header"></div>
-                  ${rows.slice(0, 100).map((_, i) => `<div class="sql-gutter-item">${i + 1}</div>`).join('')}
-                </div>
-                <div class="sql-scroll-pane">
-                  <table class="preview-table">
-                    <thead>
-                      <tr>
-                        ${columns.map(c => {
-              const typeIcon = CATALOG_TYPE_ICONS[typeof rows[0][c] === 'number' ? 'number' : typeof rows[0][c] === 'boolean' ? 'boolean' : 'text'];
-              return `
-                          <th style="width: 150px; min-width: 150px;">
-                            <div class="col-resizer" data-resizer="true"></div>
-                            <div class="th-content">
-                              <span class="th-type-icon">${typeIcon}</span>
-                              <span class="th-name">${c}</span>
-                            </div>
-                          </th>`;
-            }).join('')}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${rows.slice(0, 100).map((row, r) => `
-                      <tr>
-                        ${columns.map(c => {
-              let val = row[c];
-              let displayVal = val;
-              if (val === null || val === undefined) displayVal = '<span style="opacity:0.3">NULL</span>';
-              else if (typeof val === 'number') {
-                displayVal = !Number.isInteger(val) ?
-                  val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) :
-                  val.toLocaleString('en-US');
-              }
-              return `<td style="text-align: ${typeof val === 'number' ? 'right' : 'left'}">${displayVal}</td>`;
-            }).join('')}
-                      </tr>`).join('')}
-                    </tbody>
-                  </table>
-                </div>
-              </div>`;
-
-            if (rows.length > 100) {
-              html += `<div style="font-size:10px; opacity:0.5; padding: 10px; text-align:center;">Showing first 100 rows only. Limited to improve performance.</div>`;
-            }
-
-            html += `</div>`;
-            logToTerminal(html, null, true);
-          } catch (err) {
-            logToTerminal(`SQL Error: ${err.message}`, 'error', true);
+      if (e.key === 'Backspace' && textarea.selectionStart === textarea.selectionEnd) {
+        const start = textarea.selectionStart;
+        const textView = textarea.value.substring(0, start);
+        const lastFour = textView.slice(-4);
+        if (lastFour === '    ') {
+          // Calculate column to ensure we are at a tab stop
+          const lineStart = textView.lastIndexOf('\n') + 1;
+          const col = start - lineStart;
+          if (col % 4 === 0) {
+            e.preventDefault();
+            textarea.value = textView.substring(0, start - 4) + textarea.value.substring(start);
+            textarea.selectionStart = textarea.selectionEnd = start - 4;
+            syncEditor();
           }
-        }, 800);
-
-        return;
-      }
-
-      // Handle Python execution
-      if (!pyodide) {
-        runBtn.disabled = true;
-        runBtn.innerHTML = '<svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle></svg>';
-        if (!document.getElementById('ide-spinner-style')) {
-          const style = document.createElement('style');
-          style.id = 'ide-spinner-style';
-          style.textContent = `
-            @keyframes spin { 100% { transform: rotate(360deg); } }
-            .spinner { animation: spin 1s linear infinite; opacity: 0.7; }
-          `;
-          document.head.appendChild(style);
         }
-        pyodide = await window.loadPyodide();
-        runBtn.disabled = false;
-        runBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
       }
-      logToTerminal(`${translations[lang].playground.terminal.running}`, 'info');
-      try {
-        pyodide.runPython(`import sys\nimport io\nsys.stdout = io.StringIO()`);
-        await pyodide.runPythonAsync(content);
-        const stdout = pyodide.runPython("sys.stdout.getvalue()");
-        logToTerminal(stdout ? stdout.replace(/\n/g, '<br>') : `${translations[lang].playground.terminal.executedSuccess}`, stdout ? 'info' : 'success');
-      } catch (err) {
-        logToTerminal(`${err.message}`, 'error');
+      if (e.ctrlKey && (e.key === 'Enter' || e.keyCode === 13)) {
+        e.preventDefault();
+        executeCurrentFile();
       }
-    };
+    });
+
+    if (runBtn) runBtn.onclick = executeCurrentFile;
+
+    function syncIDEState() {
+      const hasTabs = openTabs.length > 0;
+      const launchView = section.querySelector('#playground-launch-view');
+      const catalogView = section.querySelector('#catalog-explorer-view');
+      const editorView = section.querySelector('#editor-view');
+      const editorHeader = section.querySelector('.ide-editor-header');
+      const isCatalog = !!currentSession.activeCatalogItem;
+      const textarea = section.querySelector('#ide-textarea');
+      const fileListContainer = section.querySelector('#ide-file-list');
+      const tabsContainer = section.querySelector('#ide-tabs');
+
+      if (!hasTabs) {
+        if (editorView) editorView.style.display = 'none';
+        if (catalogView) catalogView.style.display = 'none';
+        if (editorHeader) editorHeader.style.display = 'none';
+        if (launchView) {
+          // As per specific request: hide everything in the IDE area
+          launchView.style.display = 'none';
+        }
+        currentSession.fileName = null;
+        currentSession.activeCatalogItem = null;
+        currentSession.selectedFiles = [];
+        currentSession.lastSelectedFile = null;
+      } else {
+        if (launchView) launchView.style.display = 'none';
+        if (editorHeader) editorHeader.style.display = 'flex';
+        if (isCatalog) {
+          if (editorView) editorView.style.display = 'none';
+          if (catalogView) {
+            catalogView.style.display = 'block';
+            catalogView.style.backgroundColor = 'var(--ide-bg)';
+          }
+        } else {
+          if (editorView) editorView.style.display = 'flex';
+          if (catalogView) catalogView.style.display = 'none';
+
+          const file = currentFiles[currentSession.fileName];
+          if (file && textarea) {
+            if (textarea.value !== file.content) {
+              textarea.value = file.content;
+              syncEditor();
+            }
+
+            // Sync Lang Badge
+            const langBadge = section.querySelector('#status-lang-badge span');
+            if (langBadge) {
+              const ext = currentSession.fileName.split('.').pop().toUpperCase();
+              const langMap = { 'PY': 'Python', 'SQL': 'SQL', 'MD': 'Markdown', 'JSON': 'JSON' };
+              langBadge.innerText = langMap[ext] || 'Text';
+            }
+          }
+        }
+      }
+
+      renderFileList(fileListContainer);
+      renderCatalog();
+      renderTabs(tabsContainer);
+    }
 
     function closeTab(name) {
+      const wasActive = currentSession.fileName === name ||
+        (currentSession.activeCatalogItem && currentSession.activeCatalogItem.id === name);
       openTabs = openTabs.filter(t => t !== name);
-      if (currentSession.fileName === name) {
+
+      if (wasActive) {
         if (openTabs.length > 0) {
-          switchFile(openTabs[openTabs.length - 1]);
+          const nextTab = openTabs[openTabs.length - 1];
+          if (nextTab.startsWith('catalog://')) switchView(nextTab, false);
+          else switchFile(nextTab, false);
         } else {
           currentSession.fileName = null;
-          textarea.value = '';
-          preCode.textContent = '';
-          lineNumbers.innerHTML = '';
-          tabsContainer.innerHTML = '';
+          currentSession.activeCatalogItem = null;
+          currentSession.selectedFiles = [];
+          currentSession.lastSelectedFile = null;
         }
-      } else {
-        renderTabs(tabsContainer);
       }
+
+      syncIDEState();
     }
 
     tabsContainer.onclick = (e) => {
@@ -3502,7 +3785,10 @@ export function renderIDE(lang, translations) {
         return;
       }
 
-      if (tab) switchView(tab.dataset.tabId);
+      if (tab) {
+        if (tab.dataset.tabId.startsWith('catalog://')) switchView(tab.dataset.tabId, false);
+        else switchFile(tab.dataset.tabId, false);
+      }
     };
 
     const launchPlaceholder = document.createElement('div');
@@ -3730,10 +4016,6 @@ export function renderIDE(lang, translations) {
       }
     };
 
-    deleteTerminalBtn.onclick = () => {
-      currentSession.terminalOpen = false;
-      syncTerminalVisibility();
-    };
 
     window.openIDE = (mode = 'explorer', shouldFullscreen = false, returnY = null) => {
       if (returnY !== null) {
@@ -3796,10 +4078,13 @@ export function renderIDE(lang, translations) {
 
     // Initial Render
     // Initial Load
-    switchFile(currentSession.fileName);
-    renderFileList(fileListContainer);
-    renderTabs(tabsContainer);
-    renderCatalog();
+    syncIDEState();
+
+    // Sync references for global listeners
+    activeSessionRef = currentSession;
+    activeSyncRef = syncIDEState;
+    initTableResizersBound = initTableResizers;
+
     // Lock auto-scrolls for a longer period to ensure stability
     setTimeout(() => { isInitialLoad = false; }, 500);
   }, 0);
@@ -3841,6 +4126,21 @@ export function renderIDE(lang, translations) {
     document.addEventListener('mouseup', onMouseUp);
   };
 
-  initTableResizersBound = initTableResizers;
   return section;
 }
+
+// Global Deselection Monitor (Persistent across re-renders)
+window.addEventListener('mousedown', (e) => {
+  if (!activeSessionRef || !activeSyncRef) return;
+
+  const isInsideIDE = e.composedPath().some(el => el.id === 'playground');
+  const isSelectable = e.target.closest('.ide-file-item, .naming-item, .ide-tab, .sidebar-action-btn, .toolbar-btn');
+  const isInteracting = e.target.closest('[data-resizer], #terminal-resizer, .ide-terminal-resizer, .ide-modal, .window-controls, .status-bar, .ide-activity-bar');
+
+  if (!isInsideIDE || (!isSelectable && !isInteracting)) {
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+    activeSessionRef.selectedFiles = [];
+    activeSessionRef.lastSelectedFile = null;
+    activeSyncRef();
+  }
+}, true);

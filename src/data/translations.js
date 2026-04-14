@@ -33,69 +33,63 @@ export const translations = {
             skillsTitle: 'Habilidades Técnicas',
             certificationsTitle: 'Certificações',
             languagesTitle: 'Idiomas',
-            summary: 'Profissional de Dados Multidisciplinar com sólida experiência em transformação de dados, governança de BI e desenvolvimento de plataformas de dados no setor de saúde. Experiência no design de soluções de dados de ponta a ponta — desde a ingestão bruta até data marts curados — utilizando Databricks, SQL e Python em uma arquitetura medallion (bronze/silver/gold). Atua como ponte entre negócios e engenharia, traduzindo lógicas operacionais complexas em modelos de dados escaláveis e sistemas de suporte à decisão. Atualmente lidera a padronização de BI, mentora analistas e apoia a tomada de decisão em nível executivo em múltiplos departamentos.',
+            summary: 'Engenheiro de Analytics Sênior com sólida expertise no desenvolvimento de plataformas de dados, governança de BI e soluções analíticas de ponta a ponta. Especializado no design de arquiteturas de dados escaláveis usando Databricks, SQL e Python, utilizando o framework medallion (bronze/silver/gold) e Delta Lake para construir ecossistemas robustos de business intelligence. Atua como ponte entre negócios e engenharia, traduzindo processos de negócio complexos em modelos de dados escaláveis e sistemas de suporte à decisão. Experiente em liderar iniciativas de padronização de BI, estabelecer governança de KPIs e apoiar a tomada de decisão em nível executivo.',
             experiences: [
                 {
                     role: 'Engenheiro de Analytics Sênior',
                     company: 'Leve Saúde',
                     period: 'Jul 2023 – Presente',
                     description: [
-                        'Promovido rapidamente de estagiário a Engenheiro de Analytics Sênior, tornando-se referência técnica e estratégica em analytics, governança de BI e operações de dados.',
-                        'Liderou a reestruturação e padronização de mais de 50 dashboards Power BI, eliminando dependências de Excel/CSV e reduzindo o esforço de manutenção em mais de 50%.',
-                        'Desenvolve e implementa soluções integradas de BI usando Python, SQL e Excel/CSV, garantindo rastreabilidade e consistência em relatórios corporativos.',
-                        'Supervisiona e orienta a equipe de business intelligence, estabelecendo padrões de KPI, convenções de nomenclatura, hierarquia visual e documentação de dados.',
-                        'Contribui para projetos estratégicos, alinhando tarefas técnicas com prioridades de negócios usando metodologias ágeis e controle de versão colaborativo (GitHub, GitLab, Code Commit).',
-                        'Colaborou com o primeiro Engenheiro de Dados da empresa para construir o Data Warehouse baseado em Databricks, modelando e documentando a lógica SQL baseada em regras de negócios.',
-                        'Construiu e manteve data marts em SQL suportando dashboards executivos e KPIs estratégicos em departamentos como Cadastro, CX, Clínicas, Vendas, Financeiro e Sinistro.',
-                        'Participou na definição de processos de ETL e validação de lógica de pipelines, ajudando a padronizar fluxos legados baseados em Oracle para estruturas modernas de DW.',
-                        'Automatiza tarefas recorrentes e workflows complexos usando Python (Pandas, Numpy, Polars, Selenium, BeautifulSoup), melhorando a produtividade e minimizando erros operacionais.',
-                        'Desenvolve dashboards geoespaciais interativos usando Streamlit e Folium, auxiliando relatórios regulatórios e planejamento estratégico de expansão.',
-                        'Utiliza AWS Glue, Athena e S3 para ingestão estruturada de dados, melhorando a disponibilidade e reduzindo tempos de execução.',
-                        'Apoia a integração de modelos de NLP (GenieAI) em sistemas internos e Microsoft Teams para testes de agentes inteligentes e geração automatizada de queries.',
-                        'Atua como líder técnico interno para demandas complexas, sendo ponte entre negócio e engenharia com soluções em Python, Power BI, SQL e Excel.',
-                        'Lidera processos críticos de reporte, como cálculo de comissões de vendas e revisão de KPIs corporativos, representando a equipe de dados em reuniões de alto nível.',
-                        'Fornece suporte técnico e treinamento para equipes internas, promovendo data literacy e garantindo alinhamento com o dicionário de dados oficial.'
+                        'Promovido rapidamente de estagiário a cargo sênior, tornando-se referência técnica e estratégica chave em dados e analytics.',
+                        'Liderou a reestruturação de mais de 50 dashboards Power BI, eliminando dependências de Excel/CSV e reduzindo o esforço de manutenção em mais de 50%.',
+                        'Padronizou as definições de KPIs em múltiplos departamentos, melhorando a consistência e confiabilidade nos relatórios executivos.',
+                        'Projetou e implementou soluções de BI de ponta a ponta usando SQL e Python, garantindo rastreabilidade e consistência dos dados.',
+                        'Construiu e manteve data marts baseados em SQL suportando áreas de negócio fundamentais, incluindo Vendas, Financeiro, Clínicas, CX, Cadastro e Sinistro.',
+                        'Co-desenvolveu um data warehouse baseado em Databricks, traduzindo lógicas legadas Oracle em modelos de dados escaláveis e sustentáveis.',
+                        'Definiu regras de negócio e documentação nas camadas silver e gold, contribuindo para a padronização de ELT e validação de pipelines.',
+                        'Automatizou fluxos de trabalho complexos usando Python, reduzindo significativamente o esforço manual e o risco operacional.',
+                        'Melhorou a ingestão e acessibilidade de dados usando AWS (S3, Glue, Athena), aumentando a disponibilidade e reduzindo a latência de consultas.',
+                        'Apoiou a integração de analytics baseados em IA nos fluxos de trabalho, permitindo geração inteligente de queries e automação interna.',
+                        'Atuou como ponte entre as equipes de negócio e engenharia, apoiando Diretores, VPs e stakeholders de nível C-level.',
+                        'Liderou processos críticos de reporte, incluindo comissões de vendas e revisões executivas de KPIs.',
+                        'Mentorou analistas e promoveu as melhores práticas em governança de dados, convenções de nomenclatura e documentação.'
                     ]
                 },
                 {
-                    role: 'Analista de Dados (Freelance)',
+                    role: 'Analista de Dados Júnior',
                     company: 'Neurovida',
                     period: 'Fev 2023 – Jul 2023',
                     description: [
-                        'Auxiliou o diretor médico na estruturação e tradução de regras de negócios em planilhas Excel funcionais para uso operacional.',
-                        'Suportou o cadastro e organização de profissionais médicos, especialidades, procedimentos, clínicas e planos de saúde.',
-                        'Transformou lógica de saúde complexa em modelos estruturados e amigáveis para otimizar o input de dados no ERP e as operações diárias.',
-                        'Entregou soluções personalizadas em Excel para validar entradas e garantir relacionamentos consistentes entre serviços médicos e planos.'
+                        'Traduziu regras de negócio complexas do setor de saúde em modelos de dados estruturados utilizando Excel.',
+                        'Projetou frameworks de validação garantindo a consistência entre serviços, profissionais e planos de saúde.',
+                        'Apoiou a estruturação e padronização de conjuntos de dados clínicos.'
                     ]
                 },
                 {
-                    role: 'Analista de Dados',
+                    role: 'Assessor de Análise de Dados',
                     company: 'SETRANS-RJ',
                     period: 'Fev 2022 – Jan 2023',
                     description: [
-                        'Desenvolveu dashboards e relatórios em Excel para visualizar e segmentar dados de transporte em diversas modalidades (metrô, trens, ônibus, barcas).',
-                        'Liderou a reformulação e publicação do Boletim de Mobilidade Metropolitana, padronizando dados de múltiplas fontes e realizando estudos de impacto da COVID.',
-                        'Auxiliou na documentação de projetos, revisão de processos de transporte público e esforços de consolidação de dados na Subsecretaria de Logística e Transportes.',
-                        'Reconhecido pela liderança pela iniciativa técnica e capacidade de simplificar fluxos de relatórios burocráticos.'
+                        'Desenvolveu dashboards e relatórios analíticos abrangendo os sistemas de metrô, trem, ônibus e barcas.',
+                        'Liderou o redesenho do Boletim de Mobilidade Metropolitana, padronizando conjuntos de dados multi-fontes (Excel/CSV).',
+                        'Entregou insights analíticos, incluindo análises de impacto da COVID-19 na mobilidade.',
+                        'Melhorou os fluxos de trabalho de reporte por meio de processos estruturados de transformação de dados.'
                     ]
                 },
                 {
-                    role: 'Suporte de TI (Freelance)',
+                    role: 'Estagiário de Suporte de TI',
                     company: 'Rei do Queijo',
                     period: 'Jan 2019 – Mar 2019',
                     description: [
-                        'Montou e configurou 10 computadores desktop para uma operação dedicada de campanha de telemarketing.',
-                        'Verificou compatibilidade de hardware, otimizou a configuração básica de rede e garantiu a prontidão para entrada de dados em larga escala e uso de CRM.'
+                        'Implementou a infraestrutura de TI necessária para suportar operações de telemarketing.'
                     ]
                 },
                 {
-                    role: 'Desenhista CAD (Estagiário)',
+                    role: 'Estagiário de CAD',
                     company: 'CASFS',
                     period: 'Fev 2018 – Mai 2018',
                     description: [
-                        'Auxiliou na revisão e desenho de plantas arquitetônicas 2D para vistorias de propriedades residenciais.',
-                        'Apoiou análises urbanas e documentação usada para ajustes municipais de IPTU e registros oficiais.',
-                        'Utilizou AutoCAD para criar representações escaladas de edifícios, adaptando-se aos requisitos de planejamento municipal.'
+                        'Desenvolveu desenhos arquitetônicos e documentação urbana utilizando AutoCAD.'
                     ]
                 }
             ],
@@ -117,12 +111,9 @@ export const translations = {
             certifications: [
                 'Cientista de Dados 4.0 | Data Science Academy',
                 'Lean Six Sigma Green Belt | FM2S',
-                'Data Science: Análise e Visualização de Dados | Alura',
-                'Pandas | Alura',
-                'Excel Impressionador | Hashtag Treinamentos',
-                'Modelagem de Banco de Dados | CEPERJ',
-                'Noções de Administração Pública | CEPERJ',
-                'Diretor de projetos empresa junior | IBMEC Soluções'
+                'Modelagem de Dados | CEPERJ',
+                'Análise e Visualização de Dados | Alura',
+                'Excel Avançado | Hashtag Treinamentos'
             ],
             languages: [
                 'Português | Nativo',
@@ -220,69 +211,63 @@ A barra lateral de **Catalog** oferece uma visão técnica do Warehouse:
             skillsTitle: 'Technical Skills',
             certificationsTitle: 'Certifications',
             languagesTitle: 'Languages',
-            summary: 'Multidisciplinary Data Professional with strong background in data transformation, BI governance, and data platform development within healthcare. Experienced in designing end-to-end data solutions — from raw ingestion to curated data marts — leveraging Databricks, SQL, and Python in a medallion architecture (bronze/silver/gold). Acts as a bridge between business and engineering, translating complex operational logic into scalable data models and decision-support systems. Currently leading BI standardization, mentoring analysts, and supporting executive-level decision making across multiple departments.',
+            summary: 'Senior Analytics Engineer with strong expertise in data platform development, BI governance, and end-to-end analytics solutions. Specialized in designing scalable data architectures using Databricks, SQL, and Python, leveraging medallion frameworks (bronze/silver/gold) and Delta Lake to build robust business intelligence ecosystems. Acts as a bridge between business and engineering, translating complex business processes into scalable data models and decision-support systems. Experienced in leading BI standardization initiatives, establishing KPI governance, and supporting executive-level decision-making.',
             experiences: [
                 {
                     role: 'Senior Analytics Engineer',
                     company: 'Leve Saúde',
                     period: 'Jul 2023 – Present',
                     description: [
-                        'Rapidly promoted from intern to Senior Level Analytics Engineer, becoming a technical and strategic reference in analytics, business intelligence governance, and data operations.',
-                        'Led the restructuring and standardization of 50+ Power BI dashboards, eliminating Excel/CSV dependencies and reducing maintenance effort by over 50%.',
-                        'Design and implement fully integrated BI solutions using Python, SQL, and Excel/CSV, ensuring traceability and consistency across corporate reports.',
-                        'Supervise and guide the business intelligence team, establishing KPI standards, naming conventions, visual hierarchy, and data documentation for dashboard delivery.',
-                        'Contribute to strategic projects, aligning technical tasks with business priorities using agile methodologies and leveraging collaborative version control (GitHub, GitLab, Code Commit).',
-                        'Collaborated with the company’s first Data Engineer to build the Databricks-based Data Warehouse, modeling and documenting SQL logic based on business rules.',
-                        'Built and maintained SQL-based data marts supporting executive dashboards and strategic KPIs across departments such as Registration, CX, Clinics, Sales, Finance, and Claims.',
-                        'Participated in defining ETL processes and validating pipeline logic, helping standardize and scale legacy Oracle-based workflows into modern DW structures.',
-                        'Automate recurring tasks and complex workflows using Python (Pandas, Numpy, Polars, Selenium, BeautifulSoup), improving team productivity and minimizing errors.',
-                        'Develop interactive geospatial dashboards using Streamlit and Folium, supporting regulatory reports and strategic hospital expansion planning.',
-                        'Use AWS Glue, Athena, and S3 for structured data ingestion, improving data availability and reducing query and pipeline execution times.',
-                        'Support the integration of NLP models (GenieAI) into internal systems and Microsoft Teams for intelligent agent testing and automated query generation.',
-                        'Act as internal technical lead for complex demands, bridging business and engineering with solutions in Python, Power BI, SQL, and Excel.',
-                        'Leads critical reporting processes, such as sales commission calculation and corporate KPI review, representing the data team in high-level meetings.',
-                        'Provide technical support and training to internal teams, promoting data literacy and ensuring metrics align with the official data dictionary.'
+                        'Rapidly promoted from intern to senior role, becoming a key technical and strategic reference in data and analytics.',
+                        'Led the restructuring of 50+ Power BI dashboards, eliminating Excel/CSV dependencies and reducing maintenance effort by over 50%.',
+                        'Standardized KPI definitions across multiple departments, improving consistency and reliability in executive reporting.',
+                        'Designed and implemented end-to-end BI solutions using SQL and Python, ensuring data traceability and consistency.',
+                        'Built and maintained SQL-based data marts supporting core business areas including Sales, Finance, Clinics, CX, Registration, and Claims.',
+                        'Co-developed a Databricks-based data warehouse, translating legacy Oracle logic into scalable and maintainable data models.',
+                        'Defined business rules and documentation across silver and gold layers, contributing to ELT standardization and pipeline validation.',
+                        'Automated complex workflows using Python, significantly reducing manual effort and operational risk.',
+                        'Improved data ingestion and accessibility using AWS (S3, Glue, Athena), increasing data availability and reducing query latency.',
+                        'Supported integration of AI-driven analytics into workflows, enabling intelligent query generation and internal automation.',
+                        'Acted as a bridge between business and engineering teams, supporting Directors, VPs, and C-level stakeholders.',
+                        'Led critical reporting processes, including sales commissions and executive KPI reviews.',
+                        'Mentored analysts and promoted best practices in data governance, naming conventions, and documentation.'
                     ]
                 },
                 {
-                    role: 'Data Analyst (Freelance)',
+                    role: 'Junior Data Analyst',
                     company: 'Neurovida',
                     period: 'Feb 2023 – Jul 2023',
                     description: [
-                        'Assisted the medical director in structuring and translating business rules into functional Excel spreadsheets for operational use.',
-                        'Supported the registration and organization of medical professionals, specialties, procedures, clinics, and insurance plans.',
-                        'Transformed complex healthcare logic into structured, user-friendly models to streamline ERP data input and daily operations.',
-                        'Delivered custom Excel solutions to validate entries and ensure consistent relationships between medical services and plans.'
+                        'Translated complex healthcare business rules into structured data models using Excel.',
+                        'Designed validation frameworks ensuring consistency across services, professionals, and insurance plans.',
+                        'Supported structuring and standardization of clinical datasets.'
                     ]
                 },
                 {
-                    role: 'Data Analyst',
+                    role: 'Data Analysis Advisor',
                     company: 'SETRANS-RJ',
                     period: 'Feb 2022 – Jan 2023',
                     description: [
-                        'Developed Excel dashboards and reports to visualize and segment transportation data across modalities (metro, trains, buses, ferries).',
-                        'Led the redesign and publication of the Metropolitan Mobility Bulletin, standardizing multi-source Excel/CSV data and performing COVID impact studies.',
-                        'Assisted in project documentation, public transport process reviews and data consolidation efforts under the Logistics and Transport Subsecretariat.',
-                        'Gained recognition from leadership through technical initiative and ability to simplify bureaucratic reporting workflows.'
+                        'Developed dashboards and analytical reports covering metro, train, bus, and ferry systems.',
+                        'Led the redesign of the Metropolitan Mobility Bulletin, standardizing multi-source datasets (Excel/CSV).',
+                        'Delivered analytical insights, including COVID-19 impact analysis.',
+                        'Improved reporting workflows through structured data transformation processes.'
                     ]
                 },
                 {
-                    role: 'IT Support (Freelance)',
+                    role: 'IT Support Intern',
                     company: 'Rei do Queijo',
                     period: 'Jan 2019 – Mar 2019',
                     description: [
-                        'Assembled and configured 10 desktop computers for a dedicated telemarketing campaign operation.',
-                        'Verified hardware compatibility, optimized basic network setup, and ensured readiness for large-scale data entry and CRM usage.'
+                        'Implemented infrastructure supporting telemarketing operations.'
                     ]
                 },
                 {
-                    role: 'CAD Drafter (Intern)',
+                    role: 'CAD Intern',
                     company: 'CASFS',
                     period: 'Feb 2018 – May 2018',
                     description: [
-                        'Assisted in the revision and drafting of 2D architectural floor plans for residential property inspections.',
-                        'Supported urban analysis and documentation used for municipal IPTU adjustments and official records.',
-                        'Used AutoCAD to create scaled representations of buildings, adapting to municipal planning requirements.'
+                        'Developed architectural drawings and urban documentation using AutoCAD.'
                     ]
                 }
             ],
@@ -302,14 +287,11 @@ A barra lateral de **Catalog** oferece uma visão técnica do Warehouse:
                 { name: 'Versioning & Collaboration', items: ['GitHub', 'GitLab', 'Code Commit'] }
             ],
             certifications: [
-                'Cientista de Dados 4.0 | Data Science Academy',
+                'Data Science 4.0 | Data Science Academy',
                 'Lean Six Sigma Green Belt | FM2S',
-                'Data Science: Análise e Visualização de Dados | Alura',
-                'Pandas | Alura',
-                'Excel Impressionador | Hashtag Treinamentos',
-                'Modelagem de Banco de Dados | CEPERJ',
-                'Noções de Administração Pública | CEPERJ',
-                'Diretor de projetos empresa junior | IBMEC Soluções'
+                'Database Modeling | CEPERJ',
+                'Data Analysis & Visualization | Alura',
+                'Advanced Excel | Hashtag Treinamentos'
             ],
             languages: [
                 'Portuguese | Native',
