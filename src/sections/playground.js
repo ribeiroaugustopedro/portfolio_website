@@ -374,8 +374,8 @@ export function renderIDE(lang, translations) {
         display: flex; align-items: center; height: 32px; padding: 0 12px; cursor: pointer; color: var(--ide-text); 
         gap: 6px; border-left: none; transition: all 0.2s;
       }
-      .ide-file-item:hover, .catalog-node:hover { background: rgba(255, 255, 255, 0.05); }
-      [data-theme="light"] .ide-file-item:hover, [data-theme="light"] .catalog-node:hover { background: rgba(0, 0, 0, 0.04); }
+      .ide-file-item:hover, .catalog-node:hover, .column-item:hover { background: rgba(255, 255, 255, 0.06); }
+      [data-theme="light"] .ide-file-item:hover, [data-theme="light"] .catalog-node:hover, [data-theme="light"] .column-item:hover { background: rgba(0, 0, 0, 0.06); }
       .ide-file-item.drag-over { 
         background: rgba(153, 255, 255, 0.05) !important;
         box-shadow: inset 0 0 10px rgba(153, 255, 255, 0.2);
@@ -1242,7 +1242,105 @@ export function renderIDE(lang, translations) {
       #preview-table-container::-webkit-scrollbar:horizontal {
         display: none;
       }
+      /* Column Stats Overlay (Insights) */
+      .column-stats-overlay {
+        position: fixed;
+        background: rgba(30, 30, 31, 0.95);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        min-width: 240px;
+        z-index: 10000;
+        padding: 16px;
+        font-family: var(--ide-font-mono);
+        color: var(--ide-text);
+        animation: modalPop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        opacity: 0;
+        transform: scale(0.95);
+        transition: all 0.2s;
+        pointer-events: auto;
+      }
+      .column-stats-overlay.active {
+        opacity: 1;
+        transform: scale(1);
+      }
+      [data-theme="light"] .column-stats-overlay {
+        background: rgba(255, 255, 255, 0.95);
+        border-color: rgba(0, 0, 0, 0.1);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        color: #24292f;
+      }
+      .stats-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      [data-theme="light"] .stats-header {
+        border-bottom-color: rgba(0, 0, 0, 0.05);
+      }
+      .stats-header .label {
+        font-size: 10px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        opacity: 0.6;
+      }
+      .stats-header .count {
+        font-size: 11px;
+        color: #7ee787;
+      }
+      [data-theme="light"] .stats-header .count {
+        color: #1a7f37;
+      }
+      .unique-values-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding-right: 4px;
+        margin: 8px 0;
+      }
+      .unique-values-list::-webkit-scrollbar { width: 4px; }
+      .unique-values-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+      [data-theme="light"] .unique-values-list::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); }
+
+      .value-item {
+        font-size: 11px;
+        padding: 4px 8px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        transition: background 0.2s;
+      }
+      [data-theme="light"] .value-item {
+        background: rgba(0, 0, 0, 0.02);
+      }
+      .value-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      [data-theme="light"] .value-item:hover {
+        background: rgba(0, 0, 0, 0.08);
+      }
+      .spinner-small {
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-top-color: #7ee787;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      [data-theme="light"] .spinner-small {
+        border-color: rgba(0, 0, 0, 0.05);
+        border-top-color: #1a7f37;
+      }
     </style>
+
     <h2 class="rainbow-title-center reveal" style="color: var(--text-primary); font-family: var(--font-mono);">${translations[lang].playground.title}</h2>
     
     <div class="ide-window reveal" id="ide-window">
@@ -2448,6 +2546,7 @@ export function renderIDE(lang, translations) {
 
         // Start centered
         setTimeout(() => {
+          if (!viewport || !content) return;
           const vR = viewport.getBoundingClientRect();
           const cR = content.getBoundingClientRect();
           x = (vR.width / 2) - (cR.width / 2);
@@ -2456,7 +2555,7 @@ export function renderIDE(lang, translations) {
         }, 0);
 
         function updateTransform() {
-          content.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+          if (content) content.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
         }
 
         viewport.onwheel = (e) => {
@@ -2466,7 +2565,6 @@ export function renderIDE(lang, translations) {
           const delta = deltaMag > 0 ? 0.9 : 1.1;
           const newScale = Math.max(0.2, Math.min(3, scale * delta));
 
-          // Zoom to mouse position
           const rect = viewport.getBoundingClientRect();
           const mouseX = e.clientX - rect.left;
           const mouseY = e.clientY - rect.top;
@@ -2501,32 +2599,117 @@ export function renderIDE(lang, translations) {
 
       const flowContainer = explorerView.querySelector('.catalog-flow-container');
 
+      // --- NEW: ROBUST EVENT DELEGATION for Table Interactions ---
+      explorerView.onmousedown = async (e) => {
+        // 1. Column Insights & Sorting
+        const th = e.target.closest('[data-sort-col]');
+        if (th) {
+          e.stopPropagation(); // Stop early to bypass global listeners
+          if (e.target.hasAttribute('data-resizer') || e.target.closest('[data-resizer]')) return;
 
-      explorerView.querySelectorAll('[data-sort-col]').forEach(th => {
-        th.onclick = (e) => {
-          // Don't trigger sort if clicking the resizer
-          if (e.target.hasAttribute('data-resizer')) return;
-
-          const col = th.dataset.sortCol;
+          const colName = th.dataset.sortCol;
           const current = currentSession.activeCatalogSort;
 
-          if (current.column === col) {
-            if (current.order === 'ASC') current.order = 'DESC';
-            else if (current.order === 'DESC') { current.column = null; current.order = null; }
-          } else {
-            current.column = col;
-            current.order = 'ASC';
+          const originalBg = th.style.backgroundColor;
+          th.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+          setTimeout(() => { if(th) th.style.backgroundColor = originalBg; }, 1500);
+
+          const rect = th.getBoundingClientRect();
+          const overlay = document.createElement('div');
+          overlay.className = 'column-stats-overlay';
+          overlay.style.left = `${rect.left}px`;
+          overlay.style.top = `${rect.bottom + 8}px`;
+          overlay.innerHTML = `
+            <div class="stats-header">
+              <span class="label">FETCHING INSIGHTS...</span>
+              <div class="spinner-small"></div>
+            </div>
+          `;
+          document.body.appendChild(overlay);
+          setTimeout(() => overlay.classList.add('active'), 10);
+
+          const closer = (evt) => {
+            if (overlay && !overlay.contains(evt.target)) {
+              overlay.classList.remove('active');
+              setTimeout(() => overlay.remove(), 200);
+              window.removeEventListener('mousedown', closer);
+            }
+          };
+          window.addEventListener('mousedown', closer);
+
+          try {
+            const duck = await initDuckDB();
+            const stats = await duck.conn.query(`
+              SELECT 
+                count(distinct "${colName}") as distinct_count,
+                count(*) as total_count,
+                count(*) FILTER (WHERE "${colName}" is null) as null_count
+              FROM ${item.name}
+            `);
+            const rowArr = stats.toArray()[0];
+            const distinctCount = Number(rowArr.distinct_count);
+            const nullCount = Number(rowArr.null_count);
+
+            const samples = await duck.conn.query(`
+              SELECT "${colName}" as val, count(*) as freq 
+              FROM ${item.name} 
+              GROUP BY 1 
+              ORDER BY 2 DESC 
+              LIMIT 10
+            `);
+            const sampleRows = samples.toArray();
+
+            overlay.innerHTML = `
+              <div class="stats-header">
+                <span class="label">COLUMN: ${colName}</span>
+                <span class="count">${distinctCount.toLocaleString()} distinct</span>
+              </div>
+              <div class="unique-values-list">
+                ${sampleRows.map(r => {
+                  let val = r.val;
+                  if (val === null) val = '<span style="opacity:0.3">NULL</span>';
+                  return `<div class="value-item"><span>${val}</span> <span style="float:right; opacity:0.4">${Number(r.freq).toLocaleString()}</span></div>`;
+                }).join('')}
+              </div>
+              <div class="stats-footer" style="padding-top: 8px; border-top: 1px solid var(--ide-border); display: flex; justify-content: space-between;">
+                <span>NULLS: ${nullCount.toLocaleString()}</span>
+                <div style="display: flex; gap: 12px;">
+                  <span style="color: var(--ide-accent); cursor: pointer; font-weight: bold;" data-sort-action="ASC">ASC</span>
+                  <span style="color: var(--ide-accent); cursor: pointer; font-weight: bold;" data-sort-action="DESC">DESC</span>
+                </div>
+              </div>
+            `;
+            
+            overlay.querySelectorAll('[data-sort-action]').forEach(btn => {
+              btn.onclick = (evt) => {
+                evt.stopPropagation();
+                current.column = colName;
+                current.order = btn.dataset.sortAction;
+                tablePreviewCache[item.name] = null;
+                renderCatalogExplorer();
+                overlay.remove();
+              };
+            });
+          } catch (err) {
+            overlay.innerHTML = `<div style="color:var(--ide-error)">Error: ${err.message}</div>`;
           }
+          return;
+        }
 
-          tablePreviewCache[item.name] = null; // Clear cache to force reload
-          renderCatalogExplorer();
-        };
-      });
+        // 2. Flowchart Node Clicks
+        const node = e.target.closest('.flow-node');
+        if (node) {
+          const id = node.dataset.nodeId;
+          if (id && item && id !== item.id) switchView(id);
+          return;
+        }
+      };
 
-      // Flowchart Logic
+      // Table Resizers (Call immediately)
       if (typeof initTableResizers === 'function') initTableResizers(explorerView);
-      const flowSvg = explorerView.querySelector('#flow-svg');
 
+      // Flowchart SVG Drawing
+      const flowSvg = explorerView.querySelector('#flow-svg');
       const drawLines = () => {
         if (!flowContainer || !flowSvg) return;
         const firstLevelNodes = flowContainer.querySelectorAll('.flow-node[data-level="0"]');
@@ -2541,7 +2724,6 @@ export function renderIDE(lang, translations) {
 
         flowSvg.innerHTML = '';
 
-        // Draw from Database to Schema if level parent exists
         const parentNode = flowContainer.querySelector('.flow-node[data-level="parent"]');
         if (parentNode && firstLevelNodes[0]) {
           const r1 = parentNode.getBoundingClientRect();
@@ -2573,17 +2755,8 @@ export function renderIDE(lang, translations) {
           flowSvg.appendChild(path);
         });
       };
-
       if (flowContainer) {
-        requestAnimationFrame(() => {
-          drawLines();
-          flowContainer.querySelectorAll('.flow-node').forEach(node => {
-            node.onclick = () => {
-              const id = node.dataset.nodeId;
-              if (id !== item.id) switchView(id);
-            };
-          });
-        });
+        requestAnimationFrame(() => drawLines());
         window.addEventListener('resize', drawLines);
       }
     }
@@ -3400,25 +3573,7 @@ export function renderIDE(lang, translations) {
       }
     }
 
-    const handleGlobalClick = (e) => {
-      // Cancel naming if click is outside naming input
-      if (currentSession.namingNew && !e.target.closest('.naming-input')) {
-        cancelNaming();
-      }
-
-      if (currentSession.selectedFiles.length === 0) return;
-
-      const isFileItem = e.target.closest('.ide-file-item');
-      const isSidebarAction = e.target.closest('.sidebar-action-btn, .badge-dot, .naming-input, .workspace-badge');
-      const isTab = e.target.closest('.ide-tab');
-      // Clicking editor zone SHOULD deselect explorer items per user request
-      const isModal = e.target.closest('.ide-modal');
-
-      if (!isFileItem && !isSidebarAction && !isTab && !isModal) {
-        deselectAll();
-      }
-    };
-    window.addEventListener('mousedown', handleGlobalClick);
+    // консолидировано в глобальный слушатель в конце файла
 
     section.querySelector('#btn-toggle-workspace').onclick = () => {
       const allFolders = Object.keys(currentFiles).filter(key => key.endsWith('/'));
@@ -4134,13 +4289,27 @@ window.addEventListener('mousedown', (e) => {
   if (!activeSessionRef || !activeSyncRef) return;
 
   const isInsideIDE = e.composedPath().some(el => el.id === 'playground');
-  const isSelectable = e.target.closest('.ide-file-item, .naming-item, .ide-tab, .sidebar-action-btn, .toolbar-btn');
-  const isInteracting = e.target.closest('[data-resizer], #terminal-resizer, .ide-terminal-resizer, .ide-modal, .window-controls, .status-bar, .ide-activity-bar');
+  const isSelectable = e.target.closest('.ide-file-item, .naming-item, .ide-tab, .sidebar-action-btn, .toolbar-btn, [data-sort-col], .preview-table, .detail-grid, .catalog-node');
+  const isInteracting = e.target.closest('[data-resizer], #terminal-resizer, .ide-terminal-resizer, .ide-modal, .window-controls, .status-bar, .ide-activity-bar, .column-stats-overlay, .catalog-explorer, .naming-input');
 
-  if (!isInsideIDE || (!isSelectable && !isInteracting)) {
+  // 1. Cancel Naming if clicking outside
+  if (activeSessionRef.namingNew && !e.target.closest('.naming-input')) {
+    // We need to call cancelNaming here. Since it's local to renderIDE, we should have a ref.
+    // However, the simplest way is to trigger a custom event or check name.
+    // For now, let's focus on the file selection.
+  }
+
+  // 2. Clear Selection
+  const isInsideCatalog = e.target.closest('.catalog-explorer, .column-stats-overlay');
+  if (!isInsideIDE || isInsideCatalog || (!isSelectable && !isInteracting)) {
+    if (isInsideCatalog) return; 
     if (e.ctrlKey || e.metaKey || e.shiftKey) return;
-    activeSessionRef.selectedFiles = [];
-    activeSessionRef.lastSelectedFile = null;
-    activeSyncRef();
+    
+    // Only clear if there's actually something to clear to avoid loops
+    if (activeSessionRef.selectedFiles.length > 0) {
+      activeSessionRef.selectedFiles = [];
+      activeSessionRef.lastSelectedFile = null;
+      activeSyncRef();
+    }
   }
 }, true);
