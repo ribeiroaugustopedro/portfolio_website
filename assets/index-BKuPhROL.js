@@ -640,21 +640,21 @@ ORDER BY 2 DESC;`};let I=["teste.sql"],l=new Set,U=!0,N="",L=!1;ss().catch(p=>co
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        padding: 0 15px;
+        padding: 0 16px;
         background: var(--ide-sidebar);
         border-bottom: 1px solid var(--ide-border);
         font-size: 11px;
         color: var(--ide-text);
-        height: 30px;
-        box-sizing: border-box;
+        height: 30px !important;
+        box-sizing: border-box !important;
         opacity: 1;
         position: relative;
         margin: 0;
         padding-right: 4px; /* Space for buttons */
       }
       .sql-fullscreen-btn {
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -664,15 +664,18 @@ ORDER BY 2 DESC;`};let I=["teste.sql"],l=new Set,U=!0,N="",L=!1;ss().catch(p=>co
         color: var(--ide-text);
         cursor: pointer;
         transition: all 0.2s;
+        padding: 0;
       }
       .sql-fullscreen-btn:hover { 
         background: rgba(255, 255, 255, 0.08);
         animation: rainbowSimultaneous 4s linear infinite;
-        color: var(--ide-text-bright) !important; 
+        color: var(--ide-text-bright); 
       }
       [data-theme="light"] .sql-fullscreen-btn:hover {
-        background: rgba(0, 0, 0, 0.05) !important;
+        background: rgba(0, 0, 0, 0.05);
+        animation: rainbowSimultaneous 4s linear infinite;
       }
+
       [data-theme="light"] .sql-summary-bar {
         background: #f6f8fa !important;
         color: #24292f !important;
@@ -781,12 +784,15 @@ ORDER BY 2 DESC;`};let I=["teste.sql"],l=new Set,U=!0,N="",L=!1;ss().catch(p=>co
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         border-radius: 4px;
         color: var(--ide-text);
         cursor: pointer;
         transition: all 0.2s;
+        border: none;
+        background: transparent;
+        padding: 0;
       }
       .terminal-add-btn:hover { 
         background: rgba(255, 255, 255, 0.08); 
@@ -794,7 +800,7 @@ ORDER BY 2 DESC;`};let I=["teste.sql"],l=new Set,U=!0,N="",L=!1;ss().catch(p=>co
         color: var(--ide-text-bright); 
       }
       [data-theme="light"] .terminal-add-btn:hover {
-        background: rgba(0, 0, 0, 0.05) !important;
+        background: rgba(0, 0, 0, 0.05);
         animation: rainbowSimultaneous 4s linear infinite;
       }
       .terminal-add-btn:active {
@@ -1195,6 +1201,7 @@ ORDER BY 2 DESC;`};let I=["teste.sql"],l=new Set,U=!0,N="",L=!1;ss().catch(p=>co
       }
       .terminal-header {
         height: 30px !important;
+        box-sizing: border-box !important;
         background: var(--ide-sidebar) !important;
         border-bottom: 1px solid var(--ide-border) !important;
         padding: 0 16px !important;
@@ -1211,29 +1218,15 @@ ORDER BY 2 DESC;`};let I=["teste.sql"],l=new Set,U=!0,N="",L=!1;ss().catch(p=>co
         opacity: 0.6 !important;
         font-family: var(--ide-font-mono) !important;
       }
-      .terminal-add-btn {
-        width: 22px !important;
-        height: 22px !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        cursor: pointer;
-        color: var(--ide-text);
-        transition: all 0.2s;
-      }
-      .terminal-add-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: var(--ide-text-bright);
-      }
+
 
       .custom-select-trigger {
         background: rgba(255, 255, 255, 0.03) !important;
         border: 1px solid var(--ide-border) !important;
         font-size: 10px !important;
         padding: 0 24px 0 8px !important;
-        height: 22px !important;
-        line-height: 22px !important;
+        height: 28px !important;
+        line-height: 28px !important;
         border-radius: 4px !important;
       }
       [data-theme="light"] .custom-select-trigger {
@@ -1383,17 +1376,17 @@ ORDER BY 2 DESC;`};let I=["teste.sql"],l=new Set,U=!0,N="",L=!1;ss().catch(p=>co
                     <div id="terminal-select-trigger" class="custom-select-trigger">1: Terminal</div>
                     <div id="terminal-select-options" class="custom-select-options"></div>
                   </div>
-                  <div id="terminal-add" class="terminal-add-btn" title="New Terminal">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                  </div>
+                  <button id="terminal-add" class="terminal-add-btn" title="New Terminal">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
                 </div>
               </div>
               <div class="terminal-actions">
                 <button id="refresh-terminal-btn" class="run-btn" title="Clear Output">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                 </button>
                 <button id="delete-terminal-btn" class="run-btn" title="Delete Terminal">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
               </div>
             </div>
@@ -1714,13 +1707,11 @@ ORDER BY 2 DESC;`},I=I.filter(t=>n[t]),I.length===0&&(I=["teste.sql"]),n[u.fileN
                   <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-size: 11px; font-family: var(--ide-font-mono);">${e.length} rows and ${s.length} columns returned in ${t.toFixed(1)}s</span>
                   </div>
-                  <div style="display:flex; align-items:center;">
-                    <button class="sql-fullscreen-btn" title="Fullscreen">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-                      </svg>
-                    </button>
-                  </div>
+                  <button class="sql-fullscreen-btn" title="Fullscreen">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                    </svg>
+                  </button>
                  </div>`),T+=`<div class="sql-grid-layout" style="border-bottom: 1px solid var(--ide-border); margin-top: 0;">
                 <div class="sql-scroll-pane">
                   <table class="preview-table">
