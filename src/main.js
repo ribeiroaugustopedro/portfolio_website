@@ -52,11 +52,25 @@ document.addEventListener('DOMContentLoaded', () => {
       fragment.appendChild(main);
       fragment.appendChild(renderFooter(lang, translations));
 
-      // Swap content
-      app.innerHTML = '';
-      app.appendChild(fragment);
+      // Swap content in-place to prevent scroll jumps (maintaining overall page height)
+      const oldNav = app.querySelector('nav');
+      const oldMain = app.querySelector('main');
+      const oldFooter = app.querySelector('footer');
 
-      // Instantly restore scroll position
+      const newNav = fragment.querySelector('nav');
+      const newMain = fragment.querySelector('main');
+      const newFooter = fragment.querySelector('footer');
+
+      if (oldNav && newNav) app.replaceChild(newNav, oldNav);
+      else app.appendChild(newNav);
+
+      if (oldMain && newMain) app.replaceChild(newMain, oldMain);
+      else app.appendChild(newMain);
+
+      if (oldFooter && newFooter) app.replaceChild(newFooter, oldFooter);
+      else app.appendChild(newFooter);
+
+      // Instantly restore scroll position as a safety measure
       window.scrollTo(0, scrollPos);
 
       // Re-initialize animations

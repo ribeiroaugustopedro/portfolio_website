@@ -12,6 +12,12 @@ let updateTerminalUIBound = null;
 let activeSessionRef = null;
 let activeSyncRef = null;
 
+// Persistent Global State for IDE (across language switches)
+let globalCurrentFiles = null;
+let globalOpenTabs = null;
+let globalCurrentSession = null;
+let globalCollapsedFolders = new Set();
+
 const logToTerminal = (content, type = 'info', append = false) => {
   const active = terminalInstances.find(t => t.id === activeTerminalId);
   if (!active) return;
@@ -89,46 +95,170 @@ export function renderIDE(lang, translations) {
   section.id = 'playground';
   section.className = 'ide-section';
 
-  // State Management
-  let currentFiles = { ...files };
+  // 1. Initial State Setup (Persistent across language changes)
+  if (!globalCurrentFiles) {
+    globalCurrentFiles = { ...files };
 
-  // Default test file
-  currentFiles['teste.sql'] = {
-    name: 'teste.sql',
-    type: 'file',
-    content: `SELECT
+    globalCurrentFiles = { ...files };
+
+    // Initial Demo Files
+    globalCurrentFiles['analytics_basics.sql'] = {
+      name: 'analytics_basics.sql',
+      type: 'file',
+      content: `-- Provider Market Share Analysis
+-- This query calculates the concentration of providers across regions,
+-- using a subquery to determine the percentage share relative to the total.
+-
+-SELECT
+-    loc_region,
+-    COUNT(DISTINCT prov_id) AS distinct_providers,
+-    COUNT(DISTINCT prov_id) * 1.0
+-        / (SELECT COUNT(DISTINCT prov_id) FROM warehouse.gold.providers) AS total_percentage
+-FROM warehouse.gold.providers
+-GROUP BY ALL
+-ORDER BY 2 DESC, 1 ASC;`
+    };
+
+    globalCurrentFiles['marketing_aggregates.sql'] = {
+      name: 'marketing_aggregates.sql',
+      type: 'file',
+      content: `-- Marketing View: Provider Density
+-- Analyzes provider counts at the state and regional levels,
+-- calculating the relative percentage distribution using a Window Function.
+
+SELECT
+    loc_state,
     loc_region,
-    COUNT(DISTINCT prov_id) AS qtd_providers,
-    COUNT(DISTINCT prov_id) * 1.0
-        / (SELECT COUNT(DISTINCT prov_id) FROM warehouse.gold.providers) AS pct_total
+    COUNT(DISTINCT prov_id) as provider_count,
+    ROUND(COUNT(DISTINCT prov_id) * 100.0 / SUM(COUNT(DISTINCT prov_id)) OVER(), 2) as pct_total
 FROM warehouse.gold.providers
-GROUP BY loc_region
-ORDER BY 2 DESC;`
-  };
+GROUP BY 1, 2
+ORDER BY 3 DESC;`
+    };
 
-  let openTabs = ['teste.sql'];
-  let collapsedFolders = new Set();
+    globalCurrentFiles['advanced_joins.sql'] = {
+      name: 'advanced_joins.sql',
+      type: 'file',
+      content: `-- Advanced Analytics: Cross-joining Users and Providers
+-- Correlates regional user counts with provider rankings.
+-- Uses a Common Table Expression (CTE) for pre-aggregation and Window Functions for ranking.
+
+WITH region_stats AS (
+    SELECT 
+        loc_region, 
+        COUNT(*) as user_count 
+    FROM warehouse.gold.users 
+    GROUP BY 1
+)
+SELECT 
+    p.prov_name,
+    p.loc_region,
+    s.user_count,
+    RANK() OVER(PARTITION BY p.loc_region ORDER BY p.prov_id DESC) as prov_rank
+FROM warehouse.gold.providers p
+JOIN region_stats s ON p.loc_region = s.loc_region
+WHERE s.user_count > 100
+LIMIT 10;`
+    };
+
+    globalCurrentFiles['data_processing.py'] = {
+      name: 'data_processing.py',
+      type: 'file',
+      content: `import json
+
+# Python Data Processing Workflow
+# This script demonstrates a typical business logic prototype:
+# Calculating percentage shares for regional numeric values.
+
+data = [
+    {"region": "North", "value": 1500},
+    {"region": "South", "value": 2300},
+    {"region": "East", "value": 1800}
+]
+
+def calculate_shares(dataset):
+    """Calculate the relative share of each entry in the total value."""
+    total = sum(d['value'] for d in dataset)
+    return [
+        {**d, "share": round(d['value'] / total * 100, 2)}
+        for d in dataset
+    ]
+
+results = calculate_shares(data)
+
+print("--- Data Processing Result ---")
+for r in results:
+    print(f"Region: {r['region']} | Share: {r['share']}%")`
+    };
+
+    globalCurrentFiles['visualization_demo.py'] = {
+      name: 'visualization_demo.py',
+      type: 'file',
+      content: `# Analytical Simulation: Performance Threshold Audit
+# Evaluates a series of values against a static threshold
+# to identify target attainment metrics.
+
+threshold = 2000
+sales_data = [2400, 1800, 2100, 1500, 2900, 2200]
+
+def analyze_performance(data, limit):
+    """Filter and aggregate performance metrics based on input threshold."""
+    above = [v for v in data if v >= limit]
+    below = [v for v in data if v < limit]
+    
+    return {
+        "met_target": len(above),
+        "missed": len(below),
+        "peak": max(data)
+    }
+
+metrics = analyze_performance(sales_data, threshold)
+
+print("Target Performance Audit")
+print("-----------------------")
+print(f"Periods Met: {metrics['met_target']}")
+print(f"Periods Missed: {metrics['missed']}")
+print(f"Maximum Peak: {metrics['peak']}")`
+    };
+
+    globalOpenTabs = ['README.md'];
+
+    globalCurrentSession = {
+      sidebar: 'explorer',
+      isSidebarSplit: false,
+      fileName: 'README.md',
+      activeCatalogItem: null,
+      activeCatalogTab: 'overview',
+      activeCatalogSort: { column: null, order: null },
+      namingNew: null,
+      selectedFiles: ['README.md'],
+      lastSelectedFile: 'README.md',
+      terminalOpen: false,
+      searchQuery: '',
+      searchMatches: [],
+      currentMatchIdx: -1,
+      isSearchEsc: false,
+      isMultiEditActive: false
+    };
+  }
+
+  // 2. Language-Specific Content (Always updated on switch)
+  if (globalCurrentFiles['README.md'] && translations[lang]?.playground?.readmeContent) {
+    globalCurrentFiles['README.md'].content = translations[lang].playground.readmeContent;
+  }
+
+  // 3. Local References to Global State
+  let currentFiles = globalCurrentFiles;
+  let openTabs = globalOpenTabs;
+  let currentSession = globalCurrentSession;
+  let collapsedFolders = globalCollapsedFolders;
   let isInitialLoad = true;
-  let currentSearchQuery = '';
-  let searchMatches = [];
-  let currentMatchIdx = -1;
-  let isMultiEditActive = false; // For visual multi-selection feedback
-  let isSearchEsc = false; // Flag to prevent IDE exit scrolling on search-close Esc
-
   // Initialize SQL engine
   initDuckDB().catch(e => console.error("DuckDB Init failed:", e));
 
-  const currentSession = {
-    fileName: 'teste.sql',
-    sidebar: 'explorer', // 'explorer' or 'catalog'
-    activeCatalogItem: null, // { name, type, parentPath }
-    activeCatalogTab: 'overview', // 'overview' or 'details'
-    activeCatalogSort: { column: null, order: null }, // { column: string, order: 'ASC' | 'DESC' | null }
-    namingNew: null, // { resultType: 'file'|'folder', parent: string, initialName?: string, isRename?: boolean }
-    selectedFiles: ['teste.sql'],
-    lastSelectedFile: 'teste.sql',
-    terminalOpen: false
-  };
+  // Connect active refs for global access
+  activeSessionRef = currentSession;
+  activeSyncRef = () => syncIDEState();
 
   function syncTerminalVisibility() {
     const container = section.querySelector('.ide-editor-container');
@@ -273,6 +403,8 @@ ORDER BY 2 DESC;`
     number: '<span class="type-pill type-number">INT64</span>',
     decimal: '<span class="type-pill type-decimal">DECIMAL</span>',
     date: '<span class="type-pill type-date">DATE</span>',
+    datetime: '<span class="type-pill type-date">DATETIME</span>',
+    timestamp: '<span class="type-pill type-date">TIMESTAMP</span>',
     boolean: '<span class="type-pill type-bool">BOOL</span>'
   };
 
@@ -354,12 +486,10 @@ ORDER BY 2 DESC;`
     <style>
       .folder-chevron, .catalog-arrow { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; color: var(--ide-text); transition: transform 0.2s; margin-right: 4px; }
       .folder-chevron.expanded, .catalog-arrow.expanded { transform: rotate(90deg); }
-      .folder-indent { width: 14px; margin-right: 4px; flex-shrink: 0; }
-      .file-icon-wrap { margin-right: 8px; display: flex; align-items: center; opacity: 0.9; }
-      .file-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .file-main { display: flex; align-items: center; width: 100%; white-space: nowrap; height: 100%; }
-      .file-icon-wrap { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
-      .file-main span { overflow: hidden; text-overflow: ellipsis; }
+      .folder-indent { width: 12px; margin-right: 4px; flex-shrink: 0; }
+      .file-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+      .file-main { display: flex; align-items: center; width: 100%; white-space: nowrap; height: 100%; flex: 1; overflow: hidden; }
+      .file-icon-wrap { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; margin-right: 4px; flex-shrink: 0; }
       .ide-tab .tab-close:hover { 
         opacity: 1; 
         background: rgba(255, 255, 255, 0.08); 
@@ -383,11 +513,101 @@ ORDER BY 2 DESC;`
       .ide-tabs::-webkit-scrollbar { display: none; }
       
       .ide-file-item { 
-        display: flex; align-items: center; height: 32px; padding: 0 12px; cursor: pointer; color: var(--ide-text); 
+        display: flex !important; align-items: center !important; justify-content: flex-start !important; 
+        height: 32px; cursor: pointer; color: var(--ide-text); 
         gap: 6px; border-left: none; transition: all 0.2s;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-right: 0 !important;
+        text-align: left !important;
       }
       .ide-file-item:hover, .catalog-node:hover, .column-item:hover { background: rgba(255, 255, 255, 0.06); }
       [data-theme="light"] .ide-file-item:hover, [data-theme="light"] .catalog-node:hover, [data-theme="light"] .column-item:hover { background: rgba(0, 0, 0, 0.06); }
+      
+      .catalog-node, .column-item { 
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        box-sizing: border-box !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-right: 0 !important;
+        text-align: left !important;
+      }
+      .col-main {
+        flex: 1 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 6px !important;
+        overflow: hidden !important;
+        height: 100% !important;
+        width: 100% !important;
+      }
+      .catalog-node-meta {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
+        gap: 4px;
+        padding-right: 0;
+        flex-shrink: 0;
+      }
+      .catalog-rows-count {
+        font-size: 10px;
+        color: #9aa0a6;
+        font-family: var(--ide-font-mono);
+        margin-right: 4px;
+        opacity: 1 !important;
+        white-space: nowrap;
+      }
+      [data-theme="light"] .catalog-rows-count {
+        color: #57606a;
+        opacity: 1 !important;
+      }
+      .copy-table-btn, .copy-col-btn {
+        width: 32px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.2s;
+        color: var(--ide-text);
+        cursor: pointer;
+      }
+      .catalog-node:hover .copy-table-btn, .column-item:hover .copy-col-btn {
+        opacity: 0.5;
+      }
+      .copy-table-btn:hover, .copy-col-btn:hover {
+        opacity: 1 !important;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      [data-theme="light"] .copy-table-btn:hover, [data-theme="light"] .copy-col-btn:hover {
+        background: rgba(0, 0, 0, 0.05);
+      }
+      
+      .catalog-table-details, .column-list, .column-item-wrap {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .ide-file-list::-webkit-scrollbar, .catalog-tree::-webkit-scrollbar {
+        width: 5px;
+      }
+      .ide-file-list::-webkit-scrollbar-thumb, .catalog-tree::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+      }
+      [data-theme="light"] .ide-file-list::-webkit-scrollbar-thumb, [data-theme="light"] .catalog-tree::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.1);
+      }
+
       .ide-file-item.drag-over { 
         background: rgba(153, 255, 255, 0.05) !important;
         box-shadow: inset 0 0 10px rgba(153, 255, 255, 0.2);
@@ -980,8 +1200,8 @@ ORDER BY 2 DESC;`
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 28px;
-        height: 28px;
+        width: 20px;
+        height: 20px;
         border-radius: 4px;
         color: var(--ide-text);
         cursor: pointer;
@@ -1004,22 +1224,16 @@ ORDER BY 2 DESC;`
       }
       
       .ide-file-item.active,
-      .catalog-node.active {
-        background: rgba(255, 255, 255, 0.05) !important;
-        color: var(--ide-text-bright);
-        position: relative !important;
-      }
-      [data-theme="light"] .ide-file-item.active,
-      [data-theme="light"] .catalog-node.active {
-        background: rgba(0, 0, 0, 0.05) !important;
-      }
-      
+      .catalog-node.active,
       .ide-file-item.active-selection,
       .catalog-node.active-selection {
         background: rgba(255, 255, 255, 0.1) !important;
         color: var(--ide-text-bright);
         position: relative !important;
+        border-left: none !important; /* Unified look for group selection */
       }
+      [data-theme="light"] .ide-file-item.active,
+      [data-theme="light"] .catalog-node.active,
       [data-theme="light"] .ide-file-item.active-selection,
       [data-theme="light"] .catalog-node.active-selection {
         background: rgba(0, 0, 0, 0.08) !important;
@@ -1085,6 +1299,32 @@ ORDER BY 2 DESC;`
         white-space: nowrap;
         user-select: none;
       }
+      .ide-sidebar-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 35px;
+        padding: 0 12px;
+        background: var(--ide-tab-inactive) !important;
+        border-bottom: 1px solid var(--ide-border);
+        box-sizing: border-box;
+      }
+      .ide-sidebar-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .sidebar-action-btn {
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border-radius: 4px;
+        color: var(--ide-text);
+        transition: all 0.2s;
+      }
       .ide-editor-header {
         display: flex;
         background: var(--ide-tab-inactive);
@@ -1092,6 +1332,7 @@ ORDER BY 2 DESC;`
         height: 35px;
         justify-content: space-between;
         align-items: center;
+        box-sizing: border-box;
       }
 
       .ide-tabs-container {
@@ -1396,7 +1637,7 @@ ORDER BY 2 DESC;`
         flex-direction: column;
       }
       .terminal-header {
-        height: 30px !important;
+        height: 35px !important;
         box-sizing: border-box !important;
         background: var(--ide-sidebar) !important;
         border-bottom: 1px solid var(--ide-border) !important;
@@ -1421,14 +1662,66 @@ ORDER BY 2 DESC;`
         border: 1px solid var(--ide-border) !important;
         font-size: 10px !important;
         padding: 0 24px 0 8px !important;
-        height: 28px !important;
-        line-height: 28px !important;
+        height: 20px !important;
+        line-height: 18px !important;
         border-radius: 4px !important;
+        display: flex !important;
+        align-items: center !important;
+        transition: all 0.2s !important;
+      }
+      .custom-select-trigger:hover { 
+        background: rgba(255, 255, 255, 0.08) !important;
+        animation: rainbowSimultaneous 4s linear infinite !important;
+        color: var(--ide-text-bright) !important; 
+      }
+      [data-theme="light"] .custom-select-trigger:hover {
+        background: rgba(0, 0, 0, 0.05) !important;
+        animation: rainbowSimultaneous 4s linear infinite !important;
       }
       [data-theme="light"] .custom-select-trigger {
         background: rgba(0, 0, 0, 0.02) !important;
         border-color: rgba(0, 0, 0, 0.1) !important;
       }
+
+      /* Fixed Sidebar & Catalog Layout */
+      .ide-sidebar {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        height: 100%;
+        border-right: 1px solid var(--ide-border);
+      }
+      .ide-sidebar-content {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+      }
+      .ide-file-list, .catalog-tree {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+        padding-bottom: 20px;
+        padding-right: 0 !important;
+      }
+      
+      /* Type Pill Colors - User Specified */
+      .type-pill {
+        font-size: 8px;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+        border: 1px solid currentColor;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .type-text { color: #79c0ff !important; border-color: rgba(121, 192, 255, 0.3) !important; }
+      .type-number { color: #7ee787 !important; border-color: rgba(126, 231, 135, 0.3) !important; }
+      .type-decimal { color: #dcb67a !important; border-color: rgba(220, 182, 122, 0.3) !important; }
+      .type-date { color: #b392f0 !important; border-color: rgba(179, 146, 240, 0.3) !important; }
+      .type-bool { color: #ff7b72 !important; border-color: rgba(255, 123, 114, 0.3) !important; }
     </style>
 
     <h2 class="rainbow-title-center reveal" style="color: var(--text-primary); font-family: var(--font-mono);">${translations[lang].playground.title}</h2>
@@ -1458,6 +1751,15 @@ ORDER BY 2 DESC;`
               <circle cx="7.5" cy="18.5" r="4"></circle>
               <rect x="13" y="14.5" width="8" height="8" rx="1"></rect>
             </svg>
+          </div>
+          
+          <div style="margin-top: auto; border-top: 1px solid var(--ide-border); padding: 12px 0; display: flex; align-items: center; justify-content: center; width: 100%;">
+            <div class="ide-icon" id="v-split" title="Split Explorer">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+              </svg>
+            </div>
           </div>
         </div>
 
@@ -1573,16 +1875,16 @@ ORDER BY 2 DESC;`
                     <div id="terminal-select-options" class="custom-select-options"></div>
                   </div>
                   <button id="terminal-add" class="terminal-add-btn" title="New Terminal">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                   </button>
                 </div>
               </div>
-              <div class="terminal-actions">
-                <button id="refresh-terminal-btn" class="run-btn" title="Clear Output">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+              <div class="terminal-actions" style="display: flex; align-items: center; gap: 4px;">
+                <button id="refresh-terminal-btn" class="terminal-add-btn" title="Clear Output">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                 </button>
-                <button id="delete-terminal-btn" class="run-btn" title="Delete Terminal">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <button id="delete-terminal-btn" class="terminal-add-btn" title="Delete Terminal">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
               </div>
             </div>
@@ -1687,13 +1989,13 @@ ORDER BY 2 DESC;`
           textarea.setSelectionRange(wordStart, wordEnd);
 
           // Trigger highlights for all occurrences
-          currentSearchQuery = textarea.value.substring(wordStart, wordEnd);
+          currentSession.searchQuery = textarea.value.substring(wordStart, wordEnd);
           performSearch();
         } else {
           // Select next occurrence and keep highlights
           const selectedText = value.substring(start, end);
           if (selectedText) {
-            currentSearchQuery = selectedText;
+            currentSession.searchQuery = selectedText;
             const nextIdx = value.indexOf(selectedText, end);
             if (nextIdx !== -1) {
               textarea.setSelectionRange(nextIdx, nextIdx + selectedText.length);
@@ -1846,43 +2148,43 @@ ORDER BY 2 DESC;`
     const searchNext = section.querySelector('#search-next');
     const searchClose = section.querySelector('#search-close');
 
-    let searchMatches = [];
-    let currentMatchIdx = -1;
+    currentSession.searchMatches = [];
+    currentSession.currentMatchIdx = -1;
 
     function performSearch() {
-      currentSearchQuery = searchInput.value;
-      if (!currentSearchQuery) {
-        searchMatches = [];
-        currentMatchIdx = -1;
+      currentSession.searchQuery = searchInput.value;
+      if (!currentSession.searchQuery) {
+        currentSession.searchMatches = [];
+        currentSession.currentMatchIdx = -1;
         searchCount.innerText = '0/0';
         syncEditor();
         return;
       }
 
-      searchMatches = [];
-      let idx = textarea.value.toLowerCase().indexOf(currentSearchQuery.toLowerCase());
+      currentSession.searchMatches = [];
+      let idx = textarea.value.toLowerCase().indexOf(currentSession.searchQuery.toLowerCase());
       while (idx !== -1) {
-        searchMatches.push(idx);
-        idx = textarea.value.toLowerCase().indexOf(currentSearchQuery.toLowerCase(), idx + currentSearchQuery.length);
+        currentSession.searchMatches.push(idx);
+        idx = textarea.value.toLowerCase().indexOf(currentSession.searchQuery.toLowerCase(), idx + currentSession.searchQuery.length);
       }
 
-      if (searchMatches.length > 0) {
+      if (currentSession.searchMatches.length > 0) {
         const cursor = textarea.selectionStart;
-        currentMatchIdx = searchMatches.findIndex(m => m >= cursor);
-        if (currentMatchIdx === -1) currentMatchIdx = 0;
+        currentSession.currentMatchIdx = currentSession.searchMatches.findIndex(m => m >= cursor);
+        if (currentSession.currentMatchIdx === -1) currentSession.currentMatchIdx = 0;
         updateSearchUI(false); // Don't steal focus while typing
       } else {
-        currentMatchIdx = -1;
+        currentSession.currentMatchIdx = -1;
         searchCount.innerText = '0/0';
       }
       syncEditor();
     }
 
     function updateSearchUI(shouldFocus = false) {
-      if (searchMatches.length > 0) {
-        searchCount.innerText = `${currentMatchIdx + 1}/${searchMatches.length}`;
-        const matchPos = searchMatches[currentMatchIdx];
-        textarea.setSelectionRange(matchPos, matchPos + currentSearchQuery.length);
+      if (currentSession.searchMatches.length > 0) {
+        searchCount.innerText = `${currentSession.currentMatchIdx + 1}/${currentSession.searchMatches.length}`;
+        const matchPos = currentSession.searchMatches[currentSession.currentMatchIdx];
+        textarea.setSelectionRange(matchPos, matchPos + currentSession.searchQuery.length);
         if (shouldFocus) textarea.focus();
 
         requestAnimationFrame(() => {
@@ -1960,11 +2262,11 @@ ORDER BY 2 DESC;`
 
       if (e.key === 'Enter' || e.key === 'F3') {
         e.preventDefault();
-        if (searchMatches.length > 0) {
+        if (currentSession.searchMatches.length > 0) {
           if (e.shiftKey) {
-            currentMatchIdx = (currentMatchIdx - 1 + searchMatches.length) % searchMatches.length;
+            currentSession.currentMatchIdx = (currentSession.currentMatchIdx - 1 + currentSession.searchMatches.length) % currentSession.searchMatches.length;
           } else {
-            currentMatchIdx = (currentMatchIdx + 1) % searchMatches.length;
+            currentSession.currentMatchIdx = (currentSession.currentMatchIdx + 1) % currentSession.searchMatches.length;
           }
           updateSearchUI(false); // Don't lose focus from search input
         }
@@ -1972,7 +2274,7 @@ ORDER BY 2 DESC;`
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation(); // Prevent bubbling to IDE-close handlers
-        isSearchEsc = true; // Mark as search-close for fullscreenchange stabilizer
+        currentSession.isSearchEsc = true; // Mark as search-close for fullscreenchange stabilizer
         searchClose.click(); // Reuse cleanup logic
       }
     });
@@ -1982,9 +2284,9 @@ ORDER BY 2 DESC;`
         e.preventDefault();
         if (searchWidget.classList.contains('active')) {
           if (e.shiftKey) {
-            currentMatchIdx = (currentMatchIdx - 1 + searchMatches.length) % searchMatches.length;
+            currentSession.currentMatchIdx = (currentSession.currentMatchIdx - 1 + currentSession.searchMatches.length) % currentSession.searchMatches.length;
           } else {
-            currentMatchIdx = (currentMatchIdx + 1) % searchMatches.length;
+            currentSession.currentMatchIdx = (currentSession.currentMatchIdx + 1) % currentSession.searchMatches.length;
           }
           updateSearchUI();
         } else {
@@ -2001,15 +2303,15 @@ ORDER BY 2 DESC;`
     });
 
     searchNext.onclick = () => {
-      if (searchMatches.length > 0) {
-        currentMatchIdx = (currentMatchIdx + 1) % searchMatches.length;
+      if (currentSession.searchMatches.length > 0) {
+        currentSession.currentMatchIdx = (currentSession.currentMatchIdx + 1) % currentSession.searchMatches.length;
         updateSearchUI();
       }
     };
 
     searchPrev.onclick = () => {
-      if (searchMatches.length > 0) {
-        currentMatchIdx = (currentMatchIdx - 1 + searchMatches.length) % searchMatches.length;
+      if (currentSession.searchMatches.length > 0) {
+        currentSession.currentMatchIdx = (currentSession.currentMatchIdx - 1 + currentSession.searchMatches.length) % currentSession.searchMatches.length;
         updateSearchUI();
       }
     };
@@ -2017,7 +2319,7 @@ ORDER BY 2 DESC;`
     searchClose.onclick = () => {
       searchWidget.classList.remove('active');
       searchInput.value = '';
-      currentSearchQuery = '';
+      currentSession.searchQuery = '';
 
       // Clear selection in textarea
       const cursor = textarea.selectionStart;
@@ -2168,9 +2470,9 @@ ORDER BY 2 DESC;`
       if (!container) return;
       let itemsHtml = Object.keys(currentFiles)
         .sort((a, b) => {
-          // Force teste.sql to the absolute top of the root
-          if (a === 'teste.sql') return -1;
-          if (b === 'teste.sql') return 1;
+          // Sort Priority: README.md > others
+          if (a === 'README.md') return -1;
+          if (b === 'README.md') return 1;
 
           const aParts = a.split('/');
           const bParts = b.split('/');
@@ -2216,12 +2518,14 @@ ORDER BY 2 DESC;`
           }
           return `
             <div class="ide-file-item ${currentSession.selectedFiles.includes(fileName) ? 'active-selection' : ''} ${fileName === currentSession.lastSelectedFile ? 'last-selected' : ''} ${fileName === currentSession.fileName ? 'active' : ''}" 
-                 data-file="${fileName}" draggable="true" style="padding-left: ${8 + indent}px">
-              <div class="file-main">
+                 data-file="${fileName}" draggable="true" style="padding-left: ${12 + indent}px">
+              <div class="col-main">
                 ${isFolder ? `<div class="folder-chevron ${isExpanded ? 'expanded' : ''}" data-folder-toggle="${fileName}">${ICONS.chevron}</div>` : '<div class="folder-indent"></div>'}
                 <div class="file-icon-wrap">${getFileIcon(fileName)}</div>
                 <span class="file-label">${displayName}</span>
-                <div class="workspace-copy-btn" title="Copy Path" data-copy="${fileName}">
+              </div>
+              <div class="catalog-node-meta">
+                <div class="workspace-copy-btn copy-table-btn" title="Copy Path" data-copy="${fileName}">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                 </div>
               </div>
@@ -2903,6 +3207,16 @@ ORDER BY 2 DESC;`
     function renderCatalog() {
       if (!catalogTreeContainer) return;
 
+      const getTypeColor = (type) => {
+        const t = type.toLowerCase();
+        if (t === 'text' || t === 'string' || t === 'varchar') return '#79c0ff'; // Blue
+        if (t === 'number' || t === 'int64' || t === 'bigint' || t === 'integer') return '#7ee787'; // Green
+        if (t === 'decimal' || t === 'double' || t === 'float' || t === 'real') return '#dcb67a'; // Yellow
+        if (t.includes('date') || t.includes('time') || t.includes('stamp')) return '#b392f0'; // Purple
+        if (t === 'boolean' || t === 'bool') return '#ff7b72'; // Reddish
+        return 'var(--ide-text)';
+      };
+
       function renderNode(node, depth = 0, nodeIdPath = 'catalog://', dotPath = '') {
         const icon = CATALOG_ICONS[node.type];
         const color = node.type === 'database' ? '#79c0ff' : node.type === 'schema' ? '#b392f0' : '#7ee787';
@@ -2916,7 +3230,7 @@ ORDER BY 2 DESC;`
 
         let html = `
           <div class="ide-file-item catalog-node ${node.open ? 'open' : ''} ${isSelected ? 'active-selection' : ''} ${isLastSelected ? 'last-selected' : ''} ${isActiveView ? 'active' : ''}" 
-               style="padding-left: ${depth * 15 + 10}px; border-left: none !important;" 
+               style="padding-left: ${depth * 20 + 12}px; border-left: none !important;" 
                data-node-id="${nodeId}"
                data-node-name="${node.name}">
             <span class="folder-chevron ${node.open ? 'expanded' : ''}" data-catalog-toggle="true" style="display: flex; align-items: center; justify-content: center; width: 14px;">${(node.children || node.columns) ? ICONS.chevron : ' '}</span>
@@ -2938,17 +3252,19 @@ ORDER BY 2 DESC;`
 
         if (node.open && node.type === 'table' && node.columns) {
           html += `
-            <div class="catalog-table-details" style="margin-left: ${depth * 15 + 24}px">
+            <div class="catalog-table-details">
               <div class="column-list">
                 ${node.columns.map(col => `
                   <div class="column-item-wrap">
-                    <div class="column-item" data-column-name="${col.name}" data-table-name="${node.name}">
-                      <div class="col-main">
+                    <div class="column-item" 
+                         data-column-name="${col.name}" 
+                         data-table-name="${node.name}">
+                      <div class="col-main" style="padding-left: ${depth * 20 + 24}px">
                         <div class="type-pill-container">${CATALOG_TYPE_ICONS[col.type]}</div>
                         <span class="name" title="${col.name}">${col.name}</span>
                       </div>
                       <div class="catalog-node-meta">
-                        <span class="catalog-rows-count">${col.nonNull}</span>
+                        <span class="catalog-rows-count" style="color: ${getTypeColor(col.type)}; opacity: 0.8 !important;">${col.distinct}</span>
                         <div class="copy-col-btn" title="Copy Column Path" data-copy="${currentDotPath}.${col.name}">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                         </div>
@@ -2958,7 +3274,7 @@ ORDER BY 2 DESC;`
                       <div class="column-stats-panel">
                         <div class="stats-header">
                           <span class="label">UNIQUE VALUES</span>
-                          <span class="count">${col.distinct}</span>
+                          <span class="count" style="color: ${getTypeColor(col.type)}">${col.distinct}</span>
                         </div>
                          <div class="unique-values-list">
                           ${[...col.samples].sort((a, b) => a.toString().localeCompare(b.toString()))
@@ -2973,7 +3289,8 @@ ORDER BY 2 DESC;`
                               ...
                             </div>
                           ` : ''}
-                        <div class="stats-footer">
+                        <div class="stats-footer" style="display: flex; justify-content: space-between; font-size: 9px; opacity: 0.8; letter-spacing: 0.3px;">
+                          <span>NON-NULL: ${col.nonNull}</span>
                           <span>NULLS: ${(parseInt(node.rows.toString().replace(/,/g, '')) - parseInt(col.nonNull.toString().replace(/,/g, ''))) || 0}</span>
                         </div>
                       </div>
@@ -3028,52 +3345,214 @@ ORDER BY 2 DESC;`
 
     function switchSidebar(view) {
       currentSession.sidebar = view;
-      activityBar.querySelectorAll('.ide-icon').forEach(icon => icon.classList.remove('active'));
+      activityBar.querySelectorAll('.ide-icon:not(#v-split)').forEach(icon => icon.classList.remove('active'));
+      const sidebarContainer = section.querySelector('.ide-sidebar');
 
+      // Smart View Switch
       if (view === 'explorer') {
-        activityBar.querySelector('#v-explorer').classList.add('active');
-        explorerSidebar.style.display = 'flex';
-        catalogSidebar.style.display = 'none';
-        renderFileList(fileListContainer);
+        const lastFile = openTabs.findLast(t => !t.startsWith('catalog://'));
+        if (lastFile) switchFile(lastFile, false);
       } else {
-        activityBar.querySelector('#v-catalog').classList.add('active');
-        explorerSidebar.style.display = 'none';
-        catalogSidebar.style.display = 'flex';
-        renderCatalog();
+        const lastCatalog = openTabs.findLast(t => t.startsWith('catalog://'));
+        if (lastCatalog) switchView(lastCatalog, false);
       }
+
+      if (currentSession.isSidebarSplit) {
+        explorerSidebar.style.display = 'flex';
+        catalogSidebar.style.display = 'flex';
+        explorerSidebar.style.flex = '1';
+        catalogSidebar.style.flex = '1';
+
+        // Re-order based on active view: the active one goes TOP
+        if (view === 'catalog') {
+          sidebarContainer.style.flexDirection = 'column-reverse';
+          catalogSidebar.style.borderTop = 'none';
+          catalogSidebar.style.borderBottom = '1px solid var(--ide-border)';
+        } else {
+          sidebarContainer.style.flexDirection = 'column';
+          catalogSidebar.style.borderTop = '1px solid var(--ide-border)';
+          catalogSidebar.style.borderBottom = 'none';
+        }
+
+        if (view === 'explorer') activityBar.querySelector('#v-explorer').classList.add('active');
+        else activityBar.querySelector('#v-catalog').classList.add('active');
+      } else {
+        sidebarContainer.style.flexDirection = 'column';
+        explorerSidebar.style.flex = 'none';
+        catalogSidebar.style.flex = 'none';
+        catalogSidebar.style.borderTop = 'none';
+        catalogSidebar.style.borderBottom = 'none';
+
+        if (view === 'explorer') {
+          activityBar.querySelector('#v-explorer').classList.add('active');
+          explorerSidebar.style.display = 'flex';
+          catalogSidebar.style.display = 'none';
+          renderFileList(fileListContainer);
+        } else {
+          activityBar.querySelector('#v-catalog').classList.add('active');
+          explorerSidebar.style.display = 'none';
+          catalogSidebar.style.display = 'flex';
+          renderCatalog();
+        }
+      }
+      syncIDEState();
       syncTerminalVisibility();
     }
 
     // Set side bar click events
     activityBar.querySelector('#v-explorer').onclick = () => switchSidebar('explorer');
     activityBar.querySelector('#v-catalog').onclick = () => switchSidebar('catalog');
+
+    activityBar.querySelector('#v-split').onclick = () => {
+      currentSession.isSidebarSplit = !currentSession.isSidebarSplit;
+      const btn = activityBar.querySelector('#v-split');
+      if (currentSession.isSidebarSplit) btn.classList.add('active');
+      else btn.classList.remove('active');
+      switchSidebar(currentSession.sidebar);
+    };
     section.querySelector('#btn-refresh').onclick = () => {
       const btn = section.querySelector('#btn-refresh');
       btn.style.animation = 'spin 1s linear';
 
-      // Restore initial state
-      currentFiles = { ...files };
-      // Re-inject teste.sql
-      currentFiles['teste.sql'] = {
-        name: 'teste.sql',
+      // Restore initial state (Resetting global references)
+      globalCurrentFiles = { ...files };
+      
+      // Initial Demo Files
+      globalCurrentFiles['analytics_basics.sql'] = {
+        name: 'analytics_basics.sql',
         type: 'file',
-        content: `SELECT
+        content: `-- Provider Market Share Analysis
+-- This query calculates the concentration of providers across regions,
+-- using a subquery to determine the percentage share relative to the total.
+
+SELECT
     loc_region,
-    COUNT(DISTINCT prov_id) AS qtd_providers,
+    COUNT(DISTINCT prov_id) AS distinct_providers,
     COUNT(DISTINCT prov_id) * 1.0
-        / (SELECT COUNT(DISTINCT prov_id) FROM warehouse.gold.providers) AS pct_total
+        / (SELECT COUNT(DISTINCT prov_id) FROM warehouse.gold.providers) AS total_percentage
 FROM warehouse.gold.providers
-GROUP BY loc_region
-ORDER BY 2 DESC;`
+GROUP BY ALL
+ORDER BY 2 DESC, 1 ASC;`
       };
 
-      // Keep open tabs if they still exist, otherwise reset to teste.sql
-      openTabs = openTabs.filter(t => currentFiles[t]);
-      if (openTabs.length === 0) openTabs = ['teste.sql'];
+      globalCurrentFiles['marketing_aggregates.sql'] = {
+        name: 'marketing_aggregates.sql',
+        type: 'file',
+        content: `-- Marketing View: Provider Density
+-- Analyzes provider counts at the state and regional levels,
+-- calculating the relative percentage distribution using a Window Function.
 
-      if (!currentFiles[currentSession.fileName]) {
-        switchFile('teste.sql');
+SELECT
+    loc_state,
+    loc_region,
+    COUNT(DISTINCT prov_id) as provider_count,
+    ROUND(COUNT(DISTINCT prov_id) * 100.0 / SUM(COUNT(DISTINCT prov_id)) OVER(), 2) as pct_total
+FROM warehouse.gold.providers
+GROUP BY 1, 2
+ORDER BY 3 DESC;`
+      };
+
+      globalCurrentFiles['advanced_joins.sql'] = {
+        name: 'advanced_joins.sql',
+        type: 'file',
+        content: `-- Advanced Analytics: Cross-joining Users and Providers
+-- Correlates regional user counts with provider rankings.
+-- Uses a Common Table Expression (CTE) for pre-aggregation and Window Functions for ranking.
+
+WITH region_stats AS (
+    SELECT 
+        loc_region, 
+        COUNT(*) as user_count 
+    FROM warehouse.gold.users 
+    GROUP BY 1
+)
+SELECT 
+    p.prov_name,
+    p.loc_region,
+    s.user_count,
+    RANK() OVER(PARTITION BY p.loc_region ORDER BY p.prov_id DESC) as prov_rank
+FROM warehouse.gold.providers p
+JOIN region_stats s ON p.loc_region = s.loc_region
+WHERE s.user_count > 100
+LIMIT 10;`
+      };
+
+      globalCurrentFiles['data_processing.py'] = {
+        name: 'data_processing.py',
+        type: 'file',
+        content: `import json
+
+# Python Data Processing Workflow
+# This script demonstrates a typical business logic prototype:
+# Calculating percentage shares for regional numeric values.
+
+data = [
+    {"region": "North", "value": 1500},
+    {"region": "South", "value": 2300},
+    {"region": "East", "value": 1800}
+]
+
+def calculate_shares(dataset):
+    """Calculate the relative share of each entry in the total value."""
+    total = sum(d['value'] for d in dataset)
+    return [
+        {**d, "share": round(d['value'] / total * 100, 2)}
+        for d in dataset
+    ]
+
+results = calculate_shares(data)
+
+print("--- Data Processing Result ---")
+for r in results:
+    print(f"Region: {r['region']} | Share: {r['share']}%")`
+      };
+
+      globalCurrentFiles['visualization_demo.py'] = {
+        name: 'visualization_demo.py',
+        type: 'file',
+        content: `# Analytical Simulation: Performance Threshold Audit
+# Evaluates a series of values against a static threshold
+# to identify target attainment metrics.
+
+threshold = 2000
+sales_data = [2400, 1800, 2100, 1500, 2900, 2200]
+
+def analyze_performance(data, limit):
+    """Filter and aggregate performance metrics based on input threshold."""
+    above = [v for v in data if v >= limit]
+    below = [v for v in data if v < limit]
+    
+    return {
+        "met_target": len(above),
+        "missed": len(below),
+        "peak": max(data)
+    }
+
+metrics = analyze_performance(sales_data, threshold)
+
+print("Target Performance Audit")
+print("-----------------------")
+print(f"Periods Met: {metrics['met_target']}")
+print(f"Periods Missed: {metrics['missed']}")
+print(f"Maximum Peak: {metrics['peak']}")`
+      };
+
+      if (globalCurrentFiles['README.md'] && translations[lang]?.playground?.readmeContent) {
+        globalCurrentFiles['README.md'].content = translations[lang].playground.readmeContent;
       }
+
+      globalOpenTabs = ['README.md'];
+      globalCurrentSession.fileName = 'README.md';
+      globalCurrentSession.selectedFiles = ['README.md'];
+      globalCurrentSession.lastSelectedFile = 'README.md';
+      globalCurrentSession.lastEditorContent = globalCurrentFiles['README.md'].content;
+      globalCollapsedFolders.clear();
+
+      // Refresh local refs
+      currentFiles = globalCurrentFiles;
+      openTabs = globalOpenTabs;
+      currentSession = globalCurrentSession;
+      collapsedFolders = globalCollapsedFolders;
 
       const log = document.createElement('div');
       log.className = 'info';
@@ -3245,14 +3724,14 @@ ORDER BY 2 DESC;`
         let highlighted = window.Prism.highlight(code, window.Prism.languages[lang] || window.Prism.languages.text, lang);
 
         // Inject Search Highlights
-        if (currentSearchQuery) {
+        if (currentSession.searchQuery) {
           const parts = highlighted.split(/(<[^>]+>)/g);
           let globalMatchCounter = 0;
           highlighted = parts.map(part => {
             if (part.startsWith('<')) return part;
-            const regex = new RegExp(`(${currentSearchQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+            const regex = new RegExp(`(${currentSession.searchQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
             return part.replace(regex, (match) => {
-              const className = (globalMatchCounter === currentMatchIdx) ? 'search-highlight current' : 'search-highlight';
+              const className = (globalMatchCounter === currentSession.currentMatchIdx) ? 'search-highlight current' : 'search-highlight';
               globalMatchCounter++;
               return `<span class="${className}">${match}</span>`;
             });
@@ -4037,6 +4516,7 @@ ORDER BY 2 DESC;`
 
     if (runBtn) runBtn.onclick = executeCurrentFile;
 
+
     function syncIDEState() {
       const hasTabs = openTabs.length > 0;
       const launchView = section.querySelector('#playground-launch-view');
@@ -4397,9 +4877,9 @@ ORDER BY 2 DESC;`
         if (!lastFullscreenWasIDE) return;
 
         if (!isManualExit) {
-          if (isSearchEsc) {
+          if (currentSession.isSearchEsc) {
             // It was just a search bar close, ignore exit-scroll logic
-            isSearchEsc = false;
+            currentSession.isSearchEsc = false;
             setTimeout(scrollToPlaygroundTop, 100);
             return;
           }

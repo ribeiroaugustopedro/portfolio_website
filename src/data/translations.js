@@ -151,27 +151,28 @@ export const translations = {
                 restarted: '✓ Kernel reiniciado. Pronto.',
                 executedSuccess: 'Executado com sucesso (sem output).'
             },
-            readmeContent: `# Bem-vindo ao Playground IDE
+            readmeContent: `# Bem-vindo ao Analytics Playground
 
-Esta é uma plataforma de engenharia de dados e análise integrada, projetada para simular fluxos de trabalho profissionais com foco em ecossistemas de dados modernos.
+Este é meu ambiente integrado de Engenharia e Análise de Dados. Aqui você pode explorar a arquitetura de um Data Warehouse real e executar processos analíticos ponta a ponta.
 
-### Núcleo de Desenvolvimento (Workspace)
-O Workspace permite a gestão e edição de múltiplos arquivos em tempo real:
-- **Scripts Python:** Desenvolva lógica de processamento de dados usando bibliotecas padrão.
-- **Consultas SQL:** Escreva e teste sintaxe SQL diretamente no ambiente.
-- **Documentação e Estilo:** Edite arquivos Markdown, HTML e CSS para organizar seus projetos.
+### Arquitetura do Catálogo
+Explore o painel CATALOG à esquerda para visualizar nossa estrutura:
+- Camada Gold: Tabelas higienizadas (\`providers\`, \`users\`) prontas para consumo.
+- Metadados: Clique nas colunas para ver estatísticas de cardinalidade e distribuição.
 
-#### Execução Dinâmica
-Ao pressionar o botão **RUN**, o IDE detecta automaticamente o tipo de arquivo:
-- **Python (Pyodide):** O código é executado localmente via WebAssembly, permitindo testes de lógica de forma isolada.
-- **SQL (High Fidelity):** Simula a execução de consultas sobre o data warehouse **MotherDuck**, retornando resultados baseados em metadados reais.
-- **Arquivos Estáticos:** Para arquivos como HTML/CSS, o IDE atua como um editor de texto com destaque de sintaxe (sem execução direta).
+### Execução de Query SQL
+O IDE está conectado a uma engine DuckDB local (WebAssembly) que emula um ambiente MotherDuck:
+- Selecione um arquivo \`.sql\` e clique em RUN.
+- Teste agregados, JOINS complexos e Window Functions.
 
-### Explorador de Catálogo (Data Intelligence)
-A barra lateral de **Catalog** oferece uma visão técnica do Warehouse:
-- **Hierarquia MotherDuck:** Navegue pela estrutura de Banco de Dados > Esquema > Tabelas.
-- **Inteligência de Colunas:** Visualize tipos de dados e a contagem de registros não nulos.
-- **Estatísticas Avançadas:** Clique em uma coluna para auditar cardinalidade, amostragem de valores e análise de nulos.`
+### Processamento com Python
+Utilize scripts \`.py\` para manipular dados:
+- Execução via Pyodide, permitindo rodar Python moderno diretamente no seu browser.
+- Ideal para prototipagem de regras de negócio e automação de pipelines.
+
+---
+**Dica:** Use \`Ctrl + Enter\` para rodar o código rapidamente!
+`
         },
         footer: {
             rights: '&copy; 2026 {NAME}. Construído com Vite & Three.js.'
@@ -329,27 +330,28 @@ A barra lateral de **Catalog** oferece uma visão técnica do Warehouse:
                 restarted: '✓ Kernel restarted. Ready.',
                 executedSuccess: 'Executed successfully (no output).'
             },
-            readmeContent: `# Welcome to the Playground IDE
+            readmeContent: `# Welcome to the Analytics Playground
 
-This is an integrated data engineering and analytics platform designed to simulate professional workflows with a focus on modern data ecosystems.
+This is my integrated Data Engineering and Analytics environment. Here you can explore real Data Warehouse architectures and execute end-to-end analytical processes.
 
-### Development Core (Workspace)
-The Workspace allows you to manage and edit multiple files in real-time:
-- **Python Scripts:** Develop data processing logic using standard libraries.
-- **SQL Queries:** Write and test SQL syntax directly within the environment.
-- **Documentation & Styling:** Edit Markdown, HTML, and CSS files to organize your projects.
+### Catalog Architecture
+Explore the CATALOG panel on the left to visualize our structure:
+- Gold Layer: Refined tables (\`providers\`, \`users\`) ready for consumption.
+- Metadata: Click on columns to view cardinality and data distribution statistics.
 
-#### Dynamic Execution
-By pressing the **RUN** button, the IDE automatically detects the file type:
-- **Python (Pyodide):** Code is executed locally in the browser via WebAssembly, enabling isolated logic testing.
-- **SQL (High Fidelity):** Simulates query execution over the **MotherDuck** data warehouse, returning results based on real metadata.
-- **Static Files:** For files like HTML/CSS, the IDE acts as a professional code editor with syntax highlighting (no direct execution).
+### SQL Query Execution
+The IDE is powered by a local DuckDB engine (WebAssembly) emulating a MotherDuck environment:
+- Select a \`.sql\` file and click RUN.
+- Test aggregates, complex JOINS, and Window Functions.
 
-### Catalog Explorer (Data Intelligence)
-The **Catalog** sidebar provides a deep technical view of the Warehouse:
-- **MotherDuck Hierarchy:** Natively navigate through the Database > Schema > Tables structure.
-- **Column Intelligence:** View data types and precise non-null counts.
-- **Advanced Statistics Panel:** Click a column to reveal critical audit details like cardinality, data sampling, and null analysis.`
+### Python Data Processing
+Use \`.py\` scripts to manipulate datasets:
+- Execution via Pyodide, allowing you to run modern Python directly in your browser.
+- Ideal for business logic prototyping and pipeline automation.
+
+---
+**Tip:** Use \`Ctrl + Enter\` to quickly execute your code!
+`
         },
         footer: {
             rights: '&copy; 2026 {NAME}. Built with Vite & Three.js.'
