@@ -91,7 +91,7 @@ export function renderIDE(lang, translations) {
 
   // State Management
   let currentFiles = { ...files };
-  
+
   // Default test file
   currentFiles['teste.sql'] = {
     name: 'teste.sql',
@@ -836,21 +836,21 @@ ORDER BY 2 DESC;`
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        padding: 0 15px;
+        padding: 0 16px;
         background: var(--ide-sidebar);
         border-bottom: 1px solid var(--ide-border);
         font-size: 11px;
         color: var(--ide-text);
-        height: 30px;
-        box-sizing: border-box;
+        height: 30px !important;
+        box-sizing: border-box !important;
         opacity: 1;
         position: relative;
         margin: 0;
         padding-right: 4px; /* Space for buttons */
       }
       .sql-fullscreen-btn {
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -860,15 +860,18 @@ ORDER BY 2 DESC;`
         color: var(--ide-text);
         cursor: pointer;
         transition: all 0.2s;
+        padding: 0;
       }
       .sql-fullscreen-btn:hover { 
         background: rgba(255, 255, 255, 0.08);
         animation: rainbowSimultaneous 4s linear infinite;
-        color: var(--ide-text-bright) !important; 
+        color: var(--ide-text-bright); 
       }
       [data-theme="light"] .sql-fullscreen-btn:hover {
-        background: rgba(0, 0, 0, 0.05) !important;
+        background: rgba(0, 0, 0, 0.05);
+        animation: rainbowSimultaneous 4s linear infinite;
       }
+
       [data-theme="light"] .sql-summary-bar {
         background: #f6f8fa !important;
         color: #24292f !important;
@@ -977,12 +980,15 @@ ORDER BY 2 DESC;`
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         border-radius: 4px;
         color: var(--ide-text);
         cursor: pointer;
         transition: all 0.2s;
+        border: none;
+        background: transparent;
+        padding: 0;
       }
       .terminal-add-btn:hover { 
         background: rgba(255, 255, 255, 0.08); 
@@ -990,7 +996,7 @@ ORDER BY 2 DESC;`
         color: var(--ide-text-bright); 
       }
       [data-theme="light"] .terminal-add-btn:hover {
-        background: rgba(0, 0, 0, 0.05) !important;
+        background: rgba(0, 0, 0, 0.05);
         animation: rainbowSimultaneous 4s linear infinite;
       }
       .terminal-add-btn:active {
@@ -1391,6 +1397,7 @@ ORDER BY 2 DESC;`
       }
       .terminal-header {
         height: 30px !important;
+        box-sizing: border-box !important;
         background: var(--ide-sidebar) !important;
         border-bottom: 1px solid var(--ide-border) !important;
         padding: 0 16px !important;
@@ -1407,29 +1414,15 @@ ORDER BY 2 DESC;`
         opacity: 0.6 !important;
         font-family: var(--ide-font-mono) !important;
       }
-      .terminal-add-btn {
-        width: 22px !important;
-        height: 22px !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        cursor: pointer;
-        color: var(--ide-text);
-        transition: all 0.2s;
-      }
-      .terminal-add-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: var(--ide-text-bright);
-      }
+
 
       .custom-select-trigger {
         background: rgba(255, 255, 255, 0.03) !important;
         border: 1px solid var(--ide-border) !important;
         font-size: 10px !important;
         padding: 0 24px 0 8px !important;
-        height: 22px !important;
-        line-height: 22px !important;
+        height: 28px !important;
+        line-height: 28px !important;
         border-radius: 4px !important;
       }
       [data-theme="light"] .custom-select-trigger {
@@ -1579,17 +1572,17 @@ ORDER BY 2 DESC;`
                     <div id="terminal-select-trigger" class="custom-select-trigger">1: Terminal</div>
                     <div id="terminal-select-options" class="custom-select-options"></div>
                   </div>
-                  <div id="terminal-add" class="terminal-add-btn" title="New Terminal">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                  </div>
+                  <button id="terminal-add" class="terminal-add-btn" title="New Terminal">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
                 </div>
               </div>
               <div class="terminal-actions">
                 <button id="refresh-terminal-btn" class="run-btn" title="Clear Output">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
                 </button>
                 <button id="delete-terminal-btn" class="run-btn" title="Delete Terminal">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
               </div>
             </div>
@@ -2712,7 +2705,7 @@ ORDER BY 2 DESC;`
 
           const originalBg = th.style.backgroundColor;
           th.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-          setTimeout(() => { if(th) th.style.backgroundColor = originalBg; }, 1500);
+          setTimeout(() => { if (th) th.style.backgroundColor = originalBg; }, 1500);
 
           const rect = th.getBoundingClientRect();
           const overlay = document.createElement('div');
@@ -2766,10 +2759,10 @@ ORDER BY 2 DESC;`
               </div>
               <div class="unique-values-list">
                 ${sampleRows.map(r => {
-                  let val = r.val;
-                  if (val === null) val = '<span style="opacity:0.3">NULL</span>';
-                  return `<div class="value-item"><span>${val}</span> <span style="float:right; opacity:0.4">${Number(r.freq).toLocaleString()}</span></div>`;
-                }).join('')}
+              let val = r.val;
+              if (val === null) val = '<span style="opacity:0.3">NULL</span>';
+              return `<div class="value-item"><span>${val}</span> <span style="float:right; opacity:0.4">${Number(r.freq).toLocaleString()}</span></div>`;
+            }).join('')}
               </div>
               <div class="stats-footer" style="padding-top: 8px; border-top: 1px solid var(--ide-border); display: flex; justify-content: space-between;">
                 <span>NULLS: ${nullCount.toLocaleString()}</span>
@@ -2779,7 +2772,7 @@ ORDER BY 2 DESC;`
                 </div>
               </div>
             `;
-            
+
             overlay.querySelectorAll('[data-sort-action]').forEach(btn => {
               btn.onclick = (evt) => {
                 evt.stopPropagation();
@@ -3821,22 +3814,20 @@ ORDER BY 2 DESC;`
 
       // Compact layout: Glue to top and sides
       let html = `<div class="sql-result-wrapper" style="margin: 0; border-bottom: none;">`;
-      
+
       if (elapsed !== null) {
         html += `<div class="sql-summary-bar">
                   <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-size: 11px; font-family: var(--ide-font-mono);">${rows.length} rows and ${columns.length} columns returned in ${elapsed.toFixed(1)}s</span>
                   </div>
-                  <div style="display:flex; align-items:center;">
-                    <button class="sql-fullscreen-btn" title="Fullscreen">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-                      </svg>
-                    </button>
-                  </div>
+                  <button class="sql-fullscreen-btn" title="Fullscreen">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+                    </svg>
+                  </button>
                  </div>`;
       }
-      
+
       html += `<div class="sql-grid-layout" style="border-bottom: 1px solid var(--ide-border); margin-top: 0;">
                 <div class="sql-scroll-pane">
                   <table class="preview-table">
@@ -3847,16 +3838,16 @@ ORDER BY 2 DESC;`
                           <span class="th-name" style="opacity: 0.4;">#</span>
                         </th>
                         ${columns.map(c => {
-                          const isSorted = sortCol === c;
-                          const sortIcon = isSorted ? 
-                            (sortDir === 'ASC' ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 15l-6-6-6 6"/></svg>' : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>') :
-                            '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.25"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>';
-                          
-                          const rawVal = rows[0] ? rows[0][c] : null;
-                          const typeKey = typeof rawVal === 'number' ? 'number' : typeof rawVal === 'boolean' ? 'boolean' : 'text';
-                          const typeIcon = CATALOG_TYPE_ICONS[typeKey];
+        const isSorted = sortCol === c;
+        const sortIcon = isSorted ?
+          (sortDir === 'ASC' ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 15l-6-6-6 6"/></svg>' : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>') :
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.25"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>';
 
-                          return `
+        const rawVal = rows[0] ? rows[0][c] : null;
+        const typeKey = typeof rawVal === 'number' ? 'number' : typeof rawVal === 'boolean' ? 'boolean' : 'text';
+        const typeIcon = CATALOG_TYPE_ICONS[typeKey];
+
+        return `
                             <th style="width: 150px; min-width: 80px; text-align: center; cursor: pointer; padding: 8px 10px;" data-sort-col="${c}" data-sort-dir="${isSorted ? sortDir : ''}">
                               <div class="col-resizer" data-resizer="true"></div>
                               <div class="th-content">
@@ -3869,7 +3860,7 @@ ORDER BY 2 DESC;`
                                 </div>
                               </div>
                             </th>`;
-                        }).join('')}
+      }).join('')}
                       </tr>
                     </thead>
                     <tbody>
@@ -3879,25 +3870,25 @@ ORDER BY 2 DESC;`
                             ${rIdx + 1}
                           </td>
                           ${columns.map(c => {
-                            let val = row[c];
-                            let displayVal = val;
-                            const isNum = typeof val === 'number';
-                            if (isNum) {
-                              displayVal = !Number.isInteger(val) ? 
-                                val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) : 
-                                val.toLocaleString('en-US');
-                            } else if (val === null || val === undefined) {
-                              displayVal = '<span style="opacity:0.25">NULL</span>';
-                            }
-                            return `<td style="text-align: center; font-family: var(--ide-font-mono); font-size: 11px;">${displayVal}</td>`;
-                          }).join('')}
+        let val = row[c];
+        let displayVal = val;
+        const isNum = typeof val === 'number';
+        if (isNum) {
+          displayVal = !Number.isInteger(val) ?
+            val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) :
+            val.toLocaleString('en-US');
+        } else if (val === null || val === undefined) {
+          displayVal = '<span style="opacity:0.25">NULL</span>';
+        }
+        return `<td style="text-align: center; font-family: var(--ide-font-mono); font-size: 11px;">${displayVal}</td>`;
+      }).join('')}
                         </tr>
                       `).join('')}
                     </tbody>
                   </table>
                 </div>
               </div>`;
-      
+
       if (rows.length > 100) html += `<div style="font-size:10px; opacity:0.4; padding: 12px; text-align:center;">Showing first 100 rows only.</div>`;
       html += `</div>`;
       return html;
@@ -4494,18 +4485,18 @@ window.addEventListener('mousedown', (e) => {
     const column = sortHeader.dataset.sortCol;
     const currentDir = sortHeader.dataset.sortDir;
     const newDir = currentDir === 'ASC' ? 'DESC' : 'ASC';
-    
+
     if (activeSessionRef.terminalInstances && activeSessionRef.renderSQLOutput) {
       const activeTerm = activeSessionRef.terminalInstances.find(t => t.id === activeSessionRef.activeTerminalId);
       if (activeTerm && activeTerm.queryResults) {
         const newTableHtml = activeSessionRef.renderSQLOutput(
-          activeTerm.queryResults.rows, 
-          activeTerm.queryResults.columns, 
+          activeTerm.queryResults.rows,
+          activeTerm.queryResults.columns,
           activeTerm.queryResults.elapsed,
-          column, 
+          column,
           newDir
         );
-        
+
         // Find existing wrapper and replace in content
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = activeTerm.content;
@@ -4523,13 +4514,13 @@ window.addEventListener('mousedown', (e) => {
   // 0.1 Handle Auto-fit Button for SQL
   const autoFitBtn = e.target.closest('.auto-fit-btn');
   if (autoFitBtn && autoFitBtn.closest('.sql-result-wrapper')) {
-     const table = autoFitBtn.closest('.sql-result-wrapper').querySelector('.preview-table');
-     if (table) {
-       const resizer = table.querySelector('[data-resizer]');
-       if (resizer) {
-         resizer.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-       }
-     }
+    const table = autoFitBtn.closest('.sql-result-wrapper').querySelector('.preview-table');
+    if (table) {
+      const resizer = table.querySelector('[data-resizer]');
+      if (resizer) {
+        resizer.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      }
+    }
   }
 
   const isInsideIDE = e.composedPath().some(el => el.id === 'playground');
@@ -4546,9 +4537,9 @@ window.addEventListener('mousedown', (e) => {
   // 2. Clear Selection
   const isInsideCatalog = e.target.closest('.catalog-explorer, .column-stats-overlay');
   if (!isInsideIDE || isInsideCatalog || (!isSelectable && !isInteracting)) {
-    if (isInsideCatalog) return; 
+    if (isInsideCatalog) return;
     if (e.ctrlKey || e.metaKey || e.shiftKey) return;
-    
+
     // Only clear if there's actually something to clear to avoid loops
     if (activeSessionRef.selectedFiles.length > 0) {
       activeSessionRef.selectedFiles = [];
