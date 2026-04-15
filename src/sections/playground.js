@@ -108,15 +108,15 @@ export function renderIDE(lang, translations) {
       content: `-- Provider Market Share Analysis
 -- This query calculates the concentration of providers across regions,
 -- using a subquery to determine the percentage share relative to the total.
--
--SELECT
--    loc_region,
--    COUNT(DISTINCT prov_id) AS distinct_providers,
--    COUNT(DISTINCT prov_id) * 1.0
--        / (SELECT COUNT(DISTINCT prov_id) FROM warehouse.gold.providers) AS total_percentage
--FROM warehouse.gold.providers
--GROUP BY ALL
--ORDER BY 2 DESC, 1 ASC;`
+
+SELECT
+    loc_region,
+    COUNT(DISTINCT prov_id) AS distinct_providers,
+    COUNT(DISTINCT prov_id) * 1.0
+        / (SELECT COUNT(DISTINCT prov_id) FROM warehouse.gold.providers) AS total_percentage
+FROM warehouse.gold.providers
+GROUP BY ALL
+ORDER BY 2 DESC, 1 ASC;`
     };
 
     globalCurrentFiles['marketing_aggregates.sql'] = {
@@ -2998,7 +2998,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
 
       // --- NEW: ROBUST EVENT DELEGATION for Table Interactions ---
       explorerView.onmousedown = async (e) => {
-        // 1. Column Insights & Sorting
+        // 1. Column Sorting (Cycles ASC -> DESC -> None)
         const th = e.target.closest('[data-sort-col]');
         if (th) {
           e.stopPropagation(); // Stop early to bypass global listeners
@@ -3007,89 +3007,27 @@ print(f"Maximum Peak: {metrics['peak']}")`
           const colName = th.dataset.sortCol;
           const current = currentSession.activeCatalogSort;
 
+          // Visual Pulse Feedback
           const originalBg = th.style.backgroundColor;
-          th.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
-          setTimeout(() => { if (th) th.style.backgroundColor = originalBg; }, 1500);
+          th.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+          setTimeout(() => { if (th) th.style.backgroundColor = originalBg; }, 150);
 
-          const rect = th.getBoundingClientRect();
-          const overlay = document.createElement('div');
-          overlay.className = 'column-stats-overlay';
-          overlay.style.left = `${rect.left}px`;
-          overlay.style.top = `${rect.bottom + 8}px`;
-          overlay.innerHTML = `
-            <div class="stats-header">
-              <span class="label">FETCHING INSIGHTS...</span>
-              <div class="spinner-small"></div>
-            </div>
-          `;
-          document.body.appendChild(overlay);
-          setTimeout(() => overlay.classList.add('active'), 10);
-
-          const closer = (evt) => {
-            if (overlay && !overlay.contains(evt.target)) {
-              overlay.classList.remove('active');
-              setTimeout(() => overlay.remove(), 200);
-              window.removeEventListener('mousedown', closer);
+          // Standard Cycle: ASC -> DESC -> Clear
+          if (current.column === colName) {
+            if (current.order === 'ASC') {
+              current.order = 'DESC';
+            } else {
+              current.column = null;
+              current.order = null;
             }
-          };
-          window.addEventListener('mousedown', closer);
-
-          try {
-            const duck = await initDuckDB();
-            const stats = await duck.conn.query(`
-              SELECT 
-                count(distinct "${colName}") as distinct_count,
-                count(*) as total_count,
-                count(*) FILTER (WHERE "${colName}" is null) as null_count
-              FROM ${item.name}
-            `);
-            const rowArr = stats.toArray()[0];
-            const distinctCount = Number(rowArr.distinct_count);
-            const nullCount = Number(rowArr.null_count);
-
-            const samples = await duck.conn.query(`
-              SELECT "${colName}" as val, count(*) as freq 
-              FROM ${item.name} 
-              GROUP BY 1 
-              ORDER BY 2 DESC 
-              LIMIT 10
-            `);
-            const sampleRows = samples.toArray();
-
-            overlay.innerHTML = `
-              <div class="stats-header">
-                <span class="label">COLUMN: ${colName}</span>
-                <span class="count">${distinctCount.toLocaleString()} distinct</span>
-              </div>
-              <div class="unique-values-list">
-                ${sampleRows.map(r => {
-              let val = r.val;
-              if (val === null) val = '<span style="opacity:0.3">NULL</span>';
-              return `<div class="value-item"><span>${val}</span> <span style="float:right; opacity:0.4">${Number(r.freq).toLocaleString()}</span></div>`;
-            }).join('')}
-              </div>
-              <div class="stats-footer" style="padding-top: 8px; border-top: 1px solid var(--ide-border); display: flex; justify-content: space-between;">
-                <span>NULLS: ${nullCount.toLocaleString()}</span>
-                <div style="display: flex; gap: 12px;">
-                  <span style="color: var(--ide-accent); cursor: pointer; font-weight: bold;" data-sort-action="ASC">ASC</span>
-                  <span style="color: var(--ide-accent); cursor: pointer; font-weight: bold;" data-sort-action="DESC">DESC</span>
-                </div>
-              </div>
-            `;
-
-            overlay.querySelectorAll('[data-sort-action]').forEach(btn => {
-              btn.onclick = (evt) => {
-                evt.stopPropagation();
-                current.column = colName;
-                current.order = btn.dataset.sortAction;
-                tablePreviewCache[item.name] = null;
-                renderCatalogExplorer();
-                overlay.remove();
-              };
-            });
-          } catch (err) {
-            overlay.innerHTML = `<div style="color:var(--ide-error)">Error: ${err.message}</div>`;
+          } else {
+            current.column = colName;
+            current.order = 'ASC';
           }
+
+          // Invalidate cache and trigger re-render
+          tablePreviewCache[item.name] = null;
+          renderCatalogExplorer(); 
           return;
         }
 

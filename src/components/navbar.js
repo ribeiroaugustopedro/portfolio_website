@@ -59,6 +59,9 @@ export function renderNavbar(lang, translations, customLinks = null, onLangChang
   });
 
   themeToggle.addEventListener('click', () => {
+    // Disable transitions temporarily for instant theme switch
+    document.documentElement.classList.add('no-transition');
+    
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     if (isLight) {
       document.documentElement.removeAttribute('data-theme');
@@ -69,6 +72,14 @@ export function renderNavbar(lang, translations, customLinks = null, onLangChang
       localStorage.setItem('theme', 'light');
       themeToggle.innerHTML = sunIcon;
     }
+
+    // Force a reflow to ensure the theme change is applied without transition
+    window.getComputedStyle(document.documentElement).opacity;
+
+    // Re-enable transitions after a tiny delay
+    setTimeout(() => {
+      document.documentElement.classList.remove('no-transition');
+    }, 10);
   });
 
   leftContainer.appendChild(themeToggle);

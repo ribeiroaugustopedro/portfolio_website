@@ -48,10 +48,13 @@ export function renderFooter(lang, translations) {
         a.target = '_blank';
         a.className = 'social-btn';
         a.innerHTML = l.icon;
+        a.style.width = '42px';
+        a.style.height = '42px';
         a.style.color = 'var(--text-secondary)';
         a.style.display = 'flex';
         a.style.alignItems = 'center';
-        a.style.padding = '10px';
+        a.style.justifyContent = 'center';
+        a.style.padding = '0'; // Remove padding to keep it perfectly centered
         a.style.borderRadius = '50%';
         a.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
         a.style.textDecoration = 'none';

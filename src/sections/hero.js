@@ -25,7 +25,7 @@ export function renderHero(lang, translations) {
   h1.style.fontSize = 'clamp(2rem, 6vw, 3.5rem)';
   h1.style.lineHeight = '1.3';
   h1.style.minHeight = '3em'; // Normalizes for potential layout differences
-  h1.style.marginBottom = '24px';
+  h1.style.marginBottom = '40px';
   h1.style.fontWeight = '800';
   h1.style.color = 'var(--text-primary)';
 
@@ -47,7 +47,7 @@ export function renderHero(lang, translations) {
   contactTitle.textContent = translations[lang].hero.contactTitle;
   contactTitle.style.fontSize = '1.1rem';
   contactTitle.style.fontWeight = 'bold';
-  contactTitle.style.marginBottom = '16px';
+  contactTitle.style.marginBottom = '40px';
   contactTitle.style.color = 'var(--text-primary)';
 
   const btnContainer = document.createElement('div');
@@ -82,13 +82,9 @@ export function renderHero(lang, translations) {
     btn.style.display = 'flex';
     btn.style.alignItems = 'center';
     btn.style.gap = '12px';
-    btn.style.padding = '10px 20px';
     btn.style.color = 'var(--text-primary)';
     btn.style.textDecoration = 'none';
-    btn.style.borderRadius = '4px';
-    btn.style.fontSize = '0.9rem';
     btn.style.transition = 'all 0.3s ease';
-    btn.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
 
     btn.innerHTML = `${contact.icon} <span>${contact.label}</span>`;
 
@@ -107,8 +103,8 @@ export function renderHero(lang, translations) {
   ctaCluster.style.display = 'flex';
   ctaCluster.style.flexDirection = 'column';
   ctaCluster.style.alignItems = 'center';
-  ctaCluster.style.gap = '60px'; // Reduced from 100px to be more compact
-  ctaCluster.style.marginTop = '40px';
+  ctaCluster.style.gap = '20px'; // Reduced gap between primary row and resume button
+  ctaCluster.style.marginTop = '60px'; // Lowered the buttons row
 
   // Primary Buttons Row
   const primaryRow = document.createElement('div');
@@ -133,29 +129,29 @@ export function renderHero(lang, translations) {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 12px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
     <span>${translations[lang].hero.ctaPlayground}</span>
   `;
-  ctaPlayground.style.filter = 'hue-rotate(45deg)';
   ctaPlayground.style.zIndex = '1';
 
-  primaryRow.appendChild(cta);
-  primaryRow.appendChild(ctaPlayground);
-
-  // Secondary Resume Button
+  // Secondary Resume Button (Now as Rainbow Button)
   const resumeBtn = document.createElement('a');
   const resumeFile = lang === 'pt' ? 'cv_pedro_augusto_ribeiro_pt-br.pdf' : 'cv_pedro_augusto_ribeiro_en-us.pdf';
   resumeBtn.href = `./${resumeFile}`;
   resumeBtn.target = '_blank';
-  resumeBtn.className = 'btn-outline';
+  resumeBtn.className = 'btn-rainbow btn-resume';
   resumeBtn.innerHTML = `
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
     <span>${translations[lang].hero.resumeButton}</span>
   `;
+  resumeBtn.style.zIndex = '1';
+
+  primaryRow.appendChild(cta);
+  primaryRow.appendChild(ctaPlayground);
 
   ctaCluster.appendChild(primaryRow);
   ctaCluster.appendChild(resumeBtn);
   content.appendChild(ctaCluster);
+  content.appendChild(contactContainer);
 
   section.appendChild(content);
-  section.appendChild(contactContainer);
 
   return section;
 }

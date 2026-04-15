@@ -144,7 +144,8 @@ export function renderResume(lang, translations) {
 
   // 2. Certifications
   const certSection = document.createElement('div');
-  certSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary);">${t.certificationsTitle}</h4>`;
+  certSection.style.marginBottom = '32px';
+  certSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">${t.certificationsTitle}</h4>`;
   const cList = document.createElement('ul');
   cList.style.cssText = 'list-style: none; padding: 0;';
   t.certifications.forEach(c => {
@@ -157,25 +158,41 @@ export function renderResume(lang, translations) {
 
   // 3. Education
   const eduSection = document.createElement('div');
-  eduSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary);">${t.educationTitle}</h4>`;
+  eduSection.style.marginBottom = '32px';
+  eduSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">${t.educationTitle}</h4>`;
+  
   t.education.forEach(e => {
-    const div = document.createElement('div');
-    div.style.marginBottom = '12px';
-    div.innerHTML = `<h4>${e.degree}</h4><span class="company">${e.school} | ${e.period}</span>`;
-    eduSection.appendChild(div);
+    const item = document.createElement('div');
+    item.className = 'resume-item';
+    item.style.marginBottom = '16px';
+    
+    const degree = document.createElement('h4');
+    degree.textContent = e.degree;
+    degree.style.marginBottom = '4px';
+    degree.style.color = 'var(--text-primary)';
+
+    const school = document.createElement('span');
+    school.className = 'company';
+    school.textContent = `${e.school} | ${e.period}`;
+    school.style.display = 'block';
+
+    item.appendChild(degree);
+    item.appendChild(school);
+    eduSection.appendChild(item);
   });
 
   // 4. Languages
   const langSection = document.createElement('div');
-  langSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary);">${t.languagesTitle}</h4>`;
+  langSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">${t.languagesTitle}</h4>`;
+  
   const lList = document.createElement('ul');
   lList.style.cssText = 'list-style: none; padding: 0;';
   t.languages.forEach((l, idx) => {
     const pts = l.split('|');
     const li = document.createElement('li');
     const isL = idx === t.languages.length - 1;
-    li.style.cssText = `margin-bottom:${isL ? '0' : '12px'}; font-size: 0.9rem; display: flex; justify-content: space-between; border-bottom: ${isL ? 'none' : '1px dashed var(--border-color)'}; padding-bottom: 4px;`;
-    li.innerHTML = `<span style="color: var(--text-primary); font-weight: 500;">${pts[0].trim()}</span><span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">${pts[1] ? pts[1].trim() : ''}</span>`;
+    li.style.cssText = `margin-bottom:${isL ? '0' : '15px'}; font-size: 0.9rem; display: flex; justify-content: space-between; border-bottom: ${isL ? 'none' : '1px dashed var(--border-color)'}; padding-bottom: 4px;`;
+    li.innerHTML = `<span style="color: var(--text-primary); font-weight: 800;">${pts[0].trim()}</span><span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">${pts[1] ? pts[1].trim() : ''}</span>`;
     lList.appendChild(li);
   });
   langSection.appendChild(lList);
