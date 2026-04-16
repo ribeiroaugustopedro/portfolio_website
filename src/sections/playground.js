@@ -238,7 +238,9 @@ print(f"Maximum Peak: {metrics['peak']}")`
       searchMatches: [],
       currentMatchIdx: -1,
       isSearchEsc: false,
-      isMultiEditActive: false
+      isMultiEditActive: false,
+      isLaunched: false,
+      isMinimized: false
     };
   }
 
@@ -4119,11 +4121,12 @@ print(f"Maximum Peak: {metrics['peak']}")`
 
 
 
+
     // Window Logic & Shortcuts
     window.addEventListener('keydown', (e) => {
       // F11 Strategy: Override browser fullscreen to focus on IDE if it's open
       if (e.code === 'F11') {
-        if (ideWindow.style.display !== 'none') {
+        if (currentSession.isLaunched && !currentSession.isMinimized) {
           e.preventDefault();
           if (!document.fullscreenElement) {
             lastFullscreenWasIDE = true;
@@ -4140,29 +4143,6 @@ print(f"Maximum Peak: {metrics['peak']}")`
         }
       }
     });
-
-    // Window Closing
-    section.querySelector('#win-close').onclick = () => {
-      ideWindow.style.opacity = '0';
-      ideWindow.style.transform = 'scale(0.95)';
-      setTimeout(() => {
-        ideWindow.style.display = 'none';
-        const recovery = document.createElement('button');
-        recovery.className = 'run-btn';
-        recovery.textContent = 'Restore IDE';
-        recovery.style.margin = '20px auto';
-        recovery.style.display = 'block';
-        recovery.onclick = () => {
-          ideWindow.style.display = 'flex';
-          setTimeout(() => {
-            ideWindow.style.opacity = '1';
-            ideWindow.style.transform = 'scale(1)';
-            recovery.remove();
-          }, 50);
-        };
-        section.appendChild(recovery);
-      }, 300);
-    };
 
     fileListContainer.onclick = (e) => {
       const copyBtn = e.target.closest('.workspace-copy-btn');
@@ -4466,7 +4446,9 @@ print(f"Maximum Peak: {metrics['peak']}")`
 
     function syncIDEState() {
       const hasTabs = openTabs.length > 0;
+      const ideWindow = section.querySelector('#ide-window');
       const launchView = section.querySelector('#playground-launch-view');
+      const restoreFab = document.getElementById('ide-restore-fab');
       const catalogView = section.querySelector('#catalog-explorer-view');
       const editorView = section.querySelector('#editor-view');
       const editorHeader = section.querySelector('.ide-editor-header');
@@ -4475,20 +4457,31 @@ print(f"Maximum Peak: {metrics['peak']}")`
       const fileListContainer = section.querySelector('#ide-file-list');
       const tabsContainer = section.querySelector('#ide-tabs');
 
+      // --- NEW: ROBUST VISIBILITY ORCHESTRATION ---
+      if (currentSession.isLaunched && !currentSession.isMinimized) {
+        if (ideWindow) ideWindow.style.display = 'flex';
+        if (launchView) launchView.style.display = 'none';
+        if (restoreFab) restoreFab.style.display = 'none';
+      } else if (currentSession.isMinimized) {
+        if (ideWindow) ideWindow.style.display = 'none';
+        if (launchView) launchView.style.display = 'none';
+        if (restoreFab) restoreFab.style.display = 'flex';
+      } else {
+        if (ideWindow) ideWindow.style.display = 'none';
+        if (launchView) launchView.style.display = 'block';
+        if (restoreFab) restoreFab.style.display = 'none';
+      }
+
+
       if (!hasTabs) {
         if (editorView) editorView.style.display = 'none';
         if (catalogView) catalogView.style.display = 'none';
         if (editorHeader) editorHeader.style.display = 'none';
-        if (launchView) {
-          // As per specific request: hide everything in the IDE area
-          launchView.style.display = 'none';
-        }
         currentSession.fileName = null;
         currentSession.activeCatalogItem = null;
         currentSession.selectedFiles = [];
         currentSession.lastSelectedFile = null;
       } else {
-        if (launchView) launchView.style.display = 'none';
         if (editorHeader) editorHeader.style.display = 'flex';
         if (isCatalog) {
           if (editorView) editorView.style.display = 'none';
@@ -4656,18 +4649,21 @@ print(f"Maximum Peak: {metrics['peak']}")`
     // SHARED OPEN LOGIC - Fixes the "not working" bug by ensuring visual reset
     const showIDE = (mode = 'explorer', shouldFullscreen = false, returnY = null) => {
       returnPositionY = returnY;
+      currentSession.isLaunched = true;
+      currentSession.isMinimized = false;
 
-      // Hide all interaction entry points
-      launchPlaceholder.style.display = 'none';
-      restoreFab.style.display = 'none';
+      // syncIDEState will handle the DOM visibility
+      syncIDEState();
 
-      if (h2Title) h2Title.style.display = 'block';
-
-      // Crucial Fix: Always reset visual state to visible
-      ideWindow.style.display = 'flex';
-      ideWindow.style.transform = 'scale(1) translateY(0)';
-      ideWindow.style.opacity = '1';
-      ideWindow.style.transition = 'none'; // Instant reset 
+      if (h2Title) h2Title.style.display = 'flex';
+      
+      const ideWindow = section.querySelector('#ide-window');
+      if (ideWindow) {
+        ideWindow.style.display = 'flex'; // Redundant but safe
+        ideWindow.style.transform = 'scale(1) translateY(0)';
+        ideWindow.style.opacity = '1';
+        ideWindow.style.transition = 'none';
+      }
 
       if (mode === 'catalog' && !currentSession.activeCatalogItem) {
         // Automatically open the first table of the catalog if in catalog mode
@@ -4709,14 +4705,14 @@ print(f"Maximum Peak: {metrics['peak']}")`
           scrollToProjectsTop();
           returnPositionY = null;
           // Reset section to pristine state
-          ideWindow.style.display = 'none';
-          launchPlaceholder.style.display = 'block';
-          restoreFab.style.display = 'none';
+          currentSession.isLaunched = false;
+          currentSession.isMinimized = false;
+          syncIDEState();
         } else {
           scrollToPlaygroundTop();
-          ideWindow.style.display = 'none';
-          launchPlaceholder.style.display = 'block';
-          restoreFab.style.display = 'none';
+          currentSession.isLaunched = false;
+          currentSession.isMinimized = false;
+          syncIDEState();
         }
         isManualExit = false;
       };
@@ -4744,12 +4740,14 @@ print(f"Maximum Peak: {metrics['peak']}")`
         ideWindow.style.transform = 'scale(0.8) translateY(100px)';
         ideWindow.style.opacity = '0';
         setTimeout(() => {
-          ideWindow.style.display = 'none';
-          restoreFab.style.display = 'flex';
-          launchPlaceholder.style.display = 'none'; // Ensure Launch button is HIDDEN when minimized
+          currentSession.isMinimized = true;
+          syncIDEState();
 
-          restoreFab.classList.add('fab-pulse');
-          setTimeout(() => restoreFab.classList.remove('fab-pulse'), 4500);
+          const restoreFab = document.getElementById('ide-restore-fab');
+          if (restoreFab) {
+            restoreFab.classList.add('fab-pulse');
+            setTimeout(() => restoreFab.classList.remove('fab-pulse'), 4500);
+          }
 
           if (wasFromProjectAtClick) {
             scrollToProjectsTop();
