@@ -102,7 +102,9 @@ body {
   background-attachment: fixed;
   color: var(--text-primary);
   line-height: 1.6;
+  line-height: 1.6;
   overflow-x: hidden;
+  width: 100%;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -167,7 +169,9 @@ button {
 .grid {
   display: grid;
   gap: var(--spacing-lg);
+  grid-template-columns: repeat(auto-fit, minmax(min(350px, 100%), 1fr));
 }
+
 
 /* Reveal Animations */
 .reveal {
@@ -233,12 +237,12 @@ button {
 
 /* Individual Button Styles */
 .btn-rainbow {
-  padding: 12px 20px !important;
+  padding: 12px 24px !important;
   background: var(--surface-color) !important;
   color: var(--text-primary) !important;
   font-weight: bold !important;
   font-family: var(--font-mono) !important;
-  font-size: 0.85rem !important;
+  font-size: 0.9rem !important;
   border: 1px solid transparent !important;
   border-radius: 4px !important;
   text-decoration: none !important;
@@ -246,6 +250,7 @@ button {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  min-width: 220px !important; /* Forces stability based on Portuguese text length */
   position: relative !important;
   background-image:
     linear-gradient(var(--surface-color), var(--surface-color)),
@@ -254,10 +259,12 @@ button {
   background-clip: padding-box, border-box !important;
   animation: rainbowSlide 5s linear infinite !important;
   background-size: 200% auto !important;
-  width: 270px !important; /* Strictly fixed width */
-  min-width: 270px !important;
-  height: 52px !important; /* Strictly fixed height */
-  filter: none !important; /* Remove any remaining hue-rotate */
+  min-width: 220px !important; /* Minimum width for i18n safety */
+  max-width: 320px !important; /* Avoid overly wide buttons on giant screens */
+  width: auto !important;
+  height: auto !important;
+  min-height: 52px !important; 
+  filter: none !important; 
   overflow: hidden;
 }
 
@@ -266,7 +273,7 @@ button {
   animation: rainbowSimultaneous 4s linear infinite;
 }
 
-/* Specific Style for Resume Button - Adding back the loading rainbow underline */
+/* Restored Dynamic Line for Resume Button */
 .btn-resume {
   overflow: hidden !important;
   position: relative !important;
@@ -277,19 +284,19 @@ button {
   position: absolute !important;
   bottom: 0 !important;
   left: 0 !important;
-  width: 100% !important;
+  width: 0 !important;
   height: 4px !important;
   background: var(--rainbow-soft) !important;
   background-size: 200% auto !important;
-  transform: scaleX(0) !important;
-  transform-origin: left !important;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: width 0.3s ease, opacity 0.3s ease !important;
+  opacity: 0;
   animation: rainbowSlide 5s linear infinite !important;
   z-index: 5 !important;
 }
 
 .btn-resume:hover::after {
-  transform: scaleX(1) !important;
+  width: 100% !important;
+  opacity: 0.8 !important;
 }
 
 .btn-outline svg {
@@ -1042,11 +1049,20 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 150px; /* Standardized width */
-  height: 44px; /* Standardized height */
+  width: 160px; /* Standardized width for hero */
+  height: 48px; /* Standardized height for hero */
   background-color: var(--social-btn-bg);
   border-radius: 4px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+footer .social-btn {
+  width: 42px !important;
+  height: 42px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
 }
 
 .social-btn::before {
@@ -1266,3 +1282,81 @@ footer .social-btn:hover::after {
     opacity: 0.8;
   }
 }
+
+/* === RESPONSIVE HARDENING === */
+
+/* Large Laptops / Scaled Displays (<= 1536px) */
+@media (max-width: 1536px) {
+  .container {
+    max-width: 1100px;
+  }
+}
+
+/* Tablets and Small Laptops (<= 1024px) */
+@media (max-width: 1024px) {
+  .container {
+    max-width: 900px;
+    padding: 0 40px;
+  }
+
+  .section {
+    padding: var(--spacing-lg) 0;
+  }
+
+  .resume-grid {
+    gap: 40px;
+  }
+
+  .btn-rainbow {
+    min-width: 200px !important;
+    padding: 10px 20px !important;
+  }
+}
+
+/* Mobile & Small Tablets (<= 768px) */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 24px;
+  }
+
+  .section {
+    padding: var(--spacing-md) 0;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .resume-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .btn-rainbow {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  h1 {
+    font-size: 2.2rem !important;
+    min-height: auto !important;
+  }
+
+  p {
+    font-size: 1rem !important;
+    min-height: auto !important;
+  }
+}
+
+/* Extra Small Devices (<= 480px) */
+@media (max-width: 480px) {
+  .container {
+    padding: 0 16px;
+  }
+
+  .btn-rainbow {
+    font-size: 0.85rem !important;
+  }
+}
+

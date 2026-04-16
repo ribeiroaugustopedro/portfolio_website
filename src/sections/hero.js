@@ -22,20 +22,23 @@ export function renderHero(lang, translations) {
   const line2 = translations[lang].hero.titleHighlight;
 
   h1.innerHTML = `${line1}<br>${line2}`;
-  h1.style.fontSize = 'clamp(2rem, 6vw, 3.5rem)';
-  h1.style.lineHeight = '1.3';
-  h1.style.minHeight = '3em'; // Normalizes for potential layout differences
-  h1.style.marginBottom = '40px';
+  h1.style.fontSize = 'clamp(2.5rem, 6vw, 4rem)'; // Slightly larger for better impact
+  h1.style.lineHeight = '1.2';
+  h1.style.minHeight = '3.6em'; // Optimized for Portuguese multi-line wrapping
+  h1.style.marginBottom = '20px';
   h1.style.fontWeight = '800';
   h1.style.color = 'var(--text-primary)';
+  h1.style.display = 'flex';
+  h1.style.flexDirection = 'column';
+  h1.style.justifyContent = 'center';
 
   const p = document.createElement('p');
   p.innerHTML = translations[lang].hero.description;
   p.style.fontSize = '1.2rem';
   p.style.color = 'var(--text-secondary)';
-  p.style.maxWidth = '700px';
+  p.style.maxWidth = '800px';
   p.style.margin = '0 auto 40px auto';
-  p.style.minHeight = '4.5rem'; // Normalizes description height
+  p.style.minHeight = '4.8rem'; // Accommodates both EN and the more detailed PT description
 
   // Contact Content embedded in Hero
   const contactContainer = document.createElement('div');
@@ -103,13 +106,13 @@ export function renderHero(lang, translations) {
   ctaCluster.style.display = 'flex';
   ctaCluster.style.flexDirection = 'column';
   ctaCluster.style.alignItems = 'center';
-  ctaCluster.style.gap = '20px'; // Reduced gap between primary row and resume button
-  ctaCluster.style.marginTop = '60px'; // Lowered the buttons row
+  ctaCluster.style.gap = '25px'; // Increased gap between rows
+  ctaCluster.style.marginTop = '80px'; // Lowered significantly to fill the empty space below description
 
   // Primary Buttons Row
   const primaryRow = document.createElement('div');
   primaryRow.style.display = 'flex';
-  primaryRow.style.gap = '20px';
+  primaryRow.style.gap = '30px';
   primaryRow.style.justifyContent = 'center';
   primaryRow.style.flexWrap = 'wrap';
 
@@ -131,7 +134,7 @@ export function renderHero(lang, translations) {
   `;
   ctaPlayground.style.zIndex = '1';
 
-  // Secondary Resume Button (Now as Rainbow Button)
+  // Secondary Resume Button (Now as Rainbow Button with loading bar)
   const resumeBtn = document.createElement('a');
   const resumeFile = lang === 'pt' ? 'cv_pedro_augusto_ribeiro_pt-br.pdf' : 'cv_pedro_augusto_ribeiro_en-us.pdf';
   resumeBtn.href = `./${resumeFile}`;

@@ -2273,9 +2273,12 @@ print(f"Maximum Peak: {metrics['peak']}")`
       }
       if (e.key === 'Escape') {
         e.preventDefault();
-        e.stopPropagation(); // Prevent bubbling to IDE-close handlers
-        currentSession.isSearchEsc = true; // Mark as search-close for fullscreenchange stabilizer
-        searchClose.click(); // Reuse cleanup logic
+        e.stopPropagation();
+        currentSession.isSearchEsc = true;
+        searchClose.click();
+
+        // Stabilização adicional para evitar que o browser saia do fullscreen
+        setTimeout(() => { currentSession.isSearchEsc = false; }, 500);
       }
     });
 
@@ -2765,7 +2768,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
                        </span>
                     </div>
                   </div>
-                  <div class="preview-table-container" id="preview-table-container" style="overflow-x: scroll; overflow-y: auto; max-height: 600px;">
+                  <div class="preview-table-container" id="preview-table-container" style="overflow-x: scroll; overflow-y: auto; flex: 1; min-height: 0;">
                         ${(() => {
               const tableWidth = 45 + ((item.columns || []).length * 150);
               return `<table class="preview-table" style="width: ${tableWidth}px; min-width: 100%; border-collapse: collapse; table-layout: fixed;">`;
@@ -3027,7 +3030,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
 
           // Invalidate cache and trigger re-render
           tablePreviewCache[item.name] = null;
-          renderCatalogExplorer(); 
+          renderCatalogExplorer();
           return;
         }
 
@@ -3098,9 +3101,12 @@ print(f"Maximum Peak: {metrics['peak']}")`
 
     function switchView(tabId, isFromSidebar = false) {
       if (tabId.startsWith('catalog://')) {
-        const pathParts = tabId.slice(10).split('/'); // warehouse/gold/users
-        const name = pathParts[pathParts.length - 1];
-        const type = pathParts.length === 1 ? 'database' : pathParts.length === 2 ? 'schema' : 'table';
+        const pathSuffix = tabId.slice(10);
+        const pathParts = pathSuffix.split('/').filter(p => p.length > 0);
+        let name = pathParts[pathParts.length - 1];
+        let type = 'database';
+        if (pathParts.length === 2) type = 'schema';
+        if (pathParts.length === 3) type = 'table';
 
         let nodeRef = null;
         const findNodeRecursive = (list, path = '') => {
@@ -3354,7 +3360,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
 
       // Restore initial state (Resetting global references)
       globalCurrentFiles = { ...files };
-      
+
       // Initial Demo Files
       globalCurrentFiles['analytics_basics.sql'] = {
         name: 'analytics_basics.sql',
@@ -3618,6 +3624,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
       }
 
       if (column || isShowMore) {
+        e.stopPropagation();
         const target = column || isShowMore;
         const colName = target.dataset.columnName;
         const tableName = target.dataset.tableName;
@@ -3629,7 +3636,8 @@ print(f"Maximum Peak: {metrics['peak']}")`
               if (col) {
                 if (isShowMore) {
                   col.showAll = true;
-                } else {
+                } else if (column) {
+                  // Only toggle stats in sidebar context
                   col.showStats = !col.showStats;
                   if (!col.showStats) col.showAll = false;
                 }
@@ -3642,6 +3650,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
         };
         toggleColumn(catalogData);
         renderCatalog();
+        return;
       }
     };
 
@@ -4595,13 +4604,19 @@ print(f"Maximum Peak: {metrics['peak']}")`
     fabInner.innerHTML = `<div class="icon-wrap" style="display:flex;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="2.5"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg></div>`;
 
     restoreFab.appendChild(fabInner);
+    // Fix: Remove any existing stale FAB before appending
+    const oldFab = document.getElementById('ide-restore-fab');
+    if (oldFab) oldFab.remove();
     document.body.appendChild(restoreFab);
 
     const scrollToIDE = (delay = 100) => {
       setTimeout(() => {
         const yOffset = -20;
-        const y = section.getBoundingClientRect().top + window.pageYOffset + yOffset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
+        const targetSection = document.getElementById('playground');
+        if (targetSection) {
+          const y = targetSection.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
       }, delay);
     };
 
@@ -4611,12 +4626,6 @@ print(f"Maximum Peak: {metrics['peak']}")`
     let isMinimizing = false;
     let isManualExit = false;
     let lastFullscreenWasIDE = false;
-
-    // State preservation for when opened via Projects
-    let savedPlaygroundState = {
-      wasPlaceholderVisible: true,
-      wasFabVisible: false
-    };
 
     const scrollToProjectsTop = () => {
       const projectsSec = document.getElementById('projects');
@@ -4644,8 +4653,56 @@ print(f"Maximum Peak: {metrics['peak']}")`
       }
     };
 
+    // SHARED OPEN LOGIC - Fixes the "not working" bug by ensuring visual reset
+    const showIDE = (mode = 'explorer', shouldFullscreen = false, returnY = null) => {
+      returnPositionY = returnY;
+
+      // Hide all interaction entry points
+      launchPlaceholder.style.display = 'none';
+      restoreFab.style.display = 'none';
+
+      if (h2Title) h2Title.style.display = 'block';
+
+      // Crucial Fix: Always reset visual state to visible
+      ideWindow.style.display = 'flex';
+      ideWindow.style.transform = 'scale(1) translateY(0)';
+      ideWindow.style.opacity = '1';
+      ideWindow.style.transition = 'none'; // Instant reset 
+
+      if (mode === 'catalog' && !currentSession.activeCatalogItem) {
+        // Automatically open the first table of the catalog if in catalog mode
+        const defaultItem = 'catalog://warehouse/gold/users';
+        switchView(defaultItem, false);
+      } else if (mode === 'explorer') {
+        currentSession.activeCatalogItem = null;
+        switchFile('README.md', false);
+      }
+
+      switchSidebar(mode === 'catalog' ? 'catalog' : 'explorer');
+
+      if (returnY !== null) {
+        scrollToIDE(200);
+      } else {
+        scrollToPlaygroundTop();
+      }
+
+      if (shouldFullscreen && !document.fullscreenElement) {
+        setTimeout(() => {
+          lastFullscreenWasIDE = true;
+          ideWindow.requestFullscreen().catch(err => {
+            console.warn("IDE Fullscreen failed:", err);
+            lastFullscreenWasIDE = false;
+          });
+        }, 300);
+      }
+    };
+
+
+
+
     section.querySelector('#win-close').onclick = () => {
       const isFromProject = returnPositionY !== null;
+      isManualExit = true; // Fix: Prevent FS change listener from interfering
 
       const finalizeClose = () => {
         if (isFromProject) {
@@ -4661,6 +4718,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
           launchPlaceholder.style.display = 'block';
           restoreFab.style.display = 'none';
         }
+        isManualExit = false;
       };
 
       if (document.fullscreenElement) {
@@ -4712,21 +4770,11 @@ print(f"Maximum Peak: {metrics['peak']}")`
     };
 
     section.querySelector('#btn-launch-ide').onclick = () => {
-      returnPositionY = null; // Direct playground launch
-      launchPlaceholder.style.display = 'none';
-      if (h2Title) h2Title.style.display = 'block';
-      ideWindow.style.display = 'flex';
-      scrollToPlaygroundTop(); // Ensure we are aligned
+      showIDE('explorer', false, null);
     };
 
     restoreFab.onclick = () => {
-      restoreFab.style.display = 'none';
-      ideWindow.style.display = 'flex';
-      setTimeout(() => {
-        ideWindow.style.transform = 'scale(1) translateY(0)';
-        ideWindow.style.opacity = '1';
-        scrollToPlaygroundTop(); // Ensure we are aligned
-      }, 10);
+      showIDE('explorer', false, null);
     };
 
     section.querySelector('#win-max').onclick = () => {
@@ -4779,34 +4827,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
 
 
     window.openIDE = (mode = 'explorer', shouldFullscreen = false, returnY = null) => {
-      if (returnY !== null) {
-        // Save the current state of the playground section
-        savedPlaygroundState.wasPlaceholderVisible = launchPlaceholder.style.display !== 'none';
-        savedPlaygroundState.wasFabVisible = restoreFab.style.display === 'flex';
-      }
-
-      const placeholder = section.querySelector('#btn-launch-ide')?.parentElement;
-      if (placeholder) placeholder.style.display = 'none';
-      restoreFab.style.display = 'none'; // Hide FAB while IDE is open
-
-      if (h2Title) h2Title.style.display = 'block';
-      ideWindow.style.display = 'flex';
-      ideWindow.style.transform = 'scale(1) translateY(0)';
-      ideWindow.style.opacity = '1';
-      switchSidebar(mode === 'catalog' ? 'catalog' : 'explorer');
-      scrollToIDE(200);
-
-      returnPositionY = returnY;
-
-      if (shouldFullscreen && !document.fullscreenElement) {
-        setTimeout(() => {
-          lastFullscreenWasIDE = true;
-          ideWindow.requestFullscreen().catch(err => {
-            console.warn("IDE Fullscreen failed:", err);
-            lastFullscreenWasIDE = false;
-          });
-        }, 300);
-      }
+      showIDE(mode, shouldFullscreen, returnY);
     };
 
     document.addEventListener('fullscreenchange', () => {

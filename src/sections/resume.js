@@ -30,7 +30,7 @@ export function renderResume(lang, translations) {
   summaryText.style.lineHeight = '1.6';
   summaryText.style.textAlign = 'justify';
   summaryText.style.height = 'auto';
-  summaryText.style.minHeight = '120px'; // Back to original height normalization
+  summaryText.style.minHeight = '145px'; // Standardized based on Portuguese content length
   summaryText.style.marginBottom = '24px';
 
   const downloadLink = document.createElement('a');

@@ -46,8 +46,10 @@
 .ide-window {
   position: relative;
   width: 100%;
+  width: 100%;
   max-width: 1400px;
-  height: 700px;
+  height: min(700px, 85vh);
+  min-height: 400px;
   background: var(--ide-bg);
   border-radius: 10px;
   overflow: hidden;
@@ -2268,3 +2270,51 @@
 .ide-terminal-resizer:hover .resizer-bar {
   background: var(--ide-text-bright);
 }
+
+/* === Responsive Overrides === */
+@media (max-width: 1200px) {
+  .ide-window {
+    height: 600px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ide-window {
+    height: 80vh;
+  }
+  .ide-sidebar {
+    display: none;
+  }
+  .preview-section {
+    width: 100% !important;
+  }
+  .ide-modal {
+    width: 90% !important;
+    max-width: 420px;
+  }
+  .ide-status-bar {
+    width: 100%;
+    margin: 0;
+    padding: 0 10px;
+  }
+  .ide-activity-bar {
+    width: 40px;
+  }
+}
+
+@media (max-height: 800px) {
+  .ide-window {
+    height: min(600px, 80vh);
+  }
+}
+
+/* Specific fix for the user's breaking laptop viewport (982x695) */
+@media (max-width: 1024px) {
+  .ide-window {
+    height: min(600px, 75vh);
+  }
+  .ide-section {
+    padding: 60px 20px;
+  }
+}
+
