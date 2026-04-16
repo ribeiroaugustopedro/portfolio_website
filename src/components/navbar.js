@@ -18,6 +18,10 @@ export function renderNavbar(lang, translations, customLinks = null, onLangChang
   leftContainer.style.gap = '20px';
 
   const logoContainer = renderDynamicName('PEDRO AUGUSTO RIBEIRO', '1.2rem');
+  logoContainer.style.cursor = 'pointer';
+  logoContainer.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
   leftContainer.appendChild(logoContainer);
 
 
@@ -139,8 +143,8 @@ export function renderNavbar(lang, translations, customLinks = null, onLangChang
   const links = customLinks || [
     { name: translations[lang].navbar.home || 'Home', id: 'hero' },
     { name: translations[lang].navbar.projects, id: 'projects' },
-    { name: translations[lang].navbar.about, id: 'resume' },
     { name: translations[lang].navbar.playground, id: 'playground' },
+    { name: translations[lang].navbar.about, id: 'resume' },
   ];
 
   links.forEach(link => {
@@ -153,7 +157,11 @@ export function renderNavbar(lang, translations, customLinks = null, onLangChang
     a.style.fontFamily = 'var(--font-mono)';
 
     // Close menu on link click (for mobile)
-    a.addEventListener('click', () => {
+    a.addEventListener('click', (e) => {
+      if (link.id === 'hero') {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       ul.classList.remove('active');
       hamburger.classList.remove('active');
     });

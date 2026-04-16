@@ -2,7 +2,7 @@ import { renderDynamicName } from './dynamicName.js';
 
 export function renderFooter(lang, translations) {
     const footer = document.createElement('footer');
-    footer.style.padding = '40px 20px';
+    footer.style.padding = '24px 20px';
     footer.style.borderTop = '1px solid var(--border-color)';
     footer.style.backgroundColor = 'var(--bg-color)';
     footer.style.color = 'var(--text-secondary)';

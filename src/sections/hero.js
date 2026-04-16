@@ -3,13 +3,6 @@ export function renderHero(lang, translations) {
   section.className = 'section container reveal';
   section.id = 'hero';
   section.style.textAlign = 'center';
-  section.style.minHeight = '100vh';
-  section.style.display = 'flex';
-  section.style.flexDirection = 'column';
-  section.style.justifyContent = 'flex-start'; // Changed from center to prevent top cut-off
-  section.style.alignItems = 'center';
-  section.style.paddingTop = '100px'; // Mandatory space for fixed navbar
-  section.style.paddingBottom = '40px';
 
   const content = document.createElement('div');
   content.className = 'stagger-reveal';
@@ -25,7 +18,7 @@ export function renderHero(lang, translations) {
   h1.style.fontSize = 'clamp(2.5rem, 6vw, 4rem)'; // Slightly larger for better impact
   h1.style.lineHeight = '1.2';
   h1.style.minHeight = '3.6em'; // Optimized for Portuguese multi-line wrapping
-  h1.style.marginBottom = '20px';
+  h1.style.marginBottom = '40px';
   h1.style.fontWeight = '800';
   h1.style.color = 'var(--text-primary)';
   h1.style.display = 'flex';
@@ -37,7 +30,7 @@ export function renderHero(lang, translations) {
   p.style.fontSize = '1.2rem';
   p.style.color = 'var(--text-secondary)';
   p.style.maxWidth = '800px';
-  p.style.margin = '0 auto 40px auto';
+  p.style.margin = '0 auto 60px auto';
   p.style.minHeight = '4.8rem'; // Accommodates both EN and the more detailed PT description
 
   // Contact Content embedded in Hero

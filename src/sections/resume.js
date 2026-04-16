@@ -64,7 +64,7 @@ export function renderResume(lang, translations) {
 
   const expHeader = document.createElement('h3');
   expHeader.innerHTML = t.experienceTitle;
-  expHeader.style.cssText = 'margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;';
+  expHeader.className = 'resume-section-header';
   leftCol.appendChild(expHeader);
 
   const expList = document.createElement('div');
@@ -106,9 +106,8 @@ export function renderResume(lang, translations) {
   rightCol.style.flexDirection = 'column';
 
   const rightHeader = document.createElement('h3');
-  // Matching the Experience Title for total symmetry
   rightHeader.innerHTML = t.skillsTitle;
-  rightHeader.style.cssText = 'margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;';
+  rightHeader.className = 'resume-section-header';
   rightCol.appendChild(rightHeader);
 
   const rightItems = document.createElement('div');
@@ -123,7 +122,7 @@ export function renderResume(lang, translations) {
     const group = document.createElement('div');
     group.className = 'skill-group';
     group.style.marginBottom = '20px';
-    group.innerHTML = `<h4 style="font-size: 1rem; color: var(--text-primary); margin-bottom: 8px;">${cat.name}</h4>`;
+    group.innerHTML = `<h4 style="font-size: 1rem; color: var(--text-primary); margin-bottom: 8px; font-family: var(--font-mono); font-weight: 600;">${cat.name}</h4>`;
     const tagBox = document.createElement('div');
     tagBox.className = 'tags';
     tagBox.style.cssText = 'display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start;';
@@ -145,7 +144,7 @@ export function renderResume(lang, translations) {
   // 2. Certifications
   const certSection = document.createElement('div');
   certSection.style.marginBottom = '32px';
-  certSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">${t.certificationsTitle}</h4>`;
+  certSection.innerHTML = `<h3 class="resume-section-header">${t.certificationsTitle}</h3>`;
   const cList = document.createElement('ul');
   cList.style.cssText = 'list-style: none; padding: 0;';
   t.certifications.forEach(c => {
@@ -159,7 +158,7 @@ export function renderResume(lang, translations) {
   // 3. Education
   const eduSection = document.createElement('div');
   eduSection.style.marginBottom = '32px';
-  eduSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">${t.educationTitle}</h4>`;
+  eduSection.innerHTML = `<h3 class="resume-section-header">${t.educationTitle}</h3>`;
   
   t.education.forEach(e => {
     const item = document.createElement('div');
@@ -183,7 +182,7 @@ export function renderResume(lang, translations) {
 
   // 4. Languages
   const langSection = document.createElement('div');
-  langSection.innerHTML = `<h4 style="margin-bottom: 16px; color: var(--text-primary); border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">${t.languagesTitle}</h4>`;
+  langSection.innerHTML = `<h3 class="resume-section-header">${t.languagesTitle}</h3>`;
   
   const lList = document.createElement('ul');
   lList.style.cssText = 'list-style: none; padding: 0;';
@@ -192,7 +191,7 @@ export function renderResume(lang, translations) {
     const li = document.createElement('li');
     const isL = idx === t.languages.length - 1;
     li.style.cssText = `margin-bottom:${isL ? '0' : '15px'}; font-size: 0.9rem; display: flex; justify-content: space-between; border-bottom: ${isL ? 'none' : '1px dashed var(--border-color)'}; padding-bottom: 4px;`;
-    li.innerHTML = `<span style="color: var(--text-primary); font-weight: 800;">${pts[0].trim()}</span><span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">${pts[1] ? pts[1].trim() : ''}</span>`;
+    li.innerHTML = `<span style="color: var(--text-primary); font-weight: 600;">${pts[0].trim()}</span><span style="font-size: 0.85rem; color: var(--text-secondary);">${pts[1] ? pts[1].trim() : ''}</span>`;
     lList.appendChild(li);
   });
   langSection.appendChild(lList);

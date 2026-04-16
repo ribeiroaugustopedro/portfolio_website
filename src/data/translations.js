@@ -18,9 +18,6 @@ export const translations = {
             themeTooltip: 'Alternar Tema',
             langTooltip: 'Alterar Idioma'
         },
-        highlights: {
-            title: 'Destaques'
-        },
         projects: {
             title: 'Todos os Projetos',
             viewProject: 'Ver Projeto'
@@ -176,7 +173,7 @@ Utilize scripts \`.py\` para manipular dados:
 `
         },
         footer: {
-            rights: '&copy; 2026 {NAME}. Construído com Vite & Three.js.'
+            rights: '&copy; 2026 {NAME}. Construído com Vite.'
         }
     },
     en: {
@@ -197,9 +194,6 @@ Utilize scripts \`.py\` para manipular dados:
             playground: 'Playground',
             themeTooltip: 'Toggle Light/Dark Mode',
             langTooltip: 'Switch Language'
-        },
-        highlights: {
-            title: 'Selected Work'
         },
         projects: {
             title: 'All Projects',
@@ -356,7 +350,7 @@ Use \`.py\` scripts to manipulate datasets:
 `
         },
         footer: {
-            rights: '&copy; 2026 {NAME}. Built with Vite & Three.js.'
+            rights: '&copy; 2026 {NAME}. Built with Vite.'
         }
     }
 };

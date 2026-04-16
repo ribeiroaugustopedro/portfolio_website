@@ -2,12 +2,10 @@ import './style.css';
 import './ide.css';
 import { renderNavbar } from './components/navbar.js';
 import { renderHero } from './sections/hero.js';
-import { renderHighlights } from './sections/highlights.js';
 import { renderProjects } from './sections/projects.js';
 import { renderIDE } from './sections/playground.js';
 import { renderResume } from './sections/resume.js';
 import { renderFooter } from './components/footer.js';
-import { renderBackToTop } from './components/backToTop.js';
 import projectsData from './data/projects.json';
 import { translations } from './data/translations.js';
 
@@ -31,8 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const links = [
         { name: translations[lang].navbar.home || 'Home', id: 'hero' },
         { name: translations[lang].navbar.projects, id: 'projects' },
-        { name: translations[lang].navbar.about, id: 'resume' },
         { name: translations[lang].navbar.playground, id: 'playground' },
+        { name: translations[lang].navbar.about, id: 'resume' },
       ];
 
       const onLangChange = (newLang) => {
@@ -47,8 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const main = document.createElement('main');
       main.appendChild(renderHero(lang, translations));
       main.appendChild(renderProjects(projectsData, lang, translations));
-      main.appendChild(renderResume(lang, translations));
       main.appendChild(renderIDE(lang, translations));
+      main.appendChild(renderResume(lang, translations));
       fragment.appendChild(main);
       fragment.appendChild(renderFooter(lang, translations));
 

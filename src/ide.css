@@ -36,16 +36,16 @@
 }
 
 .ide-section {
-  padding: 100px 5%;
-  background: transparent;
+  padding: var(--spacing-xl) var(--spacing-lg);
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
+  min-height: 100vh;
 }
 
 .ide-window {
   position: relative;
-  width: 100%;
   width: 100%;
   max-width: 1400px;
   height: min(700px, 85vh);
