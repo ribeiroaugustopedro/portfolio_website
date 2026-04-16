@@ -239,7 +239,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
       currentMatchIdx: -1,
       isSearchEsc: false,
       isMultiEditActive: false,
-      isLaunched: false,
+      isLaunched: true,
       isMinimized: false
     };
   }
