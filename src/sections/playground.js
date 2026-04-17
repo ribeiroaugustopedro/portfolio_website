@@ -241,11 +241,12 @@ print("Status: Pulling live data from warehouse.gold.users...")
 df = await query("SELECT * FROM warehouse.gold.users")
 
 # 2. Basic processing (Simulating churn logic on real labels)
-# We assume 'prov_id' as a proxy for engagement in this demo
-df['is_high_risk'] = df['prov_id'].apply(lambda x: 1 if x > 500 else 0)
+# We assume 'user_id' can be a proxy for a continuous feature in this demo
+df['is_high_risk'] = df['user_id'].apply(lambda x: 1 if (int(str(x)[-3:]) > 500) else 0)
 
-# Features
-X = df[['prov_id']] 
+# Features - We map user_id to a small feature space for the demo
+df['feature'] = df['user_id'].apply(lambda x: int(str(x)[-4:]))
+X = df[['feature']] 
 y = df['is_high_risk']
 
 model = LogisticRegression().fit(X, y)
@@ -2643,7 +2644,7 @@ ORDER BY total_users DESC;`
               <div class="col-main">
                 ${isFolder ? `<div class="folder-chevron ${isExpanded ? 'expanded' : ''}" data-folder-toggle="${fileName}">${ICONS.chevron}</div>` : '<div class="folder-indent"></div>'}
                 <div class="file-icon-wrap">${getFileIcon(fileName)}</div>
-                <span class="file-label">${displayName}</span>
+                <span class="file-label" title="${displayName}">${displayName}</span>
               </div>
               <div class="catalog-node-meta">
                 <div class="workspace-copy-btn copy-table-btn" title="Copy Path" data-copy="${fileName}">
@@ -3296,7 +3297,7 @@ ORDER BY total_users DESC;`
                data-node-name="${node.name}">
             <span class="folder-chevron ${node.open ? 'expanded' : ''}" data-catalog-toggle="true" style="display: flex; align-items: center; justify-content: center; width: 14px;">${(node.children || node.columns) ? ICONS.chevron : ' '}</span>
             <span class="file-icon" style="color: ${color}; display: flex; align-items: center; justify-content: center; width: 16px;">${icon}</span>
-            <span class="file-name" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${node.name}</span>
+            <span class="file-name" title="${node.name}" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${node.name}</span>
 
             <div class="catalog-node-meta">
               ${node.type === 'table' ? `<span class="catalog-rows-count">${node.rows}</span>` : ''}
@@ -4529,10 +4530,10 @@ print(f"Maximum Peak: {metrics['peak']}")`
             
             // 1. Explicitly load packages to avoid the error in the screenshot
             const needed = [];
-            if (content.includes('pandas')) needed.push('pandas');
+            if (content.includes('pandas') || content.includes('query(')) needed.push('pandas');
             if (content.includes('numpy')) needed.push('numpy');
-            if (content.includes('matplotlib')) needed.push('matplotlib');
-            if (content.includes('sklearn')) needed.push('scikit-learn');
+            if (content.includes('matplotlib') || content.includes('plt.')) needed.push('matplotlib');
+            if (content.includes('sklearn') || content.includes('sklearn')) needed.push('scikit-learn');
             
             if (needed.length > 0) {
               logToTerminal(`Loading specialized libraries (${needed.join(', ')})...`, 'info', true);
@@ -4559,12 +4560,11 @@ print(f"Maximum Peak: {metrics['peak']}")`
 import io
 import base64
 import json
-import matplotlib.pyplot as plt
-import pandas as pd
 from pyodide.ffi import create_proxy
 from js import pythonQueryBridge
 
 async def query(sql):
+    import pandas as pd
     # Call the JS bridge and wait for results
     js_data = await pythonQueryBridge(sql)
     # Convert proxy to python list/dict
@@ -4572,6 +4572,7 @@ async def query(sql):
     return pd.DataFrame(py_data)
 
 def show_plot_in_terminal():
+    import matplotlib.pyplot as plt
     buf = io.BytesIO()
     plt.savefig(buf, format='png', bbox_inches='tight', transparent=True)
     buf.seek(0)
@@ -4579,7 +4580,12 @@ def show_plot_in_terminal():
     plt.close()
     print(f"DEBUG_IMAGE_BASE64:{img_str}")
 
-plt.show = show_plot_in_terminal
+# Set plt.show only if matplotlib is actually available
+try:
+    import matplotlib.pyplot as plt
+    plt.show = show_plot_in_terminal
+except ImportError:
+    pass
             `);
             
             pyodide.setStdout({
