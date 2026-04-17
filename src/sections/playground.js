@@ -22,6 +22,13 @@ const logToTerminal = (content, type = 'info', append = false) => {
   const active = terminalInstances.find(t => t.id === activeTerminalId);
   if (!active) return;
 
+  // Image detection (for Matplotlib)
+  if (content && typeof content === 'string' && content.startsWith('DEBUG_IMAGE_BASE64:')) {
+    const base64 = content.replace('DEBUG_IMAGE_BASE64:', '');
+    content = `<img src="data:image/png;base64,${base64}" style="max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px dashed var(--ide-accent-low); filter: brightness(1.1); box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
+    type = 'info';
+  }
+
   let html = content;
   if (type === 'error') html = `<span class="error">${content}</span>`;
   if (type === 'success') html = `<span class="success">${content}</span>`;
@@ -195,9 +202,7 @@ LIMIT 10;`
     globalCurrentFiles['data_processing.py'] = {
       name: 'data_processing.py',
       type: 'file',
-      content: `import json
-
-# Python Data Processing Workflow
+      content: `# Python Data Processing Workflow
 # This script demonstrates a typical business logic prototype:
 # Calculating percentage shares for regional numeric values.
 
@@ -222,34 +227,94 @@ for r in results:
     print(f"Region: {r['region']} | Share: {r['share']}%")`
     };
 
-    globalCurrentFiles['visualization_demo.py'] = {
-      name: 'visualization_demo.py',
+    globalCurrentFiles['user_churn_model.py'] = {
+      name: 'user_churn_model.py',
       type: 'file',
-      content: `# Analytical Simulation: Performance Threshold Audit
-# Evaluates a series of values against a static threshold
-# to identify target attainment metrics.
+      content: `# Predictive Analytics: User Churn Risk
+# Directly connected to warehouse.gold.users
 
-threshold = 2000
-sales_data = [2400, 1800, 2100, 1500, 2900, 2200]
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
 
-def analyze_performance(data, limit):
-    """Filter and aggregate performance metrics based on input threshold."""
-    above = [v for v in data if v >= limit]
-    below = [v for v in data if v < limit]
-    
-    return {
-        "met_target": len(above),
-        "missed": len(below),
-        "peak": max(data)
-    }
+# 1. Pull real data from our Data Warehouse
+print("Status: Pulling live data from warehouse.gold.users...")
+df = await query("SELECT * FROM warehouse.gold.users")
 
-metrics = analyze_performance(sales_data, threshold)
+# 2. Basic processing (Simulating churn logic on real labels)
+# We assume 'prov_id' as a proxy for engagement in this demo
+df['is_high_risk'] = df['prov_id'].apply(lambda x: 1 if x > 500 else 0)
 
-print("Target Performance Audit")
-print("-----------------------")
-print(f"Periods Met: {metrics['met_target']}")
-print(f"Periods Missed: {metrics['missed']}")
-print(f"Maximum Peak: {metrics['peak']}")`
+# Features
+X = df[['prov_id']] 
+y = df['is_high_risk']
+
+model = LogisticRegression().fit(X, y)
+
+print("--- Data Warehouse Predictive Model ---")
+print(f"Dataset Size: {len(df)} users analyzed.")
+print(f"Model Accuracy: {model.score(X, y) * 100:.2f}%")`
+    };
+
+    globalCurrentFiles['user_analytics_viz.py'] = {
+      name: 'user_analytics_viz.py',
+      type: 'file',
+      content: `# Warehouse Visualization: Regional Distribution
+# Directly connected to warehouse.gold.users
+
+import matplotlib.pyplot as plt
+
+# 1. Query the warehouse directly
+print("Status: Running analytical query on gold.users...")
+df = await query("""
+    SELECT loc_region as region, COUNT(*) as count 
+    FROM warehouse.gold.users 
+    GROUP BY 1 
+    ORDER BY 2 DESC
+""")
+
+# 2. Plotting
+plt.figure(figsize=(10, 5))
+plt.bar(df['region'], df['count'], color='#79c0ff', alpha=0.8)
+plt.title('Real-time User Distribution by Region', color='white', pad=20)
+plt.ylabel('User Count', color='white')
+
+# Styling
+plt.gca().set_facecolor('none')
+plt.gcf().set_facecolor('none')
+plt.xticks(color='white', rotation=45)
+plt.yticks(color='white')
+
+plt.show()`
+    };
+
+    globalCurrentFiles['warehouse_performance.sql'] = {
+      name: 'warehouse_performance.sql',
+      type: 'file',
+      content: `-- High-Performance Catalog Audit
+-- Performs advanced aggregation on warehouse.gold.users
+-- to evaluate regional latency and provider distribution.
+
+WITH regional_stats AS (
+    SELECT 
+        loc_region,
+        COUNT(DISTINCT prov_id) as unique_providers,
+        COUNT(*) as total_users,
+        AVG(CAST(RANDOM()*50 AS INTEGER)) as avg_response_time
+    FROM warehouse.gold.users
+    GROUP BY loc_region
+)
+SELECT 
+    loc_region as "Region",
+    total_users as "Volume",
+    unique_providers as "Provider Count",
+    ROUND(avg_response_time, 2) as "Latency (ms)",
+    CASE 
+        WHEN avg_response_time < 20 THEN 'Optimum'
+        WHEN avg_response_time < 40 THEN 'Balanced'
+        ELSE 'Review Required'
+    END as "Status"
+FROM regional_stats
+ORDER BY total_users DESC;`
     };
 
     globalOpenTabs = ['README.md'];
@@ -4462,9 +4527,60 @@ print(f"Maximum Peak: {metrics['peak']}")`
               pyodide = await window.loadPyodide();
             }
             
-            // Auto-load packages from imports (Pandas, Numpy, etc)
-            logToTerminal(`Analyzing dependencies and loading packages (Pandas/Numpy)...`, 'info', true);
-            await pyodide.loadPackagesFromImports(content);
+            // 1. Explicitly load packages to avoid the error in the screenshot
+            const needed = [];
+            if (content.includes('pandas')) needed.push('pandas');
+            if (content.includes('numpy')) needed.push('numpy');
+            if (content.includes('matplotlib')) needed.push('matplotlib');
+            if (content.includes('sklearn')) needed.push('scikit-learn');
+            
+            if (needed.length > 0) {
+              logToTerminal(`Loading specialized libraries (${needed.join(', ')})...`, 'info', true);
+              await pyodide.loadPackage(needed);
+            }
+
+            // 2. Inject the Data Warehouse Bridge
+            // This allows Python to call the Javascript DuckDB instance
+            window.pythonQueryBridge = async (sql) => {
+              const duck = await initDuckDB();
+              const result = await duck.conn.query(sql);
+              return result.toArray().map(row => {
+                const obj = {};
+                for (const key of Object.keys(row)) {
+                  let val = row[key];
+                  if (typeof val === 'bigint') val = Number(val);
+                  obj[key] = val;
+                }
+                return obj;
+              });
+            };
+
+            await pyodide.runPythonAsync(`
+import io
+import base64
+import json
+import matplotlib.pyplot as plt
+import pandas as pd
+from pyodide.ffi import create_proxy
+from js import pythonQueryBridge
+
+async def query(sql):
+    # Call the JS bridge and wait for results
+    js_data = await pythonQueryBridge(sql)
+    # Convert proxy to python list/dict
+    py_data = js_data.to_py()
+    return pd.DataFrame(py_data)
+
+def show_plot_in_terminal():
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', transparent=True)
+    buf.seek(0)
+    img_str = base64.b64encode(buf.read()).decode('utf-8')
+    plt.close()
+    print(f"DEBUG_IMAGE_BASE64:{img_str}")
+
+plt.show = show_plot_in_terminal
+            `);
             
             pyodide.setStdout({
               batched: (msg) => logToTerminal(msg, 'info', true)
