@@ -1569,60 +1569,9 @@
   z-index: 5;
 }
 
-.explorer-header {
-  padding: 16px 24px 0 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border-bottom: 1px solid var(--ide-border);
-}
 
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  color: var(--text-secondary);
-}
 
-.breadcrumb-item:hover {
-  text-decoration: underline;
-  cursor: pointer;
-}
 
-.explorer-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 0;
-}
-
-.explorer-title h1 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ide-text-bright);
-}
-
-.explorer-title .icon-wrap {
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ide-accent);
-}
-
-.explorer-tabs {
-  display: flex;
-  gap: 24px;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--ide-border);
-  background: var(--ide-header);
-  margin: 0 -24px -1px -24px;
-}
 
 .explorer-tab {
   padding: 8px 0;
@@ -1642,18 +1591,7 @@
   font-weight: 500;
 }
 
-.explorer-tab.active::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  animation: rainbowSyncBg 10s linear infinite !important;
-  animation-delay: -100s !important;
-  box-shadow: 0 0 10px rgba(100, 255, 218, 0.2);
-  opacity: 0.8;
-}
+
 
 .catalog-node.active {
   background: rgba(255, 255, 255, 0.1);
@@ -1662,19 +1600,7 @@
   background: rgba(0, 0, 0, 0.08);
 }
 
-.catalog-node .active-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #7ee787;
-  position: absolute;
-  left: -2px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: none;
-  box-shadow: 0 0 10px #7ee787;
-  z-index: 5;
-}
+
 
 .explorer-content {
   flex: 1;
@@ -1719,72 +1645,7 @@
   font-size: 13px;
 }
 
-/* Summary View for DB/Schema */
-.summary-section {
-  padding: 24px;
-}
 
-.summary-section h3 {
-  font-size: 14px;
-  color: var(--ide-text);
-  opacity: 0.6;
-  margin-bottom: 20px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-}
-
-.summary-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--ide-border);
-  border-radius: 8px;
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.summary-card:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-}
-
-.summary-card .card-icon {
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ide-text-bright);
-}
-
-.summary-card .card-info {
-  flex: 1;
-}
-
-.summary-card .card-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ide-text-bright);
-  margin-bottom: 2px;
-}
-
-.summary-card .card-type {
-  font-size: 10px;
-  color: var(--ide-text);
-  opacity: 0.5;
-  font-family: var(--font-mono);
-}
 
 /* Catalog Flowchart View */
 .catalog-flow-container {
@@ -1887,98 +1748,12 @@
   letter-spacing: 0.5px;
 }
 
-.advanced-card {
-  margin-top: 16px;
-  border: 1px solid var(--ide-border);
-  border-radius: 12px;
-  padding: 16px;
-}
 
-.advanced-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
 
-.advanced-row:last-child {
-  border-bottom: none;
-}
 
-.adv-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.adv-title {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ide-text-bright);
-}
-
-.adv-desc {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.adv-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #858585;
-}
-
-.status-dot.enabled {
-  background: #7ee787;
-  box-shadow: 0 0 8px #7ee787;
-}
-
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--ide-border);
-  color: var(--ide-text-bright);
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
 
 /* Light Mode Overrides for Catalog Explorer */
-[data-theme="light"] .catalog-explorer {
-  background: #ffffff;
-}
 
-[data-theme="light"] .explorer-tabs {
-  background: #f6f8fa;
-}
-
-[data-theme="light"] .advanced-card {
-  background: #f6f8fa;
-}
-
-[data-theme="light"] .status-dot:not(.enabled) {
-  background: #d0d7de;
-}
-
-[data-theme="light"] .explorer-title .icon-wrap {
-  background: #eff2f5;
-}
 
 /* Catalog Explorer Preview Table */
 .preview-section {

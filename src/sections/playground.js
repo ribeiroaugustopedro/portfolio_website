@@ -30,10 +30,33 @@ const logToTerminal = (content, type = 'info', append = false) => {
     else html = `<span class="info">${content}</span>`;
   }
 
-  if (append) active.content += (active.content ? '<br>' : '') + html;
-  else active.content = html;
+  if (append) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'terminal-entry-wrapper';
+    wrapper.innerHTML = html;
+    active.content += (active.content ? '<br>' : '') + wrapper.outerHTML;
+  } else {
+    active.content = html;
+  }
 
   if (updateTerminalUIBound) updateTerminalUIBound();
+
+  // Scroll to the START of the new output (Local Scroll only)
+  setTimeout(() => {
+    const terminal = document.querySelector('.terminal-output');
+    if (terminal) {
+      const entries = terminal.querySelectorAll('.terminal-entry-wrapper');
+      if (entries.length > 0) {
+        const lastEntry = entries[entries.length - 1];
+        // Calculate relative offset within terminal to avoid scrolling the whole page
+        const topPos = lastEntry.offsetTop - terminal.offsetTop;
+        terminal.scrollTo({
+          top: topPos,
+          behavior: 'smooth'
+        });
+      }
+    }
+  }, 100);
 
   // Re-init resizers if there's a table in the output
   if (html.includes('<table')) {
@@ -66,16 +89,24 @@ async function initDuckDB() {
 
     const connection = await db_instance.connect();
 
-    // Register Parquet Files
+    // 1. Create a dedicated Database (Catalog) for warehouse
+    // This allows the 3-level naming structure: warehouse.gold.table
+    await connection.query(`ATTACH ':memory:' AS warehouse`);
+    await connection.query(`CREATE SCHEMA warehouse.gold`);
+
+    // 2. Register and Load Parquet Files
     const providersUrl = new URL('/data/providers.parquet', window.location.origin).href;
     const usersUrl = new URL('/data/users.parquet', window.location.origin).href;
 
     await db_instance.registerFileURL('providers.parquet', providersUrl, duckdb.DuckDBDataProtocol.HTTP, false);
     await db_instance.registerFileURL('users.parquet', usersUrl, duckdb.DuckDBDataProtocol.HTTP, false);
 
-    // Create Tables from Parquet
-    await connection.query(`CREATE TABLE providers AS SELECT * FROM 'providers.parquet'`);
-    await connection.query(`CREATE TABLE users AS SELECT * FROM 'users.parquet'`);
+    await connection.query(`CREATE TABLE warehouse.gold.providers AS SELECT * FROM 'providers.parquet'`);
+    await connection.query(`CREATE TABLE warehouse.gold.users AS SELECT * FROM 'users.parquet'`);
+    
+    // 3. Create convenience views in the main schema for simpler queries
+    await connection.query(`CREATE VIEW providers AS SELECT * FROM warehouse.gold.providers`);
+    await connection.query(`CREATE VIEW users AS SELECT * FROM warehouse.gold.users`);
 
     if (terminal) {
       logToTerminal(`✓ Warehouse ready. Data loaded from Parquet.`, 'success');
@@ -304,6 +335,15 @@ print(f"Maximum Peak: {metrics['peak']}")`
           resizer.classList.remove('resizing');
           document.removeEventListener('mousemove', onMouseMove);
           document.removeEventListener('mouseup', onMouseUp);
+
+          // Save widths for persistence
+          const active = terminalInstances.find(t => t.id === activeTerminalId);
+          if (active && th.closest('.sql-result-wrapper')) {
+            const table = th.closest('table');
+            const headers = Array.from(table.querySelectorAll('th'));
+            active.savedWidths = headers.map(h => h.style.width);
+            active.savedTableWidth = table.style.width;
+          }
         };
 
         document.addEventListener('mousemove', onMouseMove);
@@ -599,6 +639,35 @@ print(f"Maximum Peak: {metrics['peak']}")`
         padding: 0 !important;
       }
 
+      /* Search Widget (Forced Style) */
+      .ide-search-widget {
+        position: absolute;
+        top: 15px;
+        right: 25px;
+        background: var(--ide-sidebar);
+        border: 1px solid var(--ide-border);
+        border-radius: 8px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        padding: 6px 12px;
+        z-index: 1000;
+        gap: 12px;
+        animation: slideInDownSearch 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .ide-search-widget.active { display: flex; }
+      @keyframes slideInDownSearch { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      .search-input-wrapper {
+        position: relative; display: flex; align-items: center;
+        background: rgba(0, 0, 0, 0.2); border: 1px solid var(--ide-border);
+        border-radius: 4px; padding: 2px 8px; min-width: 200px;
+      }
+      #search-input { background: transparent; border: none; color: var(--ide-text-bright); font-size: 12px; font-family: var(--ide-font-mono); outline: none; width: 100%; height: 24px; }
+      #search-count { font-size: 10px; color: var(--ide-text); opacity: 0.6; white-space: nowrap; margin-left: 8px; }
+      .search-actions { display: flex; gap: 2px; }
+      .search-action-btn { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: var(--ide-text); cursor: pointer; border-radius: 4px; transition: all 0.2s; }
+      .search-action-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--ide-text-bright); }
+
       .ide-file-list::-webkit-scrollbar, .catalog-tree::-webkit-scrollbar {
         width: 5px;
       }
@@ -771,6 +840,32 @@ print(f"Maximum Peak: {metrics['peak']}")`
         animation: pulse-ring 1.5s ease-out infinite;
       }
 
+      .naming-item {
+        margin: 8px auto !important;
+        padding: 6px 10px !important;
+        width: 215px !important;
+        max-width: 215px !important;
+        box-sizing: border-box !important;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--ide-accent-low);
+        border-radius: 8px;
+        display: flex !important;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.2s ease-out;
+      }
+      .naming-input {
+        background: transparent;
+        border: none;
+        color: var(--ide-text-bright);
+        font-size: 11px;
+        width: 100%;
+        min-width: 50px;
+        outline: none;
+        padding: 0;
+      }
+
       .session-badge {
         display: flex;
         align-items: center;
@@ -817,17 +912,20 @@ print(f"Maximum Peak: {metrics['peak']}")`
         border: 1px solid var(--ide-border);
         color: var(--ide-text);
         font-size: 11px;
-        padding: 2px 28px 2px 8px;
+        padding: 0 28px 0 12px;
         border-radius: 4px;
         cursor: pointer;
         font-family: var(--ide-font-mono);
         position: relative;
         transition: all 0.2s;
-        min-width: 90px;
+        min-width: 100px;
         display: flex;
         align-items: center;
         user-select: none;
-        height: 22px;
+        height: 24px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
       }
       .custom-select-trigger::after {
         content: "";
@@ -1458,6 +1556,51 @@ print(f"Maximum Peak: {metrics['peak']}")`
         background: rgba(0, 0, 0, 0.05);
       }
 
+      .toolbar-btn.run.loading {
+        background: var(--ide-accent-low);
+        pointer-events: none;
+      }
+      .toolbar-btn.run.loading svg {
+        animation: spin 1s linear infinite;
+        opacity: 0.5;
+      }
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      /* SQL Result Fullscreen */
+      .sql-result-wrapper.sql-fullscreen-mode {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 10000;
+        background: var(--ide-bg);
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        animation: fadeInScale 0.2s ease-out;
+      }
+      @keyframes fadeInScale {
+        from { opacity: 0; transform: scale(0.98); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      .sql-result-wrapper.sql-fullscreen-mode .sql-grid-layout {
+        flex: 1;
+        min-height: 0;
+      }
+      .sql-result-wrapper.sql-fullscreen-mode .sql-scroll-pane {
+        max-height: none !important;
+        flex: 1;
+      }
+      .sql-result-wrapper.sql-fullscreen-mode .sql-summary-bar {
+        padding: 5px 0 15px 0;
+        background: none;
+        border: none;
+      }
+
       .toolbar-btn.run:hover {
         color: #7ee787;
         filter: drop-shadow(0 0 5px rgba(126, 231, 135, 0.4));
@@ -1921,6 +2064,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
     const preCode = section.querySelector('#ide-code');
     const lineNumbers = section.querySelector('#line-numbers');
     const editorScroller = section.querySelector('#editor-scroller');
+    const runBtn = section.querySelector('#run-btn');
 
     // Sync scroll
     if (editorScroller) {
@@ -1929,218 +2073,6 @@ print(f"Maximum Peak: {metrics['peak']}")`
       };
     }
     // Advanced Editor Shortcuts (VS Code Style)
-    textarea.addEventListener('keydown', (e) => {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const value = textarea.value;
-
-      // Tab / Shift + Tab (Indenting)
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const before = value.substring(0, start);
-        const after = value.substring(end);
-        const selection = value.substring(start, end);
-        const lastNewLine = before.lastIndexOf('\n') + 1;
-
-        if (selection.includes('\n')) {
-          const lines = value.substring(lastNewLine, end).split('\n');
-          if (e.shiftKey) {
-            const newLines = lines.map(l => l.startsWith('  ') ? l.substring(2) : l.startsWith(' ') ? l.substring(1) : l);
-            const newText = newLines.join('\n');
-            textarea.value = value.substring(0, lastNewLine) + newText + after;
-            textarea.selectionStart = start - (lines[0].startsWith(' ') ? (lines[0].startsWith('  ') ? 2 : 1) : 0);
-            textarea.selectionEnd = lastNewLine + newText.length;
-          } else {
-            const newText = lines.map(l => '  ' + l).join('\n');
-            textarea.value = value.substring(0, lastNewLine) + newText + after;
-            textarea.selectionStart = start + 2;
-            textarea.selectionEnd = lastNewLine + newText.length;
-          }
-        } else {
-          if (e.shiftKey) {
-            const currentLineStart = lastNewLine;
-            const line = value.substring(currentLineStart, end);
-            if (line.startsWith(' ') || line.startsWith('  ')) {
-              const shift = line.startsWith('  ') ? 2 : 1;
-              textarea.value = value.substring(0, currentLineStart) + line.substring(shift) + after;
-              textarea.selectionStart = textarea.selectionEnd = Math.max(currentLineStart, start - shift);
-            }
-          } else {
-            textarea.value = before + '  ' + after;
-            textarea.selectionStart = textarea.selectionEnd = start + 2;
-          }
-        }
-        syncEditor();
-      }
-
-      // Ctrl + F (Find) - Toggle logic
-      if (e.ctrlKey && e.key === 'f') {
-        e.preventDefault();
-        toggleSearch();
-      }
-
-      // Ctrl + D (Select Next Occurrence / Select Word)
-      if (e.ctrlKey && e.key === 'd') {
-        e.preventDefault();
-        if (start === end) {
-          // Select word under cursor
-          const beforeAt = value.substring(0, start).search(/[a-zA-Z0-9_]*$/);
-          const afterAt = value.substring(start).search(/[^a-zA-Z0-9_]/);
-          const wordStart = beforeAt;
-          const wordEnd = start + (afterAt === -1 ? value.length - start : afterAt);
-          textarea.setSelectionRange(wordStart, wordEnd);
-
-          // Trigger highlights for all occurrences
-          currentSession.searchQuery = textarea.value.substring(wordStart, wordEnd);
-          performSearch();
-        } else {
-          // Select next occurrence and keep highlights
-          const selectedText = value.substring(start, end);
-          if (selectedText) {
-            currentSession.searchQuery = selectedText;
-            const nextIdx = value.indexOf(selectedText, end);
-            if (nextIdx !== -1) {
-              textarea.setSelectionRange(nextIdx, nextIdx + selectedText.length);
-              const lineIdx = value.substring(0, nextIdx).split('\n').length - 1;
-              const lineHeight = 21;
-              editorScroller.scrollTop = Math.max(0, (lineIdx * lineHeight) - (editorScroller.offsetHeight / 2));
-            } else {
-              const wrapIdx = value.indexOf(selectedText);
-              if (wrapIdx !== -1) {
-                textarea.setSelectionRange(wrapIdx, wrapIdx + selectedText.length);
-                const lineIdx = value.substring(0, wrapIdx).split('\n').length - 1;
-                const lineHeight = 21;
-                editorScroller.scrollTop = Math.max(0, (lineIdx * lineHeight) - (editorScroller.offsetHeight / 2));
-              }
-            }
-            performSearch();
-          }
-        }
-        syncEditor();
-      }
-
-      // Alt + Up / Down (Move Line)
-      if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-        e.preventDefault();
-        const lines = value.split('\n');
-        const currentLineIdx = value.substring(0, start).split('\n').length - 1;
-        const targetIdx = e.key === 'ArrowUp' ? currentLineIdx - 1 : currentLineIdx + 1;
-
-        if (targetIdx >= 0 && targetIdx < lines.length) {
-          const temp = lines[currentLineIdx];
-          lines[currentLineIdx] = lines[targetIdx];
-          lines[targetIdx] = temp;
-          textarea.value = lines.join('\n');
-
-          let newPos = 0;
-          for (let i = 0; i < targetIdx; i++) newPos += lines[i].length + 1;
-          const charOffset = start - value.lastIndexOf('\n', start - 1) - 1;
-          textarea.selectionStart = textarea.selectionEnd = newPos + charOffset;
-          syncEditor();
-        }
-      }
-
-      // Ctrl + / (Toggle Comment)
-      if (e.ctrlKey && e.key === '/') {
-        e.preventDefault();
-        const isSQL = currentSession.fileName?.endsWith('.sql');
-        const commentStr = isSQL ? '-- ' : '# ';
-        const lastNewLine = value.lastIndexOf('\n', start - 1) + 1;
-        let nextNewLine = value.indexOf('\n', end);
-        if (nextNewLine === -1) nextNewLine = value.length;
-
-        const selection = value.substring(lastNewLine, nextNewLine);
-        const lines = selection.split('\n');
-        const allCommented = lines.every(l => l.trim().startsWith(commentStr.trim()) || l.trim() === '');
-
-        const newLines = lines.map(l => {
-          if (allCommented) return l.replace(commentStr, '');
-          return commentStr + l;
-        });
-
-        textarea.value = value.substring(0, lastNewLine) + newLines.join('\n') + value.substring(nextNewLine);
-        textarea.selectionStart = lastNewLine;
-        textarea.selectionEnd = lastNewLine + newLines.join('\n').length;
-        syncEditor();
-      }
-
-      // Enter: Auto-indent and Reset Horizontal Scroll
-      if (e.key === 'Enter' && !e.ctrlKey) {
-        const lastNewLine = value.lastIndexOf('\n', start - 1) + 1;
-        const lineText = value.substring(lastNewLine, start);
-        const indentMatch = lineText.match(/^\s*/);
-        const indent = indentMatch ? indentMatch[0] : '';
-
-        // Manual insertion to control scroll timing
-        e.preventDefault();
-        const before = value.substring(0, start);
-        const after = value.substring(end);
-        textarea.value = before + '\n' + indent + after;
-        textarea.selectionStart = textarea.selectionEnd = start + 1 + indent.length;
-
-        syncEditor();
-
-        // Ensure horizontal scroll resets and vertical follows
-        editorScroller.scrollLeft = 0; // Immediate reset
-        requestAnimationFrame(() => {
-          editorScroller.scrollLeft = 0;
-          setTimeout(() => {
-            editorScroller.scrollLeft = 0;
-            scrollSelectionIntoView();
-          }, 10);
-        });
-      }
-
-      // Home (Smart Home & Ctrl + Home)
-      if (e.key === 'Home') {
-        e.preventDefault();
-        if (e.ctrlKey) {
-          const target = 0;
-          if (e.shiftKey) textarea.setSelectionRange(target, end);
-          else textarea.selectionStart = textarea.selectionEnd = target;
-
-          editorScroller.scrollTop = 0;
-          editorScroller.scrollLeft = 0;
-        } else {
-          const lastNewLine = value.lastIndexOf('\n', start - 1) + 1;
-          let nextNewLine = value.indexOf('\n', lastNewLine);
-          if (nextNewLine === -1) nextNewLine = value.length;
-
-          const lineText = value.substring(lastNewLine, nextNewLine);
-          const firstNonWhitespace = lineText.search(/\S/);
-          const indentPos = lastNewLine + (firstNonWhitespace === -1 ? 0 : firstNonWhitespace);
-          const targetPos = (start === indentPos) ? lastNewLine : indentPos;
-
-          if (e.shiftKey) textarea.setSelectionRange(targetPos, end);
-          else textarea.selectionStart = textarea.selectionEnd = targetPos;
-
-          editorScroller.scrollLeft = 0;
-        }
-      }
-
-      // End Key (Standard & Ctrl + End)
-      if (e.key === 'End') {
-        e.preventDefault();
-        if (e.ctrlKey) {
-          const target = value.length;
-          if (e.shiftKey) textarea.setSelectionRange(start, target);
-          else textarea.selectionStart = textarea.selectionEnd = target;
-
-          setTimeout(() => {
-            editorScroller.scrollTop = editorScroller.scrollHeight;
-            editorScroller.scrollLeft = editorScroller.scrollWidth;
-          }, 0);
-        } else {
-          let nextNewLine = value.indexOf('\n', start);
-          if (nextNewLine === -1) nextNewLine = value.length;
-
-          if (e.shiftKey) textarea.setSelectionRange(start, nextNewLine);
-          else textarea.selectionStart = textarea.selectionEnd = nextNewLine;
-
-          requestAnimationFrame(scrollSelectionIntoView);
-        }
-      }
-    });
 
     // Search Logic
     const searchWidget = section.querySelector('#ide-search-widget');
@@ -2276,15 +2208,60 @@ print(f"Maximum Peak: {metrics['peak']}")`
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         currentSession.isSearchEsc = true;
         searchClose.click();
 
-        // Stabilização adicional para evitar que o browser saia do fullscreen
-        setTimeout(() => { currentSession.isSearchEsc = false; }, 500);
+        // Extra stabilization to prevent browser exit
+        setTimeout(() => { if (currentSession) currentSession.isSearchEsc = false; }, 500);
       }
     });
 
     textarea.addEventListener('keydown', (e) => {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const value = textarea.value;
+
+      // 1. Search Toggle (Ctrl+F)
+      if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        toggleSearch();
+        return;
+      }
+
+      // 2. Tab Support (Unified)
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        textarea.value = value.substring(0, start) + '    ' + value.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + 4;
+        syncEditor();
+        return;
+      }
+
+      // 3. Auto-indent on Enter
+      if (e.key === 'Enter' && !e.ctrlKey) {
+        e.preventDefault();
+        const line = value.substring(0, start).split('\n').pop();
+        const indentMatch = line.match(/^\s*/);
+        const indent = indentMatch ? indentMatch[0] : '';
+        textarea.value = value.substring(0, start) + '\n' + indent + value.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + 1 + indent.length;
+        syncEditor();
+        return;
+      }
+
+      // 4. Pair Completion
+      const pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" };
+      if (pairs[e.key]) {
+        e.preventDefault();
+        const close = pairs[e.key];
+        textarea.value = value.substring(0, start) + e.key + close + value.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + 1;
+        syncEditor();
+        return;
+      }
+
+      // 5. Search Navigation (F3)
       if (e.key === 'F3') {
         e.preventDefault();
         if (searchWidget.classList.contains('active')) {
@@ -2295,7 +2272,6 @@ print(f"Maximum Peak: {metrics['peak']}")`
           }
           updateSearchUI();
         } else {
-          // Open search if F3 pressed but widget hidden
           const selectedText = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
           if (selectedText && !selectedText.includes('\n')) {
             searchInput.value = selectedText;
@@ -2303,6 +2279,26 @@ print(f"Maximum Peak: {metrics['peak']}")`
           searchWidget.classList.add('active');
           searchInput.focus();
           performSearch();
+        }
+      }
+
+      // 6. SQL/Python Execution (Ctrl+Enter)
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        executeCurrentFile();
+      }
+
+      // 7. Backspace Tab Handling
+      if (e.key === 'Backspace' && start === end) {
+        const textView = value.substring(0, start);
+        if (textView.slice(-4) === '    ') {
+          const lineStart = textView.lastIndexOf('\n') + 1;
+          if ((start - lineStart) % 4 === 0) {
+            e.preventDefault();
+            textarea.value = textView.substring(0, start - 4) + value.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start - 4;
+            syncEditor();
+          }
         }
       }
     });
@@ -2334,7 +2330,6 @@ print(f"Maximum Peak: {metrics['peak']}")`
       textarea.focus();
     };
 
-    const runBtn = section.querySelector('#run-btn');
     const terminal = section.querySelector('#terminal-output');
     const ideTerminal = section.querySelector('.ide-terminal');
     const refreshTerminalBtn = section.querySelector('#refresh-terminal-btn');
@@ -2369,8 +2364,41 @@ print(f"Maximum Peak: {metrics['peak']}")`
     const terminalSelectOptions = section.querySelector('#terminal-select-options');
     const terminalAdd = section.querySelector('#terminal-add');
 
+    if (terminalSelectTrigger) {
+      terminalSelectTrigger.onclick = (e) => {
+        e.stopPropagation();
+        terminalSelectOptions.classList.toggle('active');
+      };
+    }
 
-    function updateTerminalUI() {
+    // Table Fullscreen Delegate (Using Capture Phase + Scroll Locking)
+    terminal.addEventListener('click', (e) => {
+      const btn = e.target.closest('.sql-fullscreen-btn');
+      if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation(); // Be extremely aggressive to stop other listeners
+        
+        const wrapper = btn.closest('.sql-result-wrapper');
+        if (wrapper) {
+           // Save current scroll to prevent jump
+           const currentScroll = terminal.scrollTop;
+           
+           wrapper.classList.toggle('sql-fullscreen-mode');
+           
+           // Restore scroll immediately after toggle to counter browser layout shifts
+           terminal.scrollTop = currentScroll;
+
+           if (wrapper.classList.contains('sql-fullscreen-mode')) {
+             btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v5H3M21 8h-5V3M3 16h5v5M16 21v-5h5"/></svg>`;
+           } else {
+             btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
+           }
+        }
+      }
+    }, { capture: true });
+
+    function updateTerminalUI(shouldScrollAuto = false) {
       if (!terminalSelectTrigger || !terminalSelectOptions) return;
 
       const active = terminalInstances.find(t => t.id === activeTerminalId);
@@ -2383,24 +2411,44 @@ print(f"Maximum Peak: {metrics['peak']}")`
       terminalSelectOptions.querySelectorAll('.custom-select-option').forEach(opt => {
         opt.onclick = (e) => {
           e.stopPropagation();
+          // Save current scroll before switching
+          const prevActive = terminalInstances.find(t => t.id === activeTerminalId);
+          if (prevActive) prevActive.lastScroll = terminal.scrollTop;
+
           activeTerminalId = parseInt(opt.dataset.id);
           if (activeSessionRef) activeSessionRef.activeTerminalId = activeTerminalId;
           terminalSelectOptions.classList.remove('active');
-
-          // Re-render immediate update
-          const newActive = terminalInstances.find(t => t.id === activeTerminalId);
-          if (newActive) {
-            terminal.innerHTML = newActive.content || '';
-            terminal.scrollTop = terminal.scrollHeight;
-          }
-
-          updateTerminalUI();
+          updateTerminalUI(true); // Switch implies showing saved state
         };
       });
 
       if (active) {
         terminal.innerHTML = active.content || '';
-        terminal.scrollTop = terminal.scrollHeight;
+        
+        // Restore saved scroll OR auto-scroll if it's a new execution result
+        if (shouldScrollAuto) {
+           if (active.content && active.content.trim().startsWith('<div class="sql-result-wrapper"')) {
+             terminal.scrollTop = 0;
+           } else {
+             terminal.scrollTop = terminal.scrollHeight;
+           }
+        } else if (active.lastScroll !== undefined) {
+           terminal.scrollTop = active.lastScroll;
+        }
+
+        // Apply saved widths
+        if (active.savedWidths) {
+          const table = terminal.querySelector('.preview-table');
+          const headers = Array.from(terminal.querySelectorAll('th'));
+          if (table && headers.length === active.savedWidths.length) {
+            headers.forEach((h, idx) => {
+              h.style.width = active.savedWidths[idx];
+              h.style.minWidth = active.savedWidths[idx];
+            });
+            if (active.savedTableWidth) table.style.width = active.savedTableWidth;
+          }
+        }
+
         if (active.content.includes('<table')) {
           setTimeout(() => initTableResizers(terminal), 50);
         }
@@ -2409,7 +2457,10 @@ print(f"Maximum Peak: {metrics['peak']}")`
     updateTerminalUIBound = updateTerminalUI;
 
     window.addEventListener('mousedown', (e) => {
-      if (terminalSelectOptions) terminalSelectOptions.classList.remove('active');
+      // Don't close if clicking the trigger itself
+      if (terminalSelectOptions && !terminalSelectTrigger.contains(e.target)) {
+        terminalSelectOptions.classList.remove('active');
+      }
     }, true);
 
 
@@ -2764,9 +2815,8 @@ print(f"Maximum Peak: {metrics['peak']}")`
                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
                        </div>
                        <span style="font-family: var(--ide-font-mono); font-size: 13px; color: var(--ide-text); display: flex; align-items: center; gap: 4px;">
-                         <span style="opacity: 0.7;">SELECT * FROM</span>
-                         <span style="color: #7ee787; font-weight: 700;">warehouse.${pathParts[1] || 'gold'}.${item.name}</span>
-                         <span style="opacity: 0.7;">LIMIT 100</span>
+                          <span style="opacity: 0.7;">SELECT * FROM</span>
+                          <span style="color: #7ee787; font-weight: 700;">warehouse.${pathParts[1] || 'gold'}.${item.name}</span>
                        </span>
                     </div>
                   </div>
@@ -2813,7 +2863,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
                     const duck = await initDuckDB();
                     const sort = currentSession.activeCatalogSort;
                     const orderClause = sort.column && sort.order ? `ORDER BY ${sort.column} ${sort.order}` : "";
-                    const res = await duck.conn.query(`SELECT * FROM ${item.name} ${orderClause} LIMIT 100`);
+                    const res = await duck.conn.query(`SELECT * FROM ${item.name} ${orderClause} LIMIT 1000`);
                     tablePreviewCache[item.name] = res.toArray().map(r => {
                       const obj = {};
                       for (let k of Object.keys(r)) {
@@ -3785,8 +3835,22 @@ print(f"Maximum Peak: {metrics['peak']}")`
       const isEditorSource = e.target.tagName === 'TEXTAREA';
 
       // ESC: Close/Exit IDE and return to Projects
-      // ESC: Deselect all files
+      // ESC: Deselect all files (Prioritize closing search/menus)
       if (e.key === 'Escape') {
+        if (searchWidget && searchWidget.classList.contains('active')) {
+          e.preventDefault();
+          e.stopPropagation();
+          currentSession.isSearchEsc = true;
+          searchClose.click();
+          setTimeout(() => { if (currentSession) currentSession.isSearchEsc = false; }, 500);
+          return;
+        }
+        if (terminalSelectOptions && terminalSelectOptions.classList.contains('active')) {
+          e.preventDefault();
+          e.stopPropagation();
+          terminalSelectOptions.classList.remove('active');
+          return;
+        }
         deselectAll();
         return;
       }
@@ -4124,6 +4188,18 @@ print(f"Maximum Peak: {metrics['peak']}")`
 
     // Window Logic & Shortcuts
     window.addEventListener('keydown', (e) => {
+      // Prioritize ESC for Search/Select UI in Fullscreen
+      if (e.key === 'Escape' && document.fullscreenElement) {
+        if ((searchWidget && searchWidget.classList.contains('active')) ||
+          (terminalSelectOptions && terminalSelectOptions.classList.contains('active'))) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          if (searchWidget.classList.contains('active')) searchClose.click();
+          else terminalSelectOptions.classList.remove('active');
+          return;
+        }
+      }
+
       // F11 Strategy: Override browser fullscreen to focus on IDE if it's open
       if (e.code === 'F11') {
         if (currentSession.isLaunched && !currentSession.isMinimized) {
@@ -4223,8 +4299,8 @@ print(f"Maximum Peak: {metrics['peak']}")`
 
       if (elapsed !== null) {
         html += `<div class="sql-summary-bar">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size: 11px; font-family: var(--ide-font-mono);">${rows.length} rows and ${columns.length} columns returned in ${elapsed.toFixed(1)}s</span>
+                   <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size: 11px; font-family: var(--ide-font-mono);">${rows.length.toLocaleString()} rows and ${columns.length} columns returned in ${elapsed.toFixed(1)}s</span>
                   </div>
                   <button class="sql-fullscreen-btn" title="Fullscreen">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -4254,59 +4330,68 @@ print(f"Maximum Peak: {metrics['peak']}")`
         const typeIcon = CATALOG_TYPE_ICONS[typeKey];
 
         return `
-                            <th style="width: 150px; min-width: 80px; text-align: center; cursor: pointer; padding: 8px 10px;" data-sort-col="${c}" data-sort-dir="${isSorted ? sortDir : ''}">
-                              <div class="col-resizer" data-resizer="true"></div>
-                              <div class="th-content">
-                                <div class="th-main" style="align-items: center;">
-                                  <div style="display:flex; align-items:center; justify-content:center; gap:6.5px;">
-                                    <span class="th-name" style="${isSorted ? 'color: var(--ide-text-bright); font-weight: 700;' : ''}">${c}</span>
-                                    <div class="sort-icon" style="margin-top: 2px;">${sortIcon}</div>
-                                  </div>
-                                  <div class="type-pill-container" style="margin-top: 4px; transform: scale(0.8);">${typeIcon}</div>
-                                </div>
-                              </div>
-                            </th>`;
+                             <th style="width: 150px; min-width: 40px; text-align: center; border: 1px solid var(--ide-border); background-color: var(--ide-header); padding: 6px 10px; cursor: pointer; position: sticky; top: 0; z-index: 5;" data-sort-col="${c}" data-sort-dir="${isSorted ? sortDir : ''}">
+                               <div class="col-resizer" data-resizer="true"></div>
+                               <div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom: 0px;">
+                                 <span style="${isSorted ? 'color: var(--ide-text-bright); font-weight: bold;' : ''}; font-size: 11px;">${c}</span>
+                                 <div class="sort-icon">${sortIcon}</div>
+                               </div>
+                               <div style="display:flex; justify-content:center; align-items:center;">
+                                 <div style="transform: scale(0.85); transform-origin: center; display: inline-block;">
+                                    ${typeIcon}
+                                 </div>
+                               </div>
+                             </th>`;
       }).join('')}
                       </tr>
                     </thead>
                     <tbody>
-                      ${sortedRows.slice(0, 100).map((row, rIdx) => `
-                        <tr>
-                          <td style="width: 45px; min-width: 45px; text-align: center; position: sticky; left: 0; z-index: 5; background: var(--ide-sidebar); font-size: 10px; color: var(--ide-text); opacity: 0.5; font-family: var(--ide-font-mono); border-right: 1px solid var(--ide-border);">
-                            ${rIdx + 1}
-                          </td>
-                          ${columns.map(c => {
-        let val = row[c];
-        let displayVal = val;
-        const isNum = typeof val === 'number';
-        if (isNum) {
-          displayVal = !Number.isInteger(val) ?
-            val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) :
-            val.toLocaleString('en-US');
-        } else if (val === null || val === undefined) {
-          displayVal = '<span style="opacity:0.25">NULL</span>';
-        }
-        return `<td style="text-align: center; font-family: var(--ide-font-mono); font-size: 11px;">${displayVal}</td>`;
-      }).join('')}
-                        </tr>
-                      `).join('')}
+                      ${(() => {
+                        const renderLimit = 5000;
+                        const toRender = sortedRows.slice(0, renderLimit);
+                        return toRender.map((row, rIdx) => `
+                          <tr>
+                            <td style="width: 45px; min-width: 45px; text-align: center; position: sticky; left: 0; z-index: 5; background: var(--ide-sidebar); font-size: 10px; color: var(--ide-text); opacity: 0.5; font-family: var(--ide-font-mono); border-right: 1px solid var(--ide-border);">
+                              ${rIdx + 1}
+                            </td>
+                            ${columns.map(c => {
+                              let val = row[c];
+                              let displayVal = val;
+                              const isNum = typeof val === 'number';
+                              if (isNum) {
+                                displayVal = !Number.isInteger(val) ?
+                                  val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 6 }) :
+                                  val.toLocaleString('en-US');
+                              } else if (val === null || val === undefined) {
+                                displayVal = '<span style="opacity:0.25">NULL</span>';
+                              }
+                              return `<td style="text-align: center; font-family: var(--ide-font-mono); font-size: 11px;">${displayVal}</td>`;
+                            }).join('')}
+                          </tr>
+                        `).join('');
+                      })()}
                     </tbody>
                   </table>
                 </div>
               </div>`;
 
-      if (rows.length > 100) html += `<div style="font-size:10px; opacity:0.4; padding: 12px; text-align:center;">Showing first 100 rows only.</div>`;
+      if (rows.length > 5000) {
+        html += `<div style="padding: 15px; text-align:center; background: rgba(255,165,0,0.05); border-top: 1px solid var(--ide-border);">
+                  <div style="font-size: 12px; font-weight: 600; color: #d29922; margin-bottom: 4px;">Performance Protection Active</div>
+                  <div style="font-size: 11px; opacity: 0.7;">Rendered first 5,000 rows. Processing <b>${rows.length.toLocaleString()}</b> rows in a browser table would crash the interface.</div>
+                  <div style="font-size: 10px; opacity: 0.5; margin-top: 4px;">Tip: Use <code style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 4px;">LIMIT</code> in your SQL for specific datasets.</div>
+                 </div>`;
+      }
       html += `</div>`;
       return html;
     };
 
     textarea.oninput = syncEditor;
 
-    let sqlTimeout = null;
-
     const executeCurrentFile = async () => {
       try {
         if (!currentSession) return;
+        runBtn.classList.add('loading');
         currentSession.terminalOpen = true;
         syncTerminalVisibility();
 
@@ -4315,6 +4400,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
 
         if (!content) {
           logToTerminal(`Empty file. Nothing to run.`, 'error', true);
+          runBtn.classList.remove('loading');
           return;
         }
 
@@ -4330,27 +4416,18 @@ print(f"Maximum Peak: {metrics['peak']}")`
         const runnableExtensions = ['py', 'sql'];
         if (!runnableExtensions.includes(extension)) {
           logToTerminal(`File type .${extension.toUpperCase()} is not runnable.`, 'error', true);
+          runBtn.classList.remove('loading');
           return;
         }
 
         // Handle SQL execution
         if (fileName.endsWith('.sql')) {
-          if (sqlTimeout) clearTimeout(sqlTimeout);
           const startTime = performance.now();
-          logToTerminal(`<div class="info sql-running-msg" style="display:flex; align-items:center; height:20px;"><svg class="spinner" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle></svg> Running Query...</div>`, 'info', false);
-
-          sqlTimeout = setTimeout(async () => {
+          setTimeout(async () => {
             try {
-              const cleanContent = content.replace(/([a-zA-Z_][a-zA-Z0-9_]*\.)+([a-zA-Z_][a-zA-Z0-9_]*)/gi, (match) => {
-                const parts = match.split('.');
-                const tableName = parts[parts.length - 1].toLowerCase();
-                const knownTables = ['users', 'providers', 'orders', 'products', 'metrics'];
-                if (knownTables.includes(tableName)) return tableName;
-                return match;
-              });
-
               const duck = await initDuckDB();
-              const result = await duck.conn.query(cleanContent);
+              // NO REPLACEMENT: DuckDB handles schemas warehouse.gold natively now
+              const result = await duck.conn.query(content);
 
               const rows = result.toArray().map(row => {
                 const obj = {};
@@ -4363,83 +4440,47 @@ print(f"Maximum Peak: {metrics['peak']}")`
               });
 
               if (rows.length === 0) {
-                logToTerminal(`Query executed successfully. No rows returned.`, 'info', true);
+                logToTerminal(`Query returned no results.`, 'info', true);
+                runBtn.classList.remove('loading');
                 return;
               }
 
               const elapsed = (performance.now() - startTime) / 1000;
-              const active = terminalInstances.find(t => t.id === activeTerminalId);
-              if (active) {
-                active.queryResults = { rows, columns: Object.keys(rows[0]), elapsed };
-              }
-
               const html = renderSQLOutput(rows, Object.keys(rows[0]), elapsed);
-              logToTerminal(html, null, false);
+              logToTerminal(html, 'info', true);
+              runBtn.classList.remove('loading');
             } catch (err) {
               logToTerminal(`SQL Error: ${err.message}`, 'error', true);
+              runBtn.classList.remove('loading');
             }
-          }, 800);
-          return;
-        }
-
-        // Handle Python execution
-        if (!pyodide) {
-          if (runBtn) {
-            runBtn.disabled = true;
-            runBtn.innerHTML = '<svg class="spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"></circle></svg>';
+          }, 10);
+        } else if (fileName.endsWith('.py')) {
+          // Handle Python
+          try {
+            if (!pyodide) {
+              logToTerminal(`Preparing Python runtime (Pyodide)...`, 'info', true);
+              pyodide = await window.loadPyodide();
+            }
+            
+            // Auto-load packages from imports (Pandas, Numpy, etc)
+            logToTerminal(`Analyzing dependencies and loading packages (Pandas/Numpy)...`, 'info', true);
+            await pyodide.loadPackagesFromImports(content);
+            
+            pyodide.setStdout({
+              batched: (msg) => logToTerminal(msg, 'info', true)
+            });
+            await pyodide.runPythonAsync(content);
+            runBtn.classList.remove('loading');
+          } catch (err) {
+            logToTerminal(`Python Error: ${err.message}`, 'error', true);
+            runBtn.classList.remove('loading');
           }
-          pyodide = await window.loadPyodide();
-          if (runBtn) {
-            runBtn.disabled = false;
-            runBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
-          }
-        }
-
-        logToTerminal(t.running || 'Running...', 'info');
-        try {
-          pyodide.runPython(`import sys\nimport io\nsys.stdout = io.StringIO()`);
-          await pyodide.runPythonAsync(content);
-          const stdout = pyodide.runPython("sys.stdout.getvalue()");
-          logToTerminal(stdout ? stdout.replace(/\n/g, '<br>') : (t.executedSuccess || 'Executed successfully.'), stdout ? 'info' : 'success');
-        } catch (err) {
-          logToTerminal(`${err.message}`, 'error');
         }
       } catch (err) {
-        console.error("Execution Error:", err);
-        logToTerminal(`Internal Error: ${err.message}`, 'error', true);
+        console.error("Execution failed:", err);
+        if (runBtn) runBtn.classList.remove('loading');
       }
     };
-
-    textarea.addEventListener('keydown', (e) => {
-      if (e.key === 'Tab') {
-        e.preventDefault();
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        textarea.value = textarea.value.substring(0, start) + "    " + textarea.value.substring(end);
-        textarea.selectionStart = textarea.selectionEnd = start + 4;
-        syncEditor();
-      }
-      if (e.key === 'Backspace' && textarea.selectionStart === textarea.selectionEnd) {
-        const start = textarea.selectionStart;
-        const textView = textarea.value.substring(0, start);
-        const lastFour = textView.slice(-4);
-        if (lastFour === '    ') {
-          // Calculate column to ensure we are at a tab stop
-          const lineStart = textView.lastIndexOf('\n') + 1;
-          const col = start - lineStart;
-          if (col % 4 === 0) {
-            e.preventDefault();
-            textarea.value = textView.substring(0, start - 4) + textarea.value.substring(start);
-            textarea.selectionStart = textarea.selectionEnd = start - 4;
-            syncEditor();
-          }
-        }
-      }
-      if (e.ctrlKey && (e.key === 'Enter' || e.keyCode === 13)) {
-        e.preventDefault();
-        executeCurrentFile();
-      }
-    });
 
     if (runBtn) runBtn.onclick = executeCurrentFile;
 
@@ -4656,7 +4697,7 @@ print(f"Maximum Peak: {metrics['peak']}")`
       syncIDEState();
 
       if (h2Title) h2Title.style.display = 'flex';
-      
+
       const ideWindow = section.querySelector('#ide-window');
       if (ideWindow) {
         ideWindow.style.display = 'flex'; // Redundant but safe
@@ -4829,9 +4870,28 @@ print(f"Maximum Peak: {metrics['peak']}")`
     };
 
     document.addEventListener('fullscreenchange', () => {
-      if (!document.fullscreenElement) {
+      const ideWin = section.querySelector('#ide-window');
+
+      if (document.fullscreenElement) {
+        // Entering Fullscreen
+        if (document.fullscreenElement === ideWin) {
+          lastFullscreenWasIDE = true;
+          // Adapt terminal height if open
+          if (currentSession.terminalOpen) {
+            const terminalEl = section.querySelector('.ide-terminal');
+            if (terminalEl) terminalEl.style.height = '45vh';
+          }
+        }
+      } else {
+        // Exiting Fullscreen
         // If we were NOT in an IDE fullscreen session, ignore this event
         if (!lastFullscreenWasIDE) return;
+
+        // Reset terminal height if open
+        if (currentSession.terminalOpen) {
+          const terminalEl = section.querySelector('.ide-terminal');
+          if (terminalEl) terminalEl.style.height = '220px';
+        }
 
         if (!isManualExit) {
           if (currentSession.isSearchEsc) {
@@ -4919,10 +4979,22 @@ window.addEventListener('mousedown', (e) => {
 
   // 0. Handle SQL Sorting in Terminal
   const sortHeader = e.target.closest('[data-sort-col]');
-  if (sortHeader && sortHeader.closest('.sql-result-wrapper')) {
+  const isResizer = e.target.closest('[data-resizer]');
+
+  if (sortHeader && !isResizer && sortHeader.closest('.sql-result-wrapper')) {
     const column = sortHeader.dataset.sortCol;
     const currentDir = sortHeader.dataset.sortDir;
-    const newDir = currentDir === 'ASC' ? 'DESC' : 'ASC';
+
+    // Cycle: ASC -> DESC -> CLEAR (None)
+    let newDir = 'ASC';
+    let targetCol = column;
+
+    if (currentDir === 'ASC') {
+      newDir = 'DESC';
+    } else if (currentDir === 'DESC') {
+      newDir = null;
+      targetCol = null;
+    }
 
     if (activeSessionRef.terminalInstances && activeSessionRef.renderSQLOutput) {
       const activeTerm = activeSessionRef.terminalInstances.find(t => t.id === activeSessionRef.activeTerminalId);
@@ -4931,7 +5003,7 @@ window.addEventListener('mousedown', (e) => {
           activeTerm.queryResults.rows,
           activeTerm.queryResults.columns,
           activeTerm.queryResults.elapsed,
-          column,
+          targetCol,
           newDir
         );
 
@@ -4965,11 +5037,18 @@ window.addEventListener('mousedown', (e) => {
   const isSelectable = e.target.closest('.ide-file-item, .naming-item, .ide-tab, .sidebar-action-btn, .toolbar-btn, [data-sort-col], .preview-table, .detail-grid, .catalog-node');
   const isInteracting = e.target.closest('[data-resizer], #terminal-resizer, .ide-terminal-resizer, .ide-modal, .window-controls, .status-bar, .ide-activity-bar, .column-stats-overlay, .catalog-explorer, .naming-input');
 
-  // 1. Cancel Naming if clicking outside
-  if (activeSessionRef.namingNew && !e.target.closest('.naming-input')) {
-    // We need to call cancelNaming here. Since it's local to renderIDE, we should have a ref.
-    // However, the simplest way is to trigger a custom event or check name.
-    // For now, let's focus on the file selection.
+  // 1. Cancel Naming if clicking outside or window loses focus
+  const handleNamingCancel = () => {
+    if (activeSessionRef.isNaming) {
+      activeSessionRef.isNaming = false;
+      activeSessionRef.namingType = null;
+      activeSessionRef.namingParentId = null;
+      activeSyncRef();
+    }
+  };
+
+  if (activeSessionRef.isNaming && !e.target.closest('.naming-item')) {
+    handleNamingCancel();
   }
 
   // 2. Clear Selection
