@@ -22,16 +22,20 @@ const logToTerminal = (content, type = 'info', append = false) => {
   const active = terminalInstances.find(t => t.id === activeTerminalId);
   if (!active) return;
 
-  // Image detection (for Matplotlib)
+  // Rich Content Detection
   if (content && typeof content === 'string' && content.startsWith('DEBUG_IMAGE_BASE64:')) {
     const base64 = content.replace('DEBUG_IMAGE_BASE64:', '');
     content = `<img src="data:image/png;base64,${base64}" style="max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px dashed var(--ide-accent-low); filter: brightness(1.1); box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
     type = 'info';
+  } else if (content && typeof content === 'string' && content.startsWith('DEBUG_HTML_RAW:')) {
+    content = content.replace('DEBUG_HTML_RAW:', '');
+    type = 'raw';
   }
 
   let html = content;
   if (type === 'error') html = `<span class="error">${content}</span>`;
   if (type === 'success') html = `<span class="success">${content}</span>`;
+  if (type === 'raw') html = `<div class="raw-html-output" style="margin-top: 10px; border-radius: 8px; overflow: hidden; background: rgba(0,0,0,0.2); border: 1px solid var(--ide-border);">${content}</div>`;
   if (type === 'info') {
     if (content.includes('class="spinner"')) html = content;
     else html = `<span class="info">${content}</span>`;
@@ -139,13 +143,14 @@ export function renderIDE(lang, translations) {
 
     globalCurrentFiles = { ...files };
 
-    // Initial Demo Files
-    globalCurrentFiles['analytics_basics.sql'] = {
-      name: 'analytics_basics.sql',
+    // 📂 Queries Folder
+    globalCurrentFiles['queries/'] = { name: 'queries/', type: 'folder' };
+    
+    globalCurrentFiles['queries/market_share.sql'] = {
+      name: 'market_share.sql',
       type: 'file',
       content: `-- Provider Market Share Analysis
--- This query calculates the concentration of providers across regions,
--- using a subquery to determine the percentage share relative to the total.
+-- Calculates the concentration of providers across regions.
 
 SELECT
     loc_region,
@@ -157,12 +162,11 @@ GROUP BY ALL
 ORDER BY 2 DESC, 1 ASC;`
     };
 
-    globalCurrentFiles['marketing_aggregates.sql'] = {
-      name: 'marketing_aggregates.sql',
+    globalCurrentFiles['queries/provider_density.sql'] = {
+      name: 'provider_density.sql',
       type: 'file',
-      content: `-- Marketing View: Provider Density
--- Analyzes provider counts at the state and regional levels,
--- calculating the relative percentage distribution using a Window Function.
+      content: `-- Provider Density by State
+-- Uses Window Functions for relative distribution.
 
 SELECT
     loc_state,
@@ -174,12 +178,11 @@ GROUP BY 1, 2
 ORDER BY 3 DESC;`
     };
 
-    globalCurrentFiles['advanced_joins.sql'] = {
-      name: 'advanced_joins.sql',
+    globalCurrentFiles['queries/regional_joins.sql'] = {
+      name: 'regional_joins.sql',
       type: 'file',
       content: `-- Advanced Analytics: Cross-joining Users and Providers
 -- Correlates regional user counts with provider rankings.
--- Uses a Common Table Expression (CTE) for pre-aggregation and Window Functions for ranking.
 
 WITH region_stats AS (
     SELECT 
@@ -199,36 +202,11 @@ WHERE s.user_count > 100
 LIMIT 10;`
     };
 
-    globalCurrentFiles['data_processing.py'] = {
-      name: 'data_processing.py',
-      type: 'file',
-      content: `# Python Data Processing Workflow
-# This script demonstrates a typical business logic prototype:
-# Calculating percentage shares for regional numeric values.
+    // 📂 Data Science Folder
+    globalCurrentFiles['data_science/'] = { name: 'data_science/', type: 'folder' };
 
-data = [
-    {"region": "North", "value": 1500},
-    {"region": "South", "value": 2300},
-    {"region": "East", "value": 1800}
-]
-
-def calculate_shares(dataset):
-    """Calculate the relative share of each entry in the total value."""
-    total = sum(d['value'] for d in dataset)
-    return [
-        {**d, "share": round(d['value'] / total * 100, 2)}
-        for d in dataset
-    ]
-
-results = calculate_shares(data)
-
-print("--- Data Processing Result ---")
-for r in results:
-    print(f"Region: {r['region']} | Share: {r['share']}%")`
-    };
-
-    globalCurrentFiles['user_churn_model.py'] = {
-      name: 'user_churn_model.py',
+    globalCurrentFiles['data_science/churn_prediction.py'] = {
+      name: 'churn_prediction.py',
       type: 'file',
       content: `# Predictive Analytics: User Churn Risk
 # Directly connected to warehouse.gold.users
@@ -240,15 +218,12 @@ from sklearn.linear_model import LogisticRegression
 print("Status: Pulling live data from warehouse.gold.users...")
 df = await query("SELECT * FROM warehouse.gold.users")
 
-# 2. Basic processing (Simulating churn logic on real labels)
-# We assume 'user_id' can be a proxy for a continuous feature in this demo
+# 2. Logic: Assume user_id suffix as engagement proxy
 df['is_high_risk'] = df['user_id'].apply(lambda x: 1 if (int(str(x)[-3:]) > 500) else 0)
-
-# Features - We map user_id to a small feature space for the demo
 df['feature'] = df['user_id'].apply(lambda x: int(str(x)[-4:]))
+
 X = df[['feature']] 
 y = df['is_high_risk']
-
 model = LogisticRegression().fit(X, y)
 
 print("--- Data Warehouse Predictive Model ---")
@@ -256,16 +231,12 @@ print(f"Dataset Size: {len(df)} users analyzed.")
 print(f"Model Accuracy: {model.score(X, y) * 100:.2f}%")`
     };
 
-    globalCurrentFiles['user_analytics_viz.py'] = {
-      name: 'user_analytics_viz.py',
+    globalCurrentFiles['data_science/regional_viz.py'] = {
+      name: 'regional_viz.py',
       type: 'file',
-      content: `# Warehouse Visualization: Regional Distribution
-# Directly connected to warehouse.gold.users
-
+      content: `# Warehouse Visualization: Matplotlib 
 import matplotlib.pyplot as plt
 
-# 1. Query the warehouse directly
-print("Status: Running analytical query on gold.users...")
 df = await query("""
     SELECT loc_region as region, COUNT(*) as count 
     FROM warehouse.gold.users 
@@ -273,49 +244,96 @@ df = await query("""
     ORDER BY 2 DESC
 """)
 
-# 2. Plotting
 plt.figure(figsize=(10, 5))
 plt.bar(df['region'], df['count'], color='#79c0ff', alpha=0.8)
-plt.title('Real-time User Distribution by Region', color='white', pad=20)
-plt.ylabel('User Count', color='white')
-
-# Styling
+plt.title('User Distribution by Region', color='white', pad=20)
 plt.gca().set_facecolor('none')
 plt.gcf().set_facecolor('none')
 plt.xticks(color='white', rotation=45)
 plt.yticks(color='white')
-
 plt.show()`
     };
 
-    globalCurrentFiles['warehouse_performance.sql'] = {
-      name: 'warehouse_performance.sql',
+    globalCurrentFiles['data_science/interactive_metrics.py'] = {
+      name: 'interactive_metrics.py',
       type: 'file',
-      content: `-- High-Performance Catalog Audit
--- Performs advanced aggregation on warehouse.gold.users
--- to evaluate regional latency and provider distribution.
+      content: `# Interactive DS: Plotly Visualization
+import plotly.express as px
 
-WITH regional_stats AS (
-    SELECT 
-        loc_region,
-        COUNT(DISTINCT prov_id) as unique_providers,
-        COUNT(*) as total_users,
-        AVG(CAST(RANDOM()*50 AS INTEGER)) as avg_response_time
-    FROM warehouse.gold.users
-    GROUP BY loc_region
+# 1. Fetch data from Gold Layer
+df = await query("""
+    SELECT user_product as product, COUNT(*) as volume 
+    FROM warehouse.gold.users 
+    GROUP BY 1
+""")
+
+# 2. Create interactive pie chart
+fig = px.pie(df, values='volume', names='product', 
+             title='Real-time Product Tier Distribution',
+             hole=.3,
+             color_discrete_sequence=px.colors.qualitative.Pastel)
+
+fig.update_layout(
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)',
+    font_color="white",
+    margin=dict(t=50, b=0, l=0, r=0)
 )
-SELECT 
-    loc_region as "Region",
-    total_users as "Volume",
-    unique_providers as "Provider Count",
-    ROUND(avg_response_time, 2) as "Latency (ms)",
-    CASE 
-        WHEN avg_response_time < 20 THEN 'Optimum'
-        WHEN avg_response_time < 40 THEN 'Balanced'
-        ELSE 'Review Required'
-    END as "Status"
-FROM regional_stats
-ORDER BY total_users DESC;`
+
+# 3. Render in IDE Terminal
+print(f"DEBUG_HTML_RAW:{fig.to_html(full_html=False, include_plotlyjs='cdn')}")`
+    };
+
+    // 📂 Engineering Folder
+    globalCurrentFiles['engineering/'] = { name: 'engineering/', type: 'folder' };
+
+    globalCurrentFiles['engineering/warehouse_audit.py'] = {
+      name: 'warehouse_audit.py',
+      type: 'file',
+      content: `# MotherDuck-style Warehouse Inspection 
+import pandas as pd
+
+print("--- 🔍 Data Warehouse Professional Audit ---")
+
+# 1. Inspect Catalogs (Databases)
+print("\\n[Catalogs]")
+db_df = await query("SELECT * FROM duckdb_databases()")
+print(db_df[['database_name', 'path', 'internal']])
+
+# 2. Inspect Schemas
+print("\\n[Schemas in 'warehouse' Catalog]")
+schema_df = await query("SELECT * FROM duckdb_schemas() WHERE database_name = 'warehouse'")
+print(schema_df[['schema_name', 'internal']])
+
+# 3. Inspect Tables
+print("\\n[Gold Layer Assets]")
+tables_df = await query("SELECT * FROM duckdb_tables() WHERE schema_name = 'gold'")
+print(tables_df[['table_name', 'column_count', 'estimated_size']])
+
+# 4. Deep Column Inspection via Information Schema
+print("\\n[Schema Details: warehouse.gold.users]")
+cols_df = await query("SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'users'")
+print(cols_df)`
+    };
+
+    globalCurrentFiles['engineering/geospatial_demo.py'] = {
+      name: 'geospatial_demo.py',
+      type: 'file',
+      content: `# Geospatial Engineering: Folium Map
+import folium
+from folium.plugins import HeatMap
+
+# 1. Sample geographic coordinates
+print("Status: Pulling geospatial user data...")
+df = await query("SELECT loc_latitude, loc_longitude FROM warehouse.gold.users LIMIT 2000")
+
+# 2. Initialize Heatmap
+m = folium.Map(location=[37, -100], zoom_start=4, tiles='CartoDB dark_matter')
+heat_data = [[row['loc_latitude'], row['loc_longitude']] for idx, row in df.iterrows()]
+HeatMap(heat_data, radius=15).add_to(m)
+
+# 3. Render Leaflet Map
+print(f"DEBUG_HTML_RAW:{m._repr_html_()}")`
     };
 
     globalOpenTabs = ['README.md'];
@@ -354,6 +372,14 @@ ORDER BY total_users DESC;`
   let isInitialLoad = true;
   // Initialize SQL engine
   initDuckDB().catch(e => console.error("DuckDB Init failed:", e));
+
+  // Inject Plotly CDN if not present
+  if (!document.getElementById('plotly-cdn-script')) {
+    const s = document.createElement('script');
+    s.id = 'plotly-cdn-script';
+    s.src = 'https://cdn.plot.ly/plotly-2.24.1.min.js';
+    document.head.appendChild(s);
+  }
 
   // Connect active refs for global access
   activeSessionRef = currentSession;
@@ -4533,11 +4559,20 @@ print(f"Maximum Peak: {metrics['peak']}")`
             if (content.includes('pandas') || content.includes('query(')) needed.push('pandas');
             if (content.includes('numpy')) needed.push('numpy');
             if (content.includes('matplotlib') || content.includes('plt.')) needed.push('matplotlib');
-            if (content.includes('sklearn') || content.includes('sklearn')) needed.push('scikit-learn');
+            if (content.includes('sklearn')) needed.push('scikit-learn');
+            if (content.includes('plotly')) needed.push('plotly');
             
             if (needed.length > 0) {
               logToTerminal(`Loading specialized libraries (${needed.join(', ')})...`, 'info', true);
               await pyodide.loadPackage(needed);
+            }
+
+            // Folium usually requires micropip installation in many pyodide envs
+            if (content.includes('folium')) {
+              logToTerminal(`Installing folium (micropip)...`, 'info', true);
+              await pyodide.loadPackage('micropip');
+              const micropip = pyodide.pyimport('micropip');
+              await micropip.install('folium');
             }
 
             // 2. Inject the Data Warehouse Bridge

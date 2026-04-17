@@ -149,27 +149,27 @@ export const translations = {
                 restarted: '✓ Kernel reiniciado. Pronto.',
                 executedSuccess: 'Executado com sucesso (sem output).'
             },
-            readmeContent: `# Bem-vindo ao Analytics Playground
+            readmeContent: `# 🚀 Analytics Playground Profissional
 
-Este é o meu ambiente integrado de Engenharia e Análise de Dados. Aqui, você pode explorar a arquitetura de um Data Warehouse real e executar processos analíticos de ponta a ponta.
+Bem-vindo ao meu ambiente integrado de Engenharia e Análise de Dados. Este workspace foi otimizado para simular um ecossistema real de **Data Warehouse (Modern Data Stack)**.
 
-### Arquitetura do Catálogo
-Explore o painel CATALOG à esquerda para visualizar nossa estrutura:
-- Camada Gold: Tabelas higienizadas (\`providers\`, \`users\`) prontas para consumo.
-- Metadados: Clique nas colunas para visualizar estatísticas de cardinalidade e distribuição de dados.
+### 📂 Organização do Workspace
+O explorador de arquivos agora segue padrões de engenharia:
+- **queries/**: Protótipos de lógica analítica e transformações SQL.
+- **data_science/**: Modelagem preditiva e visualizações avançadas.
+- **engineering/**: Auditoria de tabelas e processamento geoespacial.
 
-### Execução de Consultas SQL
-O IDE está conectado a um motor DuckDB local (WebAssembly) que emula um ambiente MotherDuck:
-- Selecione um arquivo \`.sql\` e clique em RUN.
-- Teste agregações, JOINS complexos e Window Functions.
+### 🛠️ Novos Recursos Integrados
+- **Plotly & Folium**: Renderização de gráficos interativos e mapas geoespaciais diretamente no terminal.
+- **MotherDuck Connection**: O IDE emula um motor DuckDB (Wasm) com suporte a inspeção de catálogos e esquemas.
+- **Deep Metadata**: Clique nas colunas no painel **CATALOG** para visualizar estatísticas de distribuição.
 
-### Processamento com Python
-Utilize scripts \`.py\` para manipular dados:
-- Execução via Pyodide, permitindo rodar Python moderno diretamente no seu navegador.
-- Ideal para prototipar regras de negócio e automação de pipelines.
+### ⚡ Execução Rápida
+- Selecione qualquer arquivo e use \`Ctrl + Enter\` para executar.
+- Experimente o arquivo \`engineering/warehouse_audit.py\` para uma visão completa da infraestrutura.
 
 ---
-**Dica:** Use \`Ctrl + Enter\` para executar o código rapidamente!
+**Objetivo:** Demonstrar a ponte entre Engenharia de Dados bruta e Analytics de alto impacto.
 `
         },
         footer: {
@@ -326,27 +326,27 @@ Utilize scripts \`.py\` para manipular dados:
                 restarted: '✓ Kernel restarted. Ready.',
                 executedSuccess: 'Executed successfully (no output).'
             },
-            readmeContent: `# Welcome to the Analytics Playground
+            readmeContent: `# 🚀 Professional Analytics Playground
 
-This is my integrated Data Engineering and Analytics environment. Here you can explore real Data Warehouse architectures and execute end-to-end analytical processes.
+Welcome to my integrated Data Engineering and Analytics environment. This workspace is optimized to simulate a real **Data Warehouse (Modern Data Stack)** ecosystem.
 
-### Catalog Architecture
-Explore the CATALOG panel on the left to visualize our structure:
-- Gold Layer: Refined tables (\`providers\`, \`users\`) ready for consumption.
-- Metadata: Click on columns to view cardinality and data distribution statistics.
+### 📂 Workspace Organization
+The file explorer now follows professional engineering standards:
+- **queries/**: Prototypes for analytical logic and SQL transformations.
+- **data_science/**: Predictive modeling and advanced visualizations.
+- **engineering/**: Table auditing and geospatial processing.
 
-### SQL Query Execution
-The IDE is powered by a local DuckDB engine (WebAssembly) emulating a MotherDuck environment:
-- Select a \`.sql\` file and click RUN.
-- Test aggregates, complex JOINS, and Window Functions.
+### 🛠️ Integrated Capabilities
+- **Plotly & Folium**: Interactive charts and geospatial maps rendered directly in the terminal.
+- **MotherDuck Simulation**: The IDE runs a local DuckDB engine (Wasm) with support for catalog and schema auditing.
+- **Deep Metadata**: Click on columns in the **CATALOG** panel to view distribution and cardinality stats.
 
-### Python Data Processing
-Use \`.py\` scripts to manipulate datasets:
-- Execution via Pyodide, allowing you to run modern Python directly in your browser.
-- Ideal for business logic prototyping and pipeline automation.
+### ⚡ Quick Execution
+- Select any file and press \`Ctrl + Enter\` to run.
+- Try \`engineering/warehouse_audit.py\` for a full infrastructure inspection.
 
 ---
-**Tip:** Use \`Ctrl + Enter\` to quickly execute your code!
+**Goal:** Demonstrate the bridge between raw Data Engineering and high-impact Analytics.
 `
         },
         footer: {
