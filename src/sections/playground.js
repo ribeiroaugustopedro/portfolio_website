@@ -22,22 +22,53 @@ const logToTerminal = (content, type = 'info', append = false) => {
   const active = terminalInstances.find(t => t.id === activeTerminalId);
   if (!active) return;
 
-  // Rich Content Detection
-  if (content && typeof content === 'string' && content.startsWith('DEBUG_IMAGE_BASE64:')) {
-    const base64 = content.replace('DEBUG_IMAGE_BASE64:', '');
-    content = `<img src="data:image/png;base64,${base64}" style="max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px dashed var(--ide-accent-low); filter: brightness(1.1); box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
-    type = 'info';
-  } else if (content && typeof content === 'string' && content.startsWith('DEBUG_HTML_RAW:')) {
-    content = content.replace('DEBUG_HTML_RAW:', '');
-    type = 'raw';
+  // Robust Content Detection (captures markers anywhere in the msg)
+  if (content && typeof content === 'string') {
+    if (content.includes('DEBUG_IMAGE_BASE64:')) {
+      const parts = content.split('DEBUG_IMAGE_BASE64:');
+      if (parts[0]) logToTerminal(parts[0], 'info', append);
+      const base64 = parts[1].trim();
+      content = `<img src="data:image/png;base64,${base64}" style="max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px dashed var(--ide-accent-low); filter: brightness(1.1); box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
+      type = 'info';
+    } else if (content.includes('DEBUG_HTML_RAW:')) {
+      const parts = content.split('DEBUG_HTML_RAW:');
+      if (parts[0]) logToTerminal(parts[0], 'info', append);
+      content = parts[1].trim();
+      type = 'raw';
+    } else if (content.includes('DEBUG_PANDAS_HTML:')) {
+      const parts = content.split('DEBUG_PANDAS_HTML:');
+      if (parts[0]) logToTerminal(parts[0], 'info', append);
+      content = parts[1].trim();
+      type = 'info'; // Render inline but as HTML
+      html = content;
+    }
   }
 
   let html = content;
   if (type === 'error') html = `<span class="error">${content}</span>`;
   if (type === 'success') html = `<span class="success">${content}</span>`;
-  if (type === 'raw') html = `<div class="raw-html-output" style="margin-top: 10px; border-radius: 8px; overflow: hidden; background: rgba(0,0,0,0.2); border: 1px solid var(--ide-border);">${content}</div>`;
+    if (type === 'raw') {
+    const frameId = `frame_${Math.random().toString(36).substr(2, 9)}`;
+    let fullHtml = content;
+    if (!content.includes('<html')) {
+      fullHtml = `<html><body style="margin:0; padding:0; height: 100%; display: flex; flex-direction: column; background: transparent;">${content}</body></html>`;
+    }
+
+    const encodedSource = encodeURIComponent(fullHtml);
+
+    html = `<div class="raw-html-output" data-raw-source="${encodedSource}" style="margin-top: 15px; border-radius: 8px; overflow: hidden; background: #0f1115; border: 1px solid rgba(255,255,255,0.1); height: 500px; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+      <div style="background: #1a1d23; padding: 6px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); display:flex; justify-content: space-between; align-items: center; font-family: var(--ide-font-mono); font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:8px; height:8px; border-radius:50%; background:#79c0ff; box-shadow:0 0 8px #79c0ff44;"></div>
+          <span>Interactive Visualization</span>
+        </div>
+        <a href="#" onclick="const w=window.open(); w.document.write(decodeURIComponent(this.closest('.raw-html-output').dataset.rawSource)); return false;" style="color: #c9d1d9; text-decoration: none; padding: 2px 6px; border-radius: 3px; background: rgba(255,255,255,0.05); transition: all 0.2s;">Full Screen</a>
+      </div>
+      <iframe id="${frameId}" style="width: 100%; flex: 1; border: none; background: transparent;" sandbox="allow-scripts allow-downloads allow-popups"></iframe>
+    </div>`;
+  }
   if (type === 'info') {
-    if (content.includes('class="spinner"')) html = content;
+    if (typeof content === 'string' && content.includes('class="spinner"')) html = content;
     else html = `<span class="info">${content}</span>`;
   }
 
@@ -231,6 +262,25 @@ print(f"Dataset Size: {len(df)} users analyzed.")
 print(f"Model Accuracy: {model.score(X, y) * 100:.2f}%")`
     };
 
+    globalCurrentFiles['data_science/pandas_tutorial.py'] = {
+      name: 'pandas_tutorial.py',
+      type: 'file',
+      content: `# Pandas Tutorial: Data Exploration
+import pandas as pd
+
+print("--- PANDAS WORKSPACE ---")
+
+# 1. Loading data
+print("\\n[1] DATASET PREVIEW")
+df = await query("SELECT * FROM warehouse.gold.users")
+display(df.head(10))
+
+# 2. Aggregation & Metrics
+print("\\n[2] USERS BY REGION")
+dist = df.groupby('loc_region').size().reset_index(name='Count')
+display(dist)`
+    };
+
     globalCurrentFiles['data_science/regional_viz.py'] = {
       name: 'regional_viz.py',
       type: 'file',
@@ -257,31 +307,91 @@ plt.show()`
     globalCurrentFiles['data_science/interactive_metrics.py'] = {
       name: 'interactive_metrics.py',
       type: 'file',
-      content: `# Interactive DS: Plotly Visualization
-import plotly.express as px
+      content: `# Quality Engineering: Shewhart Control Chart (SPC)
+import plotly.graph_objects as go
+import pandas as pd
+import numpy as np
 
-# 1. Fetch data from Gold Layer
-df = await query("""
-    SELECT user_product as product, COUNT(*) as volume 
+# 1. Advanced Discovery: Find Temporal Column in Warehouse
+schema = await query("PRAGMA table_info('warehouse.gold.users')")
+col_names = schema['name'].tolist()
+
+# Priority list for temporal data
+target_col = next((c for c in ['signup_date', 'joined_at', 'created_at', 'last_login'] if c in col_names), None)
+
+if target_col:
+    date_expr = f"CAST({target_col} AS DATE)"
+else:
+    # Safe Fallback: Generate a logical sequence using INTERVAL logic
+    date_expr = "((TIMESTAMP '2024-01-01' + INTERVAL (user_id % 30) DAY)::DATE)"
+
+# 2. Fetch Time-Series Signups from Warehouse
+# Ensure we fetch clean data for Plotly
+df = await query(f"""
+    SELECT 
+        {date_expr} as onboarding_date,
+        COUNT(*) as signup_count
     FROM warehouse.gold.users 
     GROUP BY 1
+    ORDER BY 1 ASC
 """)
 
-# 2. Create interactive pie chart
-fig = px.pie(df, values='volume', names='product', 
-             title='Real-time Product Tier Distribution',
-             hole=.3,
-             color_discrete_sequence=px.colors.qualitative.Pastel)
+# Convert to native Python types and ensure datetime objects for Plotly
+df['onboarding_date'] = pd.to_datetime(df['onboarding_date'])
+df['signup_count'] = df['signup_count'].astype(float)
 
+# 3. Statistical Process Control (SPC) Calculations
+mean_val = df['signup_count'].mean()
+std_val = df['signup_count'].std()
+if pd.isna(std_val) or std_val == 0: std_val = 0.001 # Prevent zero division
+ucl = mean_val + (3 * std_val)
+lcl = max(0, mean_val - (3 * std_val))
+
+# 4. Build the Shewhart Chart
+fig = go.Figure()
+
+# Add Control Limit (Shaded Region)
+fig.add_hrect(y0=lcl, y1=ucl, fillcolor="rgba(121, 192, 255, 0.05)", line_width=0, annotation_text="Control Zone (±3σ)", annotation_position="top left")
+
+# Add Mean Line
+fig.add_hline(y=mean_val, line_dash="dash", line_color="rgba(255, 255, 255, 0.3)", annotation_text=f"Mean: {mean_val:.2f}")
+
+# Add UCL/LCL Lines
+fig.add_hline(y=ucl, line_color="rgba(255, 123, 114, 0.3)", line_width=1)
+fig.add_hline(y=lcl, line_color="rgba(255, 123, 114, 0.3)", line_width=1)
+
+# Main Data Line
+fig.add_trace(go.Scatter(
+    x=df['onboarding_date'], y=df['signup_count'],
+    mode='lines+markers',
+    name='Daily Onboarding',
+    line=dict(color='#79c0ff', width=2),
+    marker=dict(size=6, color='#58a6ff', symbol='circle'),
+    hovertemplate="Date: %{x}<br>Signups: %{y}<extra></extra>"
+))
+
+# 5. Professional Layout
 fig.update_layout(
+    title="Statistical Process Control: Daily User Onboarding Trend",
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
-    font_color="white",
-    margin=dict(t=50, b=0, l=0, r=0)
+    font_color="#8b949e",
+    margin=dict(t=80, b=40, l=40, r=40),
+    xaxis=dict(
+        showgrid=False, 
+        zeroline=False, 
+        color="#8b949e",
+        type='date',
+        tickformat='%b %d',  # Clean format: e.g., "Jan 01"
+        nticks=10
+    ),
+    yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', zeroline=False, color="#8b949e"),
+    showlegend=False,
+    height=450
 )
 
-# 3. Render in IDE Terminal
-print(f"DEBUG_HTML_RAW:{fig.to_html(full_html=False, include_plotlyjs='cdn')}")`
+# 6. Render in IDE Terminal
+display_html(fig.to_html(full_html=False, include_plotlyjs='cdn'), type='raw')`
     };
 
     // Engineering Folder
@@ -316,7 +426,7 @@ cols_df = await query("SELECT column_name, data_type, is_nullable FROM informati
 print(cols_df)`
     };
 
-    globalCurrentFiles['engineering/geospatial_demo.py'] = {
+    globalCurrentFiles['data_science/geospatial_demo.py'] = {
       name: 'geospatial_demo.py',
       type: 'file',
       content: `# Geospatial Engineering: Folium Map
@@ -333,7 +443,7 @@ heat_data = [[row['loc_latitude'], row['loc_longitude']] for idx, row in df.iter
 HeatMap(heat_data, radius=15).add_to(m)
 
 # 3. Render Leaflet Map
-print(f"DEBUG_HTML_RAW:{m._repr_html_()}")`
+display_html(m._repr_html_(), type='raw')`
     };
 
     globalOpenTabs = ['README.md'];
@@ -1536,6 +1646,49 @@ print(f"DEBUG_HTML_RAW:{m._repr_html_()}")`
         align-items: center;
       }
 
+      /* Clean Data Studio Pandas Display */
+      .pandas-display-container {
+        margin: 15px 0;
+        border: 1px solid var(--ide-border);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--ide-bg);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        max-width: 100%;
+      }
+      .pandas-scroll-pane {
+        overflow-x: auto;
+        max-width: 100%;
+      }
+      .pandas-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--ide-font-mono);
+        font-size: 11px;
+        text-align: left;
+      }
+      .pandas-table th {
+        padding: 8px 12px;
+        color: var(--ide-text-bright);
+        font-weight: 600;
+        border-bottom: 1px solid var(--ide-border);
+        font-size: 11px;
+      }
+      .pandas-table td {
+        padding: 6px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        color: var(--ide-text);
+        white-space: nowrap;
+      }
+      .pandas-table tr:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .pandas-table .index-col {
+        opacity: 0.3;
+        width: 40px;
+        font-size: 10px;
+      }
+
       /* Edge Fades */
       .ide-tabs-container::before,
       .ide-tabs-container::after {
@@ -2462,33 +2615,30 @@ print(f"DEBUG_HTML_RAW:{m._repr_html_()}")`
         terminalSelectOptions.classList.toggle('active');
       };
     }
-
-    // Table Fullscreen Delegate (Using Capture Phase + Scroll Locking)
-    terminal.addEventListener('click', (e) => {
+    // Table Fullscreen Delegate (Robust state management)
+    terminal.addEventListener('mousedown', (e) => {
       const btn = e.target.closest('.sql-fullscreen-btn');
       if (btn) {
         e.preventDefault();
         e.stopPropagation();
-        e.stopImmediatePropagation(); // Be extremely aggressive to stop other listeners
         
         const wrapper = btn.closest('.sql-result-wrapper');
         if (wrapper) {
-           // Save current scroll to prevent jump
-           const currentScroll = terminal.scrollTop;
-           
            wrapper.classList.toggle('sql-fullscreen-mode');
            
-           // Restore scroll immediately after toggle to counter browser layout shifts
-           terminal.scrollTop = currentScroll;
-
            if (wrapper.classList.contains('sql-fullscreen-mode')) {
              btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v5H3M21 8h-5V3M3 16h5v5M16 21v-5h5"/></svg>`;
            } else {
              btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`;
            }
+
+           // Force a quick sync of the content string to persist the state
+           const active = terminalInstances.find(t => t.id === activeTerminalId);
+           if (active) active.content = terminal.innerHTML;
         }
       }
     }, { capture: true });
+
 
     function updateTerminalUI(shouldScrollAuto = false) {
       if (!terminalSelectTrigger || !terminalSelectOptions) return;
@@ -2544,6 +2694,14 @@ print(f"DEBUG_HTML_RAW:{m._repr_html_()}")`
         if (active.content.includes('<table')) {
           setTimeout(() => initTableResizers(terminal), 50);
         }
+
+        // Hydrate Rich Content (Plots/Folium)
+        terminal.querySelectorAll('.raw-html-output[data-raw-source]').forEach(wrapper => {
+          const iframe = wrapper.querySelector('iframe');
+          if (iframe && !iframe.srcdoc) {
+            iframe.srcdoc = decodeURIComponent(wrapper.dataset.rawSource);
+          }
+        });
       }
     }
     updateTerminalUIBound = updateTerminalUI;
@@ -2783,7 +2941,7 @@ print(f"DEBUG_HTML_RAW:{m._repr_html_()}")`
       if (!container) return;
       container.innerHTML = openTabs.map(tabId => {
         const isCatalog = tabId.startsWith('catalog://');
-        const displayName = isCatalog ? tabId.split('/').pop() : tabId;
+        const displayName = tabId.split('/').pop();
 
         let icon;
         if (isCatalog) {
@@ -4418,7 +4576,13 @@ print(f"Maximum Peak: {metrics['peak']}")`
           '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity:0.25"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>';
 
         const rawVal = rows[0] ? rows[0][c] : null;
-        const typeKey = typeof rawVal === 'number' ? 'number' : typeof rawVal === 'boolean' ? 'boolean' : 'text';
+        let typeKey = typeof rawVal === 'number' ? 'number' : typeof rawVal === 'boolean' ? 'boolean' : 'text';
+        
+        // Dynamic detection for decimal icon
+        if (typeKey === 'number' && rawVal !== null && !Number.isInteger(rawVal)) {
+          typeKey = 'decimal';
+        }
+        
         const typeIcon = CATALOG_TYPE_ICONS[typeKey];
 
         return `
@@ -4552,62 +4716,56 @@ print(f"Maximum Peak: {metrics['peak']}")`
             if (!pyodide) {
               logToTerminal(`Preparing Python runtime (Pyodide)...`, 'info', true);
               pyodide = await window.loadPyodide();
-            }
-            
-            // 1. Explicitly load packages to avoid the error in the screenshot
-            const needed = [];
-            if (content.includes('pandas') || content.includes('query(')) needed.push('pandas');
-            if (content.includes('numpy')) needed.push('numpy');
-            if (content.includes('matplotlib') || content.includes('plt.')) needed.push('matplotlib');
-            if (content.includes('sklearn')) needed.push('scikit-learn');
-            
-            if (needed.length > 0) {
-              logToTerminal(`Loading core libraries (${needed.join(', ')})...`, 'info', true);
-              await pyodide.loadPackage(needed);
-            }
-
-            // 2. Extra packages (Plotly, Folium) often need micropip
-            const extra = [];
-            if (content.includes('plotly')) extra.push('plotly');
-            if (content.includes('folium')) extra.push('folium');
-
-            if (extra.length > 0) {
-              logToTerminal(`Installing specialized libraries (${extra.join(', ')})...`, 'info', true);
-              await pyodide.loadPackage('micropip');
-              const micropip = pyodide.pyimport('micropip');
-              await micropip.install(extra);
-            }
-
-            // 2. Inject the Data Warehouse Bridge
-            // This allows Python to call the Javascript DuckDB instance
-            window.pythonQueryBridge = async (sql) => {
-              const duck = await initDuckDB();
-              const result = await duck.conn.query(sql);
-              return result.toArray().map(row => {
-                const obj = {};
-                for (const key of Object.keys(row)) {
-                  let val = row[key];
-                  if (typeof val === 'bigint') val = Number(val);
-                  obj[key] = val;
-                }
-                return obj;
+              
+              // 1. Stable Stdout
+              pyodide.setStdout({
+                batched: (msg) => logToTerminal(msg, 'info', true)
               });
-            };
 
-            await pyodide.runPythonAsync(`
-import io
-import base64
-import json
+              // 2. High-Performance JS Bridges
+              window.logRichContent = (content, type) => logToTerminal(content, type, true);
+              window.pythonQueryBridge = async (sql) => {
+                const duck = await initDuckDB();
+                const result = await duck.conn.query(sql);
+                return result.toArray().map(row => {
+                  const obj = {};
+                  for (const key of Object.keys(row)) {
+                    let val = row[key];
+                    if (typeof val === 'bigint') val = Number(val);
+                    if (val instanceof Date) val = val.toISOString();
+                    obj[key] = val;
+                  }
+                  return obj;
+                });
+              };
+
+              // 3. Persistent Python Toolset
+              await pyodide.runPythonAsync(`
+import io, base64, json, datetime
 from pyodide.ffi import create_proxy
-from js import pythonQueryBridge
+from js import pythonQueryBridge, logRichContent
 
 async def query(sql):
     import pandas as pd
-    # Call the JS bridge and wait for results
     js_data = await pythonQueryBridge(sql)
-    # Convert proxy to python list/dict
-    py_data = js_data.to_py()
-    return pd.DataFrame(py_data)
+    return pd.DataFrame(json.loads(json.dumps(js_data.to_py())))
+
+def display(df, limit=100):
+    if hasattr(df, 'head'):
+        pdf = df.head(limit)
+        cols = pdf.columns.tolist()
+        html = '<div class="pandas-display-container"><div class="pandas-scroll-pane"><table class="pandas-table"><thead><tr>'
+        html += '<th class="index-col">#</th>'
+        for c in cols: html += f'<th>{c}</th>'
+        html += '</tr></thead><tbody>'
+        for i, row in enumerate(pdf.to_dict("records")):
+            html += f'<tr><td class="index-col">{i+1}</td>'
+            for c in cols: html += f'<td>{row[c]}</td>'
+        html += '</tbody></table></div></div>'
+        logRichContent(html, 'info')
+    else: print(df)
+
+def display_html(html, type='raw'): logRichContent(html, type)
 
 def show_plot_in_terminal():
     import matplotlib.pyplot as plt
@@ -4616,20 +4774,43 @@ def show_plot_in_terminal():
     buf.seek(0)
     img_str = base64.b64encode(buf.read()).decode('utf-8')
     plt.close()
-    print(f"DEBUG_IMAGE_BASE64:{img_str}")
+    img_html = f'<img src="data:image/png;base64,{img_str}" style="max-width: 100%; border-radius: 8px; margin-top: 10px;">'
+    logRichContent(img_html, 'info')
 
-# Set plt.show only if matplotlib is actually available
 try:
     import matplotlib.pyplot as plt
     plt.show = show_plot_in_terminal
-except ImportError:
-    pass
-            `);
+except ImportError: pass
+`);
+            }
             
-            pyodide.setStdout({
-              batched: (msg) => logToTerminal(msg, 'info', true)
-            });
+            // 4. Per-Run Library Check
+            const needed = [];
+            if (content.includes('pandas') || content.includes('query(')) needed.push('pandas');
+            if (content.includes('matplotlib') || content.includes('plt.')) needed.push('matplotlib');
+            if (content.includes('sklearn') || content.includes('LogisticRegression')) needed.push('scikit-learn');
+            
+            if (needed.length > 0) {
+              logToTerminal(`Checking libraries (${needed.join(', ')})...`, 'info', true);
+              await pyodide.loadPackage(needed);
+              if (needed.includes('matplotlib')) {
+                await pyodide.runPythonAsync("import matplotlib.pyplot as plt; plt.show = show_plot_in_terminal");
+              }
+            }
+
+            const extra = [];
+            if (content.includes('plotly')) extra.push('plotly');
+            if (content.includes('folium')) extra.push('folium');
+
+            if (extra.length > 0) {
+              logToTerminal(`Updating specialized assets (${extra.join(', ')})...`, 'info', true);
+              await pyodide.loadPackage('micropip');
+              await pyodide.pyimport('micropip').install(extra);
+            }
+
             await pyodide.runPythonAsync(content);
+            runBtn.classList.remove('loading');
+
             runBtn.classList.remove('loading');
           } catch (err) {
             logToTerminal(`Python Error: ${err.message}`, 'error', true);
