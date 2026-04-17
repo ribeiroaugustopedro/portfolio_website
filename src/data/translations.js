@@ -146,25 +146,25 @@ export const translations = {
                 ready: 'Pronto.',
                 running: 'Executando...',
                 restarting: 'Reiniciando kernel...',
-                restarted: '✓ Kernel reiniciado. Pronto.',
+                restarted: 'Kernel reiniciado. Pronto.',
                 executedSuccess: 'Executado com sucesso (sem output).'
             },
-            readmeContent: `# 🚀 Analytics Playground Profissional
+            readmeContent: `# Analytics Playground Profissional
 
 Bem-vindo ao meu ambiente integrado de Engenharia e Análise de Dados. Este workspace foi otimizado para simular um ecossistema real de **Data Warehouse (Modern Data Stack)**.
 
-### 📂 Organização do Workspace
+### Organização do Workspace
 O explorador de arquivos agora segue padrões de engenharia:
 - **queries/**: Protótipos de lógica analítica e transformações SQL.
 - **data_science/**: Modelagem preditiva e visualizações avançadas.
 - **engineering/**: Auditoria de tabelas e processamento geoespacial.
 
-### 🛠️ Novos Recursos Integrados
+### Novos Recursos Integrados
 - **Plotly & Folium**: Renderização de gráficos interativos e mapas geoespaciais diretamente no terminal.
 - **MotherDuck Connection**: O IDE emula um motor DuckDB (Wasm) com suporte a inspeção de catálogos e esquemas.
 - **Deep Metadata**: Clique nas colunas no painel **CATALOG** para visualizar estatísticas de distribuição.
 
-### ⚡ Execução Rápida
+### Execução Rápida
 - Selecione qualquer arquivo e use \`Ctrl + Enter\` para executar.
 - Experimente o arquivo \`engineering/warehouse_audit.py\` para uma visão completa da infraestrutura.
 
@@ -323,25 +323,25 @@ O explorador de arquivos agora segue padrões de engenharia:
                 ready: 'Ready.',
                 running: 'Running...',
                 restarting: 'Restarting kernel...',
-                restarted: '✓ Kernel restarted. Ready.',
+                restarted: 'Kernel restarted. Ready.',
                 executedSuccess: 'Executed successfully (no output).'
             },
-            readmeContent: `# 🚀 Professional Analytics Playground
+            readmeContent: `# Professional Analytics Playground
 
 Welcome to my integrated Data Engineering and Analytics environment. This workspace is optimized to simulate a real **Data Warehouse (Modern Data Stack)** ecosystem.
 
-### 📂 Workspace Organization
+### Workspace Organization
 The file explorer now follows professional engineering standards:
 - **queries/**: Prototypes for analytical logic and SQL transformations.
 - **data_science/**: Predictive modeling and advanced visualizations.
 - **engineering/**: Table auditing and geospatial processing.
 
-### 🛠️ Integrated Capabilities
+### Integrated Capabilities
 - **Plotly & Folium**: Interactive charts and geospatial maps rendered directly in the terminal.
 - **MotherDuck Simulation**: The IDE runs a local DuckDB engine (Wasm) with support for catalog and schema auditing.
 - **Deep Metadata**: Click on columns in the **CATALOG** panel to view distribution and cardinality stats.
 
-### ⚡ Quick Execution
+### Quick Execution
 - Select any file and press \`Ctrl + Enter\` to run.
 - Try \`engineering/warehouse_audit.py\` for a full infrastructure inspection.
 

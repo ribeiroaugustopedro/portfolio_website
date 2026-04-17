@@ -120,7 +120,7 @@ async function initDuckDB() {
     await connection.query(`CREATE VIEW users AS SELECT * FROM warehouse.gold.users`);
 
     if (terminal) {
-      logToTerminal(`✓ Warehouse ready. Data loaded from Parquet.`, 'success');
+      logToTerminal(`Warehouse ready. Data loaded from Parquet.`, 'success');
     }
 
     db = db_instance;
@@ -143,7 +143,7 @@ export function renderIDE(lang, translations) {
 
     globalCurrentFiles = { ...files };
 
-    // 📂 Queries Folder
+    // Queries Folder
     globalCurrentFiles['queries/'] = { name: 'queries/', type: 'folder' };
     
     globalCurrentFiles['queries/market_share.sql'] = {
@@ -202,7 +202,7 @@ WHERE s.user_count > 100
 LIMIT 10;`
     };
 
-    // 📂 Data Science Folder
+    // Data Science Folder
     globalCurrentFiles['data_science/'] = { name: 'data_science/', type: 'folder' };
 
     globalCurrentFiles['data_science/churn_prediction.py'] = {
@@ -284,7 +284,7 @@ fig.update_layout(
 print(f"DEBUG_HTML_RAW:{fig.to_html(full_html=False, include_plotlyjs='cdn')}")`
     };
 
-    // 📂 Engineering Folder
+    // Engineering Folder
     globalCurrentFiles['engineering/'] = { name: 'engineering/', type: 'folder' };
 
     globalCurrentFiles['engineering/warehouse_audit.py'] = {
@@ -293,7 +293,7 @@ print(f"DEBUG_HTML_RAW:{fig.to_html(full_html=False, include_plotlyjs='cdn')}")`
       content: `# MotherDuck-style Warehouse Inspection 
 import pandas as pd
 
-print("--- 🔍 Data Warehouse Professional Audit ---")
+print("--- Data Warehouse Professional Audit ---")
 
 # 1. Inspect Catalogs (Databases)
 print("\\n[Catalogs]")
@@ -4560,19 +4560,22 @@ print(f"Maximum Peak: {metrics['peak']}")`
             if (content.includes('numpy')) needed.push('numpy');
             if (content.includes('matplotlib') || content.includes('plt.')) needed.push('matplotlib');
             if (content.includes('sklearn')) needed.push('scikit-learn');
-            if (content.includes('plotly')) needed.push('plotly');
             
             if (needed.length > 0) {
-              logToTerminal(`Loading specialized libraries (${needed.join(', ')})...`, 'info', true);
+              logToTerminal(`Loading core libraries (${needed.join(', ')})...`, 'info', true);
               await pyodide.loadPackage(needed);
             }
 
-            // Folium usually requires micropip installation in many pyodide envs
-            if (content.includes('folium')) {
-              logToTerminal(`Installing folium (micropip)...`, 'info', true);
+            // 2. Extra packages (Plotly, Folium) often need micropip
+            const extra = [];
+            if (content.includes('plotly')) extra.push('plotly');
+            if (content.includes('folium')) extra.push('folium');
+
+            if (extra.length > 0) {
+              logToTerminal(`Installing specialized libraries (${extra.join(', ')})...`, 'info', true);
               await pyodide.loadPackage('micropip');
               const micropip = pyodide.pyimport('micropip');
-              await micropip.install('folium');
+              await micropip.install(extra);
             }
 
             // 2. Inject the Data Warehouse Bridge
